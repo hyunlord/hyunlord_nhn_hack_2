@@ -1,0 +1,90 @@
+:root {
+  --surface: #f4f1e8;
+  --panel: #fffdf6;
+  --text: #25241f;
+  --muted: #68655b;
+  --border: #b8b2a3;
+  --accent: #1f6650;
+  --space-2: 8px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  color: var(--text);
+  background: var(--surface);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100dvh;
+}
+
+button,
+canvas {
+  font: inherit;
+}
+
+.app-shell {
+  width: min(100% - var(--space-8), 1200px);
+  margin-inline: auto;
+  padding-block: var(--space-8);
+}
+
+.app-header {
+  margin-bottom: var(--space-6);
+}
+
+.app-header h1 {
+  margin: 0 0 var(--space-2);
+  font-size: 1.5rem;
+}
+
+.app-header p,
+.placeholder p {
+  color: var(--muted);
+}
+
+.scaffold-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+.canvas-panel {
+  grid-column: 1 / -1;
+}
+
+.game-canvas,
+.placeholder {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.game-canvas {
+  display: block;
+  min-height: 240px;
+}
+
+.placeholder {
+  min-height: 112px;
+  padding: var(--space-4);
+}
+
+.placeholder h2 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+.placeholder p {
+  margin: var(--space-2) 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
