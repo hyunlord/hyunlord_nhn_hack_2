@@ -2,8 +2,8 @@
 
 ## 1. Atmosphere & Identity
 
-A quiet technical staging area for a future fantasy simulation. The signature
-is a restrained blueprint-like grid of clearly labeled placeholder surfaces.
+A quiet technical frame around a living fantasy simulation. The signature is a
+restrained blueprint-like interface surrounding a dark, vignetted world map.
 
 ## 2. Color
 
@@ -15,8 +15,15 @@ is a restrained blueprint-like grid of clearly labeled placeholder surfaces.
 | Muted | `--muted` | `#68655b` | Supporting text |
 | Border | `--border` | `#b8b2a3` | Surface outlines |
 | Accent | `--accent` | `#1f6650` | Canvas label and focus |
+| World | `--world` | `#1a1613` | Canvas ground |
+| World grid | `--world-grid` | `rgba(255, 245, 220, 0.055)` | Map grid |
+| World outline | `--world-outline` | `rgba(0, 0, 0, 0.72)` | Agent outlines |
+| Ashvale | content config | `#d4693f` | House agents and HUD swatch |
+| Thornhold | content config | `#4f8fbf` | House agents and HUD swatch |
+| Greymoor | content config | `#7bb06a` | House agents and HUD swatch |
 
-Only these tokens are used during the scaffolding phase.
+The simulation colors are owned by content configuration so canvas and HUD use
+the same house identity.
 
 ## 3. Typography
 
@@ -38,10 +45,24 @@ The content width is capped at 1200px and arranged with CSS Grid.
 - States: static only during scaffolding
 - Accessibility: labeled semantic regions and visible text
 
+### Living-world canvas
+
+- Logical size: 960 by 600, scaled for device pixel ratio
+- Surface: dark ground, 40px grid, and inexpensive radial vignette
+- Agents: 4px house-colored circles with a dark one-pixel outline
+- Accessibility: descriptive canvas label; live counts remain readable in HUD
+
+### World HUD
+
+- Tick count at the top right
+- One row per house with configured swatch and living-agent count
+- Existing scaffold spacing and border treatment remain unchanged
+
 ## 6. Motion & Interaction
 
-No UI motion or interaction is implemented in this phase. The canvas animation
-frame exists only to clear the canvas and is cancelled on unmount.
+The world advances at a fixed 20 ticks per second while canvas painting follows
+the browser animation frame. Both loops cancel on unmount. Agents wander
+continuously; no decorative UI animation is added.
 
 ## 7. Depth & Surface
 

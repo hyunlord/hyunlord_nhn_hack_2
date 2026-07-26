@@ -12,7 +12,7 @@ export function App() {
     <main className="app-shell">
       <header className="app-header">
         <h1>Fantasy God-Sim</h1>
-        <p>Phase 1 scaffold — game systems are not implemented.</p>
+        <p>Phase 2A — a deterministic living world awakens.</p>
       </header>
       <div className="scaffold-grid">
         <div className="canvas-panel">

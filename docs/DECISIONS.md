@@ -26,3 +26,38 @@ data types.
 `DESIGN.md` and `src/index.css` are supporting scaffold files. They keep the
 placeholder layout organized and token-based without adding interaction,
 responsive-design work, or game behavior.
+
+## 2026-07-27 — Deterministic living-world foundation
+
+### Agent heading belongs to simulation state
+
+`Agent.heading` is a persisted radian value rather than an internal render
+detail. Movement consumes and updates it deterministically, and replay checks
+can therefore compare complete agent trajectories from the same seed.
+
+### Seeded RNG is an explicit dependency
+
+World creation and tick advancement accept the same stateful Mulberry32 `Rng`
+instance. No simulation code calls `Math.random`, which keeps spawn positions,
+dispositions, turns, and movement reproducible.
+
+### Fixed simulation clock, independent render clock
+
+The store advances at 20 ticks per second from a request-animation-frame
+accumulator, capped at five catch-up ticks per frame. Canvas rendering uses its
+own animation frame and reads the latest state through a ref. This prevents
+React rerenders at display refresh rate while avoiding an unbounded catch-up
+spiral after a suspended tab resumes.
+
+### Mutable RNG ref is a deliberate boundary tradeoff
+
+Game state remains immutable, while the seeded RNG is held in a provider ref
+and consumed only by reducer actions. Reset replaces that ref together with the
+world. This small mutable boundary avoids storing generator internals in UI
+state without allowing nondeterministic calls into the simulation.
+
+### Phase 2A remains foundation-only
+
+The initial phase is `intervention`, but threats, highlights, endings,
+disposition behavior, miracles, and narrative systems remain inactive. Dead
+agents are skipped; every other agent state uses the same bounded wander step.

@@ -23,6 +23,7 @@ export interface Agent {
   disposition: Disposition;
   x: number;
   y: number;
+  heading: number;
   state: AgentState;
   hp: number;
 }

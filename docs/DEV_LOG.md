@@ -10,3 +10,18 @@
 - Centralized `HouseId` in `content` to uphold the three-axis import boundary.
 - No work was offloaded to DGX Spark because this pass required no heavy
   compute, dependency installation, test workload, or asset generation.
+
+## 2026-07-27 — Phase 2A living world
+
+- Added a seeded Mulberry32 RNG and deterministic world initializer.
+- Created Ashvale, Thornhold, and Greymoor with 20 stable-ID agents each.
+- Added immutable wandering, probabilistic turns, wall reflection, and a
+  fixed-rate 20 Hz simulation loop capped at five catch-up ticks per frame.
+- Rendered the 960 by 600 world with a cheap grid/vignette and house-colored
+  agents, including device-pixel-ratio canvas scaling.
+- Replaced the HUD placeholder with tick and per-house living counts.
+- Added Node/TypeScript unit tests plus a required 500-tick determinism check.
+- Left divine, threat, narrative, ending, miracle, disposition, and asset
+  systems untouched.
+- No work was offloaded to DGX Spark because the deterministic simulation,
+  build, and browser checks are lightweight local workloads.

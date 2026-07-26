@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "check:determinism": "tsx scripts/checkDeterminism.ts",
     "preview": "vite preview",
+    "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -14,9 +16,11 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@types/node": "^24.0.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "tsx": "^4.20.6",
     "typescript": "^7.0.2",
     "vite": "^8.1.5"
   }

@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { GameStoreProvider } from "./state/gameStore";
 import "./index.css";
 
 class RootElementMissingError extends Error {
@@ -18,6 +19,8 @@ if (rootElement === null) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <GameStoreProvider>
+      <App />
+    </GameStoreProvider>
   </StrictMode>,
 );

@@ -5,6 +5,9 @@
   --muted: #68655b;
   --border: #b8b2a3;
   --accent: #1f6650;
+  --world: #1a1613;
+  --world-grid: rgba(255, 245, 220, 0.055);
+  --world-outline: rgba(0, 0, 0, 0.72);
   --space-2: 8px;
   --space-4: 16px;
   --space-6: 24px;
@@ -69,7 +72,9 @@ canvas {
 
 .game-canvas {
   display: block;
+  aspect-ratio: 8 / 5;
   min-height: 240px;
+  background: var(--world);
 }
 
 .placeholder {
@@ -87,4 +92,57 @@ canvas {
   margin: var(--space-2) 0 0;
   font-size: 0.875rem;
   line-height: 1.5;
+}
+
+.hud-panel {
+  min-height: 112px;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.hud-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.hud-heading h2 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+.tick-counter {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.house-status-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.house-status-list li {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+}
+
+.house-status-list strong {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.house-swatch {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--world-outline);
+  border-radius: 50%;
 }
