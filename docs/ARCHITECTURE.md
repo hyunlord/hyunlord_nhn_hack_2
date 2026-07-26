@@ -1,9 +1,9 @@
 # Architecture
 
 This repository is a browser-based fantasy god-sim built with Vite, React,
-TypeScript, and raw Canvas 2D. Phase 2A provides a deterministic living-world
-foundation; miracle, disposition, threat, and narrative behavior remain
-scaffolded for later phases.
+TypeScript, and raw Canvas 2D. Phase 2B provides a deterministic living world
+and playable divine intervention; disposition, threat, and narrative behavior
+remain scaffolded for later phases.
 
 ## Structure
 

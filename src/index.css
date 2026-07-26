@@ -77,6 +77,10 @@ canvas {
   background: var(--world);
 }
 
+.game-canvas--targeting {
+  cursor: crosshair;
+}
+
 .placeholder {
   min-height: 112px;
   padding: var(--space-4);
@@ -101,6 +105,65 @@ canvas {
   background: var(--panel);
 }
 
+.miracle-panel {
+  min-height: 112px;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.miracle-panel h2 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+.miracle-button-list {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.miracle-button {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--miracle-color);
+  color: var(--text);
+  background: var(--panel);
+  cursor: pointer;
+  text-align: left;
+}
+
+.miracle-button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--miracle-color) 18%, var(--panel));
+}
+
+.miracle-button:focus-visible {
+  outline: 2px solid var(--miracle-color);
+  outline-offset: 2px;
+}
+
+.miracle-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.miracle-cost,
+.miracle-cooldown {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.miracle-cooldown {
+  min-width: 3ch;
+  color: var(--text);
+  text-align: right;
+}
+
 .hud-heading {
   display: flex;
   align-items: baseline;
@@ -117,6 +180,25 @@ canvas {
 .tick-counter {
   color: var(--muted);
   font-size: 0.75rem;
+}
+
+.divine-power {
+  margin-top: var(--space-4);
+}
+
+.divine-power-label {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font-size: 0.75rem;
+}
+
+.divine-power progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  margin-top: var(--space-2);
+  accent-color: var(--accent);
 }
 
 .house-status-list {

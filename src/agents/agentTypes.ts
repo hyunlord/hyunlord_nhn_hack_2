@@ -26,4 +26,5 @@ export interface Agent {
   heading: number;
   state: AgentState;
   hp: number;
+  lastDamagedTick: number;
 }

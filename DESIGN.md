@@ -1,4 +1,4 @@
-# Fantasy God-Sim Scaffold Design System
+# Fantasy God-Sim Design System
 
 ## 1. Atmosphere & Identity
 
@@ -21,6 +21,11 @@ restrained blueprint-like interface surrounding a dark, vignetted world map.
 | Ashvale | content config | `#d4693f` | House agents and HUD swatch |
 | Thornhold | content config | `#4f8fbf` | House agents and HUD swatch |
 | Greymoor | content config | `#7bb06a` | House agents and HUD swatch |
+| Lightning | divine config | `#ffd76a` | Lightning button and effect |
+| Blessing | divine config | `#8fe3b0` | Blessing button and effect |
+| Curse | divine config | `#b06ad4` | Curse button and effect |
+| Damage flash | canvas token | `rgba(255, 243, 196, 0.95)` | Recent-hit outline |
+| Fallen | canvas token | `rgba(175, 164, 151, 0.65)` | Dead-agent marker |
 
 The simulation colors are owned by content configuration so canvas and HUD use
 the same house identity.
@@ -54,15 +59,25 @@ The content width is capped at 1200px and arranged with CSS Grid.
 
 ### World HUD
 
-- Tick count at the top right
-- One row per house with configured swatch and living-agent count
+- Tick count and current/max divine-power meter
+- One row per house with configured swatch, living-agent count, and power
 - Existing scaffold spacing and border treatment remain unchanged
+
+### Miracle controls
+
+- One semantic button per configured miracle with label, cost, and cooldown
+- The configured miracle color drives the border/accent and canvas effect
+- Selected state uses a low-alpha tonal fill; disabled state remains legible
+- Keyboard focus uses a two-pixel outline and selected buttons expose
+  `aria-pressed`
 
 ## 6. Motion & Interaction
 
 The world advances at a fixed 20 ticks per second while canvas painting follows
 the browser animation frame. Both loops cancel on unmount. Agents wander
-continuously; no decorative UI animation is added.
+continuously. Miracle effects use expanding rings and opacity only; no blur,
+shadow, or per-pixel animation is added. The canvas cursor becomes a crosshair
+only while a miracle is selected.
 
 ## 7. Depth & Surface
 

@@ -1,4 +1,5 @@
 import { useGameStore } from "../../state/gameStore";
+import { BALANCE_CONFIG } from "../../content/balanceConfig";
 
 export function HUD() {
   const { state } = useGameStore();
@@ -8,6 +9,19 @@ export function HUD() {
       <div className="hud-heading">
         <h2>Living world</h2>
         <span className="tick-counter">Tick {state.tick}</span>
+      </div>
+      <div className="divine-power">
+        <div className="divine-power-label">
+          <span>Divine power</span>
+          <strong>
+            {state.divinePower.toFixed(1)}/{BALANCE_CONFIG.DIVINE_POWER_MAX}
+          </strong>
+        </div>
+        <progress
+          aria-label="Divine power"
+          max={BALANCE_CONFIG.DIVINE_POWER_MAX}
+          value={state.divinePower}
+        />
       </div>
       <ul className="house-status-list">
         {state.houses.map((house) => {
@@ -24,7 +38,9 @@ export function HUD() {
                 style={{ backgroundColor: house.color }}
               />
               <span>{house.name}</span>
-              <strong>{livingCount} living</strong>
+              <strong>
+                {livingCount} living · {house.power} power
+              </strong>
             </li>
           );
         })}

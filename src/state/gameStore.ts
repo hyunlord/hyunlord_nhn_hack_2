@@ -1,16 +1,24 @@
 import {
   createElement,
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useReducer,
   useRef,
+  useState,
   type PropsWithChildren,
 } from "react";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
+import type { MiracleType } from "../divine/divine.types";
 import type { Rng } from "../engine/prng";
 import type { GameState } from "../engine/engine.types";
-import { advanceTick, createInitialState } from "../engine/tick";
+import {
+  advanceTick,
+  castMiracle,
+  createInitialState,
+} from "../engine/tick";
 import type { GameAction, GameStoreValue } from "./gameStore.types";
 
 const TICK_INTERVAL_MS = 1_000 / BALANCE_CONFIG.TICKS_PER_SECOND;
@@ -24,6 +32,13 @@ class GameStoreUnavailableError extends Error {
   public constructor() {
     super("useGameStore must be used inside GameStoreProvider.");
     this.name = "GameStoreUnavailableError";
+  }
+}
+
+class UnexpectedGameActionError extends Error {
+  public constructor(action: never) {
+    super(`Unexpected game action: ${JSON.stringify(action)}`);
+    this.name = "UnexpectedGameActionError";
   }
 }
 
@@ -42,6 +57,17 @@ export function gameReducer(
       rngReference.current = initialWorld.rng;
       return initialWorld.state;
     }
+    case "castMiracle":
+      return castMiracle(state, {
+        type: action.miracle,
+        targetX: action.x,
+        targetY: action.y,
+        tick: state.tick,
+      });
+    case "selectMiracle":
+      return state;
+    default:
+      throw new UnexpectedGameActionError(action);
   }
 }
 
@@ -56,11 +82,36 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
   }
 
   const rngReference = useRef(initialWorldReference.current.rng);
-  const [state, dispatch] = useReducer(
+  const [selectedMiracle, setSelectedMiracle] =
+    useState<MiracleType | null>(null);
+  const [state, simulationDispatch] = useReducer(
     (currentState: GameState, action: GameAction) =>
       gameReducer(currentState, action, rngReference),
     initialWorldReference.current.state,
   );
+  const selectMiracle = useCallback((miracle: MiracleType | null) => {
+    setSelectedMiracle(miracle);
+  }, []);
+  const dispatch = useCallback((action: GameAction) => {
+    switch (action.type) {
+      case "selectMiracle":
+        setSelectedMiracle(action.miracle);
+        return;
+      case "castMiracle":
+        simulationDispatch(action);
+        setSelectedMiracle(null);
+        return;
+      case "reset":
+        simulationDispatch(action);
+        setSelectedMiracle(null);
+        return;
+      case "tick":
+        simulationDispatch(action);
+        return;
+      default:
+        throw new UnexpectedGameActionError(action);
+    }
+  }, []);
 
   useEffect(() => {
     let frameId = 0;
@@ -93,9 +144,19 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
     return () => cancelAnimationFrame(frameId);
   }, []);
 
+  const store = useMemo<GameStoreValue>(
+    () => ({
+      state,
+      dispatch,
+      selectedMiracle,
+      selectMiracle,
+    }),
+    [dispatch, selectMiracle, selectedMiracle, state],
+  );
+
   return createElement(
     GameStoreContext.Provider,
-    { value: { state, dispatch } },
+    { value: store },
     children,
   );
 }

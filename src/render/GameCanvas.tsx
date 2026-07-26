@@ -3,9 +3,10 @@ import { BALANCE_CONFIG } from "../content/balanceConfig";
 import { useGameStore } from "../state/gameStore";
 import { drawAgents } from "./drawAgents";
 import { drawBackground } from "./drawBackground";
+import { drawEffects } from "./drawEffects";
 
 export function GameCanvas() {
-  const { state } = useGameStore();
+  const { dispatch, selectedMiracle, state } = useGameStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef(state);
 
@@ -46,6 +47,12 @@ export function GameCanvas() {
         context,
         stateRef.current.agents,
         stateRef.current.houses,
+        stateRef.current.tick,
+      );
+      drawEffects(
+        context,
+        stateRef.current.activeEffects,
+        stateRef.current.tick,
       );
       frameId = requestAnimationFrame(drawFrame);
     };
@@ -53,11 +60,34 @@ export function GameCanvas() {
     return () => cancelAnimationFrame(frameId);
   }, []);
 
+  function handleClick(event: React.MouseEvent<HTMLCanvasElement>) {
+    if (selectedMiracle === null) {
+      return;
+    }
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    dispatch({
+      type: "castMiracle",
+      miracle: selectedMiracle,
+      x:
+        (event.clientX - bounds.left) *
+        (BALANCE_CONFIG.WORLD_WIDTH / bounds.width),
+      y:
+        (event.clientY - bounds.top) *
+        (BALANCE_CONFIG.WORLD_HEIGHT / bounds.height),
+    });
+  }
+
   return (
     <canvas
       aria-label="Living world with sixty wandering house agents"
-      className="game-canvas"
+      className={
+        selectedMiracle === null
+          ? "game-canvas"
+          : "game-canvas game-canvas--targeting"
+      }
       height={BALANCE_CONFIG.WORLD_HEIGHT}
+      onClick={handleClick}
       ref={canvasRef}
       role="img"
       width={BALANCE_CONFIG.WORLD_WIDTH}

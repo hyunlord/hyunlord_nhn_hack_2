@@ -57,6 +57,7 @@ export function createAgents(houses: readonly House[], rng: Rng): Agent[] {
           heading: rng.range(0, FULL_TURN),
           state: "idle",
           hp: BALANCE_CONFIG.INITIAL_HP,
+          lastDamagedTick: -1,
         };
       },
     );

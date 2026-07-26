@@ -61,3 +61,34 @@ state without allowing nondeterministic calls into the simulation.
 The initial phase is `intervention`, but threats, highlights, endings,
 disposition behavior, miracles, and narrative systems remain inactive. Dead
 agents are skipped; every other agent state uses the same bounded wander step.
+
+## 2026-07-27 — Playable divine intervention
+
+### Divine targeting uses structural snapshots
+
+`divine/` declares `MiracleTargetSnapshot` with only `id`, string `houseId`,
+position, and HP. The concrete `Agent` type satisfies that contract
+structurally, so `engine/` can pass agent snapshots to the resolver without
+creating a forbidden `divine/` → `agents/` import. Divine code describes plain
+outcomes; only engine code mutates the world through immutable state copies.
+
+### Divine state belongs to deterministic world snapshots
+
+`GameState` now stores `divinePower`, per-type `miracleCooldowns`, and
+`activeEffects`; `Agent` stores `lastDamagedTick`. These values affect replay,
+world consequences, or rendering derived from a specific simulation tick and
+therefore belong in the deterministic snapshot.
+
+### Miracle selection remains UI-only
+
+`selectedMiracle` lives in provider `useState`, outside `GameState`. Selection
+does not describe the world and must not perturb deterministic no-input runs.
+The provider handles selection actions, dispatches cast actions to the engine,
+and clears selection after each cast.
+
+### Miracle resolution consumes no RNG
+
+Damage/heal falloff, dominant-house selection, and outcome sorting are pure
+functions of event and structural snapshots. Dominance ties sort by ascending
+house ID, and effect arrays sort by agent ID. Later narrative randomness must
+continue through the engine-owned seeded RNG rather than reusing this resolver.
