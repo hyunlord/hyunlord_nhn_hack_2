@@ -10,6 +10,20 @@ export function HUD() {
         <h2>Living world</h2>
         <span className="tick-counter">Tick {state.tick}</span>
       </div>
+      <div className="phase-status">
+        <span>Phase</span>
+        <strong>{state.phase}</strong>
+      </div>
+      {state.activeThreat === null ? null : (
+        <div className="invasion-status" aria-label="Invasion status">
+          <span>
+            {state.activeThreat.creatures.length} creatures remaining
+          </span>
+          <strong>
+            Mage {state.activeThreat.mage.hp}/{BALANCE_CONFIG.DARK_MAGE_HP} HP
+          </strong>
+        </div>
+      )}
       <div className="divine-power">
         <div className="divine-power-label">
           <span>Divine power</span>

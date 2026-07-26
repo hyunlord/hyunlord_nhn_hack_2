@@ -1,4 +1,3 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { GameStoreProvider } from "./state/gameStore";
@@ -18,9 +17,7 @@ if (rootElement === null) {
 }
 
 createRoot(rootElement).render(
-  <StrictMode>
-    <GameStoreProvider>
-      <App />
-    </GameStoreProvider>
-  </StrictMode>,
+  <GameStoreProvider>
+    <App />
+  </GameStoreProvider>,
 );

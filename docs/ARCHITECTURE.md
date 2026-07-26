@@ -1,9 +1,9 @@
 # Architecture
 
 This repository is a browser-based fantasy god-sim built with Vite, React,
-TypeScript, and raw Canvas 2D. Phase 2B provides a deterministic living world
-and playable divine intervention; disposition, threat, and narrative behavior
-remain scaffolded for later phases.
+TypeScript, and raw Canvas 2D. Phase 2C provides a deterministic living world,
+playable divine intervention, and an invasion in which agents fight, help, or
+betray their houses.
 
 ## Structure
 
@@ -31,6 +31,7 @@ src/
 │   └── endingResolver.ts
 ├── engine/
 │   ├── prng.ts
+│   ├── invasionCombat.ts
 │   ├── tick.ts
 │   └── engine.types.ts
 ├── state/
@@ -40,6 +41,7 @@ src/
 │   ├── GameCanvas.tsx
 │   ├── drawBackground.ts
 │   ├── drawAgents.ts
+│   ├── drawThreats.ts
 │   └── drawEffects.ts
 ├── ui/
 │   ├── screens/
@@ -54,7 +56,8 @@ src/
 └── content/
     ├── houseConfig.ts
     ├── threatConfig.ts
-    └── balanceConfig.ts
+    ├── balanceConfig.ts
+    └── random.ts
 docs/
 ├── ARCHITECTURE.md
 ├── DEV_LOG.md
@@ -82,3 +85,27 @@ types or data from `src/content/`. Coordination belongs in `src/engine/`.
 - `ui` contains React components and no inline simulation math.
 - `content` contains data and shared type declarations only.
 - `api` remains empty except for `.gitkeep`.
+
+## Phase 2C simulation flow
+
+At 20 fixed ticks per second, `engine/tick.ts` advances global time and divine
+maintenance, then delegates invasion coordination to
+`engine/invasionCombat.ts`. The invasion coordinator owns the cross-axis order:
+
+1. spawn the seeded threat and assign one traitor at the intervention boundary;
+2. derive structural threat presences for each living agent;
+3. decide intent, move agents, and classify nearby helpers;
+4. resolve simultaneous defender attacks from one threat snapshot;
+5. step surviving threats and collect their attacks;
+6. aggregate and apply damage in both directions;
+7. resolve first-blood or timeout phase handoff.
+
+`narrative/invasionDirector.ts` owns pure threat behavior, while
+`agents/dispositionEngine.ts` and `agents/movement.ts` own pure agent choices
+and motion. Only the engine combines their structural contracts.
+
+## Render layering
+
+The canvas draws background, agents, threats, then transient divine effects.
+Threat animation derives solely from the simulation tick. Rendering reads the
+immutable world snapshot and never advances combat or consumes RNG.

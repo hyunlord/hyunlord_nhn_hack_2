@@ -54,7 +54,10 @@ spiral after a suspended tab resumes.
 Game state remains immutable, while the seeded RNG is held in a provider ref
 and consumed only by reducer actions. Reset replaces that ref together with the
 world. This small mutable boundary avoids storing generator internals in UI
-state without allowing nondeterministic calls into the simulation.
+state without allowing nondeterministic calls into the simulation. The app does
+not use React's development `StrictMode` wrapper because its deliberate
+double-invocation of reducers would consume the stateful RNG twice and make
+development play diverge from tests and production.
 
 ### Phase 2A remains foundation-only
 
@@ -92,3 +95,50 @@ Damage/heal falloff, dominant-house selection, and outcome sorting are pure
 functions of event and structural snapshots. Dominance ties sort by ascending
 house ID, and effect arrays sort by agent ID. Later narrative randomness must
 continue through the engine-owned seeded RNG rather than reusing this resolver.
+
+## 2026-07-27 — Deterministic invasion and betrayal
+
+### RNG contracts are shared, implementations remain engine-owned
+
+`content/random.ts` declares the narrow `Rng` interface used by agents and
+narrative systems. `engine/prng.ts` remains the sole generator implementation.
+This preserves the no-reverse-import boundary while keeping one ordered random
+stream for spawn geometry, traitor assignment, and idle movement. Invasion
+spawn draws the mage edge and position before choosing the traitor, then draws
+creature positions; this order is part of the deterministic replay contract.
+
+### Cross-axis combat uses structural snapshots in both directions
+
+Narrative threat logic accepts minimal agent snapshots and returns sorted damage
+outcomes. Agent disposition logic accepts minimal threat-presence snapshots.
+Neither axis imports the other's concrete types. The engine owns orchestration,
+aggregates simultaneous hits from a shared pre-attack snapshot, and applies
+immutable results.
+
+### First blood starts observation
+
+An invasion becomes `engaged` when either a defender or a threat first lands
+damage. The phase changes from `invasion` to `observation` on the following
+phase-resolution step; a fixed handoff timeout prevents an indefinitely quiet
+invasion. No ending or highlight behavior is activated in this phase.
+
+### Betrayal remains visible but unnamed
+
+Exactly one `House.isTraitor` mirrors the active threat's
+`traitorHouseId`. That state affects agent intent, but the HUD and canvas never
+print or label the traitor. Fleeing opacity, combat outlines, helping rims, and
+stable house colors let players infer disloyal behavior from the simulation.
+
+### Helping and attacks use stable snapshots
+
+Helping is classified after movement from a living-agent snapshot; distance
+ties resolve by ascending agent ID. Defender attacks choose from one
+pre-attack threat snapshot, ordered by stable target key with creatures before
+the mage, and all hits are aggregated before application. This removes
+array-order and mid-loop casualty bias.
+
+### Miracles stay available without threat-specific effects
+
+All three existing miracles remain castable during invasion and observation.
+Their established agent and house effects are unchanged: they do not directly
+damage, heal, or retarget threats in Phase 2C.

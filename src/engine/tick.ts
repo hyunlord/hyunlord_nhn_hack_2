@@ -1,5 +1,4 @@
 import { createAgents, createHouses } from "../agents/agentFactory";
-import { stepAgent } from "../agents/movement";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { MiracleEvent } from "../divine/divine.types";
 import { canCast, resolveMiracle } from "../divine/miracleResolver";
@@ -7,6 +6,7 @@ import { MIRACLE_DEFINITIONS } from "../divine/miracleTypes";
 import type { Rng } from "./prng";
 import { createRng } from "./prng";
 import type { GameState } from "./engine.types";
+import { advanceInvasion } from "./invasionCombat";
 
 export function castMiracle(
   state: GameState,
@@ -84,11 +84,12 @@ export function castMiracle(
 
 export function advanceTick(state: GameState, rng: Rng): GameState {
   const tick = state.tick + 1;
+  const invasion = advanceInvasion(state, tick, rng);
 
   return {
     ...state,
     tick,
-    agents: state.agents.map((agent) => stepAgent(agent, rng)),
+    ...invasion,
     divinePower: Math.min(
       BALANCE_CONFIG.DIVINE_POWER_MAX,
       state.divinePower + BALANCE_CONFIG.DIVINE_POWER_REGEN_PER_TICK,

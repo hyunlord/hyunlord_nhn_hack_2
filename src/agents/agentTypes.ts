@@ -27,4 +27,11 @@ export interface Agent {
   state: AgentState;
   hp: number;
   lastDamagedTick: number;
+  lastAttackTick: number;
+}
+
+export interface ThreatPresence {
+  x: number;
+  y: number;
+  hostile: boolean;
 }

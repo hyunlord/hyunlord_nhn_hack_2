@@ -1,9 +1,6 @@
-export interface Rng {
-  next(): number;
-  range(min: number, max: number): number;
-  int(minInclusive: number, maxExclusive: number): number;
-  pick<T>(items: readonly T[]): T;
-}
+import type { Rng } from "../content/random";
+
+export type { Rng } from "../content/random";
 
 export function createRng(seed: number): Rng {
   let state = seed >>> 0;

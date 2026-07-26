@@ -41,3 +41,25 @@
   cooldown decay, and effect expiry.
 - No work was offloaded to DGX Spark because unit, build, and browser workloads
   remained lightweight locally.
+
+## 2026-07-27 — Phase 2C invasion and betrayal
+
+- Added a deterministic dark-mage invasion with 24 bounded, stable-ID
+  creatures, seeded traitor assignment, nearest-target movement, attack
+  cadence, damage aggregation, deaths, and first-blood phase handoff.
+- Added structural cross-axis contracts so agent disposition and narrative
+  threats remain independent while engine-owned orchestration resolves
+  movement, helping, and simultaneous two-way combat.
+- Added visible fighting, fleeing, helping, recent-damage, creature, mage, HP,
+  phase, and combat status rendering without revealing the traitor in text.
+- Removed the React development `StrictMode` wrapper after browser QA proved
+  its double reducer invocation consumed the stateful RNG twice; development,
+  tests, and production now follow the same seeded timeline.
+- Preserved the existing miracle costs and agent/house-only effects throughout
+  invasion and observation.
+- Extended tests for spawn bounds and IDs, order-independent betrayal, pure
+  threat stepping, targeting ties, attack cadence, traitor decisions, RNG-free
+  directed movement, phase transitions, combat, miracle availability, and a
+  1,400-tick full-state deterministic replay.
+- No work was offloaded to DGX Spark because the implementation, test, build,
+  and browser-playthrough workloads remained lightweight locally.

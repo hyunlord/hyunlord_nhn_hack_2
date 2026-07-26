@@ -186,6 +186,30 @@ canvas {
   margin-top: var(--space-4);
 }
 
+.phase-status,
+.invasion-status {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+  font-size: 0.75rem;
+}
+
+.phase-status strong {
+  color: var(--accent);
+  text-transform: capitalize;
+}
+
+.invasion-status {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.invasion-status strong {
+  color: var(--text);
+}
+
 .divine-power-label {
   display: flex;
   justify-content: space-between;

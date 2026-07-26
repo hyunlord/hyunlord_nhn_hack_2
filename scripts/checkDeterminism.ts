@@ -8,15 +8,16 @@ const second = createInitialState(BALANCE_CONFIG.DEFAULT_SEED);
 let firstState = first.state;
 let secondState = second.state;
 
-for (let tick = 0; tick < 500; tick += 1) {
+const verificationTicks = 1_400;
+
+for (let tick = 0; tick < verificationTicks; tick += 1) {
   firstState = advanceTick(firstState, first.rng);
   secondState = advanceTick(secondState, second.rng);
 }
 
-assert.deepEqual(
-  firstState.agents.map(({ id, x, y, heading }) => ({ id, x, y, heading })),
-  secondState.agents.map(({ id, x, y, heading }) => ({ id, x, y, heading })),
-);
+assert.deepEqual(firstState, secondState);
+assert.equal(firstState.phase, "observation");
+assert.notEqual(firstState.activeThreat, null);
 assert.ok(
   firstState.agents.every(
     ({ x, y }) =>
@@ -25,7 +26,7 @@ assert.ok(
       y >= BALANCE_CONFIG.AGENT_RADIUS &&
       y <= BALANCE_CONFIG.WORLD_HEIGHT - BALANCE_CONFIG.AGENT_RADIUS,
   ),
-  "Every agent must remain inside the world after 500 ticks.",
+  `Every agent must remain inside the world after ${verificationTicks} ticks.`,
 );
 
 console.log(

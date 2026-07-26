@@ -26,6 +26,12 @@ restrained blueprint-like interface surrounding a dark, vignetted world map.
 | Curse | divine config | `#b06ad4` | Curse button and effect |
 | Damage flash | canvas token | `rgba(255, 243, 196, 0.95)` | Recent-hit outline |
 | Fallen | canvas token | `rgba(175, 164, 151, 0.65)` | Dead-agent marker |
+| Creature | threat token | `#6b3f8f` | Creature body |
+| Creature rim | threat token | `#b58ad0` | Creature outline |
+| Dark mage | threat token | `#c04ad8` | Dark-mage body and HP |
+| Mage pulse | threat token | `rgba(226, 165, 239, 0.65)` | Tick-driven mage locator ring |
+| Mage HP track | threat token | `rgba(26, 22, 19, 0.85)` | Mage health background |
+| Helping rim | canvas token | `rgba(255, 250, 230, 0.90)` | Cross-house aid |
 
 The simulation colors are owned by content configuration so canvas and HUD use
 the same house identity.
@@ -71,13 +77,23 @@ The content width is capped at 1200px and arranged with CSS Grid.
 - Keyboard focus uses a two-pixel outline and selected buttons expose
   `aria-pressed`
 
+### Invasion status
+
+- HUD phase is always visible; creature count and mage HP appear only after
+  the invasion exists
+- The traitor is never named in presentation; betrayal is communicated through
+  fleeing movement and lower-opacity agent marks
+- Creature and mage status remains readable at zero HP/count without changing
+  layout
+
 ## 6. Motion & Interaction
 
 The world advances at a fixed 20 ticks per second while canvas painting follows
 the browser animation frame. Both loops cancel on unmount. Agents wander
 continuously. Miracle effects use expanding rings and opacity only; no blur,
 shadow, or per-pixel animation is added. The canvas cursor becomes a crosshair
-only while a miracle is selected.
+only while a miracle is selected. Threat motion follows simulation ticks; the
+mage locator pulse derives from the current tick rather than wall-clock time.
 
 ## 7. Depth & Surface
 

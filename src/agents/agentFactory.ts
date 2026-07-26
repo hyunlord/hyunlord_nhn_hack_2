@@ -1,6 +1,6 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import { HOUSE_CONFIG } from "../content/houseConfig";
-import type { Rng } from "../engine/prng";
+import type { Rng } from "../content/random";
 import type { Agent, House } from "./agentTypes";
 
 const FULL_TURN = Math.PI * 2;
@@ -58,6 +58,7 @@ export function createAgents(houses: readonly House[], rng: Rng): Agent[] {
           state: "idle",
           hp: BALANCE_CONFIG.INITIAL_HP,
           lastDamagedTick: -1,
+          lastAttackTick: -1,
         };
       },
     );

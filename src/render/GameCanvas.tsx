@@ -4,6 +4,7 @@ import { useGameStore } from "../state/gameStore";
 import { drawAgents } from "./drawAgents";
 import { drawBackground } from "./drawBackground";
 import { drawEffects } from "./drawEffects";
+import { drawThreats } from "./drawThreats";
 
 export function GameCanvas() {
   const { dispatch, selectedMiracle, state } = useGameStore();
@@ -47,6 +48,11 @@ export function GameCanvas() {
         context,
         stateRef.current.agents,
         stateRef.current.houses,
+        stateRef.current.tick,
+      );
+      drawThreats(
+        context,
+        stateRef.current.activeThreat,
         stateRef.current.tick,
       );
       drawEffects(

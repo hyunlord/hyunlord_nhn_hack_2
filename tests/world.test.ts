@@ -18,6 +18,7 @@ function createAgent(overrides: Partial<Agent> = {}): Agent {
     state: "idle",
     hp: BALANCE_CONFIG.INITIAL_HP,
     lastDamagedTick: -1,
+    lastAttackTick: -1,
     ...overrides,
   };
 }
