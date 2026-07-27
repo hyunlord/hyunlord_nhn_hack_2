@@ -468,8 +468,23 @@ helpers directly, and the draw modules use `arc`, `fillRect`, `stroke`,
 `.gitkeep` directories. Moving to sprites will therefore need preload/cache/
 atlas work plus draw-module changes, not a simple asset swap.
 
-### Verification remains partial
+### Shared global rites resolve once per run
 
-The earlier phase gate trail is documented as reaching the 193-test mark, but
-the final browser/default-balance gates are still outstanding and should not
-be described as complete.
+Global investments split into per-house agent effects and once-per-run shared
+effects before engine initialization. This prevents Divine Grace from
+compounding once for every selected house: rank one resolves to exactly
+`1.08`, and rank four resolves to `1.08^4 = 1.36048896`. Per-house effects
+such as Vigor still reach every selected house, while house tracks remain
+scoped to their owner.
+
+### Verification is complete with one viewport limitation
+
+The final gate passed 197 tests, TypeScript, the production build, both
+determinism lanes, boundary greps, diff hygiene, and the default 200-run
+neutral harness. Real-browser QA completed two runs, purchased Vigor rank one,
+and confirmed the next run HUD displayed `Legacy rites`, the track rank, and
+the `+10 max HP` effect with no fresh-session console warnings or errors.
+The available in-app browser surface was fixed at 1280px and its security
+policy rejected alternate viewport emulation, so 375px and 768px were verified
+through the shipped responsive rules and focused review rather than fresh
+browser captures.

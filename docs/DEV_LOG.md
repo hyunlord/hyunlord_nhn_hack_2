@@ -309,6 +309,14 @@
 - Expanded the meta screen into a scoped ledger with global tracks, house
   tracks, rank pips, next-cost labels, disabled reasons, and active-bonus
   summaries.
+- Added a run-visible `Legacy rites` HUD summary after browser QA showed that
+  purchased bonuses applied mechanically but were not visible in the next
+  run. Track-specific purchase labels and narrow hero-row wrapping keep the
+  ledger and HUD accessible.
+- Split global starting effects into per-house and shared run modifiers after
+  final review caught Divine Grace multiplying once per selected house.
+  Rank one now resolves to exactly 1.08 and rank four to 1.36048896, while
+  Vigor still grants +10 max HP to every selected house.
 - Kept the renderer on primitive canvas draws. There is still no asset
   loader/cache/atlas or `drawImage` path, and `public/assets` only contains
   placeholder directories, so any sprite pass needs a separate preload/draw-
@@ -316,3 +324,11 @@
 - Balance tuning was not done in this slice. DGX/heavy compute stayed unused
   because the local tests and harness were enough for the verification needed
   here.
+- Final verification passed 197/197 tests, TypeScript, the production build,
+  both determinism lanes, the meta-boundary grep, and diff hygiene. Browser QA
+  completed two runs, spent 120 of 165 Legacy on Vigor rank one, and confirmed
+  `Legacy rites · Vigor of the Faithful · Rank 1 · +10 max HP per rank` on
+  the following run with no fresh-session warning/error logs. The browser
+  surface was fixed at 1280px; 375px and 768px rules were reviewed but could
+  not be freshly captured because alternate viewport emulation was blocked by
+  browser security policy.
