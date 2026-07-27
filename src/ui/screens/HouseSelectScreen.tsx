@@ -1,4 +1,8 @@
-import { HOUSE_CONFIG, HOUSE_SPAWN_SLOTS } from "../../content/houseConfig";
+import {
+  HOUSE_CONFIG,
+  HOUSE_SPAWN_SLOTS,
+  houseTraitSummary,
+} from "../../content/houseConfig";
 import { previewHouseSynergies } from "../../content/houseSynergies";
 import { useAppFlow } from "../../state/appFlowContext";
 
@@ -72,6 +76,9 @@ export function HouseSelectScreen() {
                   <span>
                     <strong>{house.name}</strong>
                     <small>{house.identity}</small>
+                    <small className="trait-line">
+                      {houseTraitSummary(house.id)}
+                    </small>
                   </span>
                   <span className="status-label">
                     {selected ? `Pick ${order + 1}` : unlocked ? "Choose" : "Locked"}

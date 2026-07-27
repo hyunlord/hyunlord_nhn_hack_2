@@ -177,6 +177,23 @@ export const HOUSE_CONFIG = [
   },
 ] as const satisfies readonly HouseConfigEntry[];
 
+export function houseTraitSummary(houseId: HouseId): string {
+  switch (houseId) {
+    case "house_a":
+      return "+10% damage, +12 aggression";
+    case "house_b":
+      return "+20% health, +10 loyalty, -8% speed";
+    case "house_c":
+      return "+5% health, +1 tribute per kill";
+    case "house_d":
+      return "+25% speed, -15% attack interval, -18% health";
+    case "house_e":
+      return "+45% health, -22% speed, -10% damage";
+    case "house_f":
+      return "+3 tribute per kill, -8% damage, -8 aggression";
+  }
+}
+
 const HOUSE_ID_SET: ReadonlySet<string> = new Set(HOUSE_IDS);
 
 function isHouseId(value: string): value is HouseId {

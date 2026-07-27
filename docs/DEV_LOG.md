@@ -242,8 +242,16 @@
   (38.5%), 2.04 towers per run, and 22 median tribute after the final shop.
   The 400-seed all-trio run flagged no combination above 70%; `abc` and `abe`
   tied for strongest at 45.0% in their 20-seed slices.
-- All 131 tests, both determinism lanes, TypeScript, and the production build
-  passed before browser QA.
+- A completion audit added the explicit `legacyForRun` numeric API, shared
+  mechanical trait summaries on both Legacy and selection screens, exact
+  destroyed-tower-ground replacement coverage, negative achievement
+  boundaries, and same-seed full-state betrayal verification.
+- All 134 tests, both determinism lanes, TypeScript, the production build, and
+  the no-excuse static rules passed. Production browser QA completed two
+  victories, preserved 289 Legacy across reload, reached 502 earned Legacy,
+  purchased Duskmere for 300, previewed Wildfire Charge, and started a run
+  with Duskmere selected. Responsive 375/768/1280 checks had no horizontal
+  overflow, and browser warnings/errors remained empty.
 - No work was offloaded to DGX Spark because Phase 3D required no heavy compute
   or generated assets. The planned 3E sprite pass can replace draw helpers
   without changing simulation state.

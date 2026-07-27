@@ -2,26 +2,13 @@ import {
   ACHIEVEMENT_DEFINITIONS,
   HOUSE_UNLOCK_DEFINITIONS,
 } from "../../content/metaConfig";
-import { HOUSE_CONFIG, type HouseId } from "../../content/houseConfig";
+import {
+  HOUSE_CONFIG,
+  houseTraitSummary,
+  type HouseId,
+} from "../../content/houseConfig";
 import { HOUSE_SYNERGIES } from "../../content/houseSynergies";
 import { useAppFlow } from "../../state/appFlowContext";
-
-function traitLine(houseId: HouseId): string {
-  switch (houseId) {
-    case "house_a":
-      return "+10% damage, +12 aggression";
-    case "house_b":
-      return "+20% health, +10 loyalty, -8% speed";
-    case "house_c":
-      return "+5% health, +1 tribute per kill";
-    case "house_d":
-      return "+25% speed, -15% attack interval, -18% health";
-    case "house_e":
-      return "+45% health, -22% speed, -10% damage";
-    case "house_f":
-      return "+3 tribute per kill, -8% damage, -8 aggression";
-  }
-}
 
 function unlockRequirement(
   houseId: HouseId,
@@ -110,7 +97,7 @@ export function MetaScreen() {
                     {unlocked ? "Available" : "Locked"}
                   </span>
                 </div>
-                <p className="trait-line">{traitLine(house.id)}</p>
+                <p className="trait-line">{houseTraitSummary(house.id)}</p>
                 {!unlocked && definition !== undefined ? (
                   <div className="unlock-row">
                     <span>

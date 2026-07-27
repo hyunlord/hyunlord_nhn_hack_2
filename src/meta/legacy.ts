@@ -58,6 +58,10 @@ export function calculateLegacyReward(
   };
 }
 
+export function legacyForRun(summary: RunSummary): number {
+  return calculateLegacyReward(summary).total;
+}
+
 export type PurchaseHouseUnlockResult =
   | { readonly kind: "purchased"; readonly state: MetaState }
   | { readonly kind: "already_unlocked"; readonly state: MetaState }

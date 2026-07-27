@@ -127,11 +127,11 @@ test("Given a max-count tower field loses one tower, when a replacement is purch
     towers: damage.towers,
   };
 
-  const result = purchaseTowerAt(state, 800, 520);
+  const result = purchaseTowerAt(state, towers[0]?.x ?? 0, towers[0]?.y ?? 0);
 
   assert.equal(damage.destroyed.length, 1);
   assert.equal(result.towers.length, TOWER_CONFIG.TOWER_MAX_COUNT);
-  assert.equal(result.towers.at(-1)?.x, 800);
+  assert.equal(result.towers.at(-1)?.x, towers[0]?.x);
   assert.equal(result.towers.at(-1)?.y, 520);
 });
 

@@ -6,6 +6,7 @@ import {
   HOUSE_IDS,
   HOUSE_SPAWN_SLOTS,
   expandHouseSelection,
+  houseTraitSummary,
   validateHouseSelection,
 } from "../src/content/houseConfig";
 import {
@@ -36,6 +37,17 @@ test("Given the shipped roster, when house identities are inspected, then all si
     ["house_d", "Duskmere", "fast, fragile", false, 0.82, 1, 0.85, 1.25, 0, 0, 0],
     ["house_e", "Stonewake", "slow, immovable", false, 1.45, 0.9, 1, 0.78, 0, 0, 0],
     ["house_f", "Highreach", "wealth-focused", false, 1, 0.92, 1, 1, -8, 0, 3],
+  ]);
+});
+
+test("Given every house, when selection presentation requests its traits, then a concise mechanical summary is available", () => {
+  assert.deepEqual(HOUSE_IDS.map(houseTraitSummary), [
+    "+10% damage, +12 aggression",
+    "+20% health, +10 loyalty, -8% speed",
+    "+5% health, +1 tribute per kill",
+    "+25% speed, -15% attack interval, -18% health",
+    "+45% health, -22% speed, -10% damage",
+    "+3 tribute per kill, -8% damage, -8 aggression",
   ]);
 });
 

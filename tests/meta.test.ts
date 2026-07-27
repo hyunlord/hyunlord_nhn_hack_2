@@ -5,8 +5,10 @@ import {
   applyRunSummaryToMeta,
   calculateLegacyReward,
   createDefaultMetaState,
+  legacyForRun,
   purchaseHouseUnlock,
 } from "../src/meta/legacy";
+import { evaluateNewAchievements } from "../src/meta/achievements";
 import {
   loadMetaState,
   META_STORAGE_KEY,
@@ -65,14 +67,13 @@ test("Given no prior save, when meta state is created, then only the original tr
 });
 
 test("Given a run result, when legacy is calculated, then the exact itemized formula is used", () => {
-  const reward = calculateLegacyReward(
-    summary({
-      wavesCleared: 3,
-      victory: true,
-      survivingAgents: 12,
-      survivingHalls: 2,
-    }),
-  );
+  const run = summary({
+    wavesCleared: 3,
+    victory: true,
+    survivingAgents: 12,
+    survivingHalls: 2,
+  });
+  const reward = calculateLegacyReward(run);
 
   assert.deepEqual(reward, {
     base: 20,
@@ -82,6 +83,7 @@ test("Given a run result, when legacy is calculated, then the exact itemized for
     survivingHalls: 30,
     total: 197,
   });
+  assert.equal(legacyForRun(run), 197);
 });
 
 test("Given missing, corrupt, or mismatched persisted data, when loading, then safe defaults are returned", () => {
@@ -187,6 +189,36 @@ test("Given each achievement condition, when its run is processed, then the exac
     assert.ok(result.state.unlockedAchievements.includes(fixture.id), fixture.id);
     assert.equal(result.achievementLegacyEarned, fixture.reward, fixture.id);
     assert.equal(result.state.legacyPoints, runReward + fixture.reward, fixture.id);
+  }
+});
+
+test("Given each conditional achievement is one fact short, when achievements are evaluated, then none fires early", () => {
+  const cases = [
+    {
+      id: "unbroken",
+      run: summary({ victory: false, survivingHalls: 3 }),
+    },
+    {
+      id: "pyrrhic",
+      run: summary({ victory: true, survivingAgents: 10 }),
+    },
+    {
+      id: "no_towers",
+      run: summary({ victory: true, towersBuilt: 1 }),
+    },
+    {
+      id: "hero_less",
+      run: summary({ wavesCleared: 1, heroLessWave2Clear: true }),
+    },
+    {
+      id: "betrayed",
+      run: summary({ betrayal: null }),
+    },
+  ] as const;
+
+  for (const fixture of cases) {
+    const earned = evaluateNewAchievements(fixture.run, ["first_stand"]);
+    assert.equal(earned.includes(fixture.id), false, fixture.id);
   }
 });
 

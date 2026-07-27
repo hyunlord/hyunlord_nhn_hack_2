@@ -10,7 +10,7 @@ import {
 import { chooseDraftCard } from "../src/engine/progressionEngine";
 import { createRng } from "../src/engine/prng";
 import { createRunSummary } from "../src/engine/runSummary";
-import { calculateLegacyReward } from "../src/meta/legacy";
+import { legacyForRun } from "../src/meta/legacy";
 import { printBalanceReport } from "./balanceReport";
 import {
   HarnessUsageError,
@@ -238,7 +238,7 @@ function runSimulation(
       shopMode === "auto" ? tributeAfterFinalShop : state.tribute,
     heroDeaths: state.heroDeaths,
     shopDiagnostics,
-    legacyEarned: calculateLegacyReward(createRunSummary(state)).total,
+    legacyEarned: legacyForRun(createRunSummary(state)),
   };
 }
 

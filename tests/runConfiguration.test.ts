@@ -201,6 +201,24 @@ test("Given Ashvale and Highreach reach wave three, when the seeded roll passes,
   assert.equal(missed.betrayalHouseId, null);
 });
 
+test("Given the same eligible wave-three state and RNG seed, when betrayal resolves twice, then the complete spawned state matches", () => {
+  const initial = createInitialState(451, [
+    "house_a",
+    "house_f",
+    "house_c",
+  ]).state;
+  const ready = {
+    ...initial,
+    phase: "intermission" as const,
+    waveIndex: 1,
+  };
+
+  const first = beginNextWave(ready, createRng(19));
+  const second = beginNextWave(ready, createRng(19));
+
+  assert.deepEqual(first, second);
+});
+
 test("Given an ineligible trio reaches wave three, when spawning, then no betrayal roll is consumed", () => {
   const initial = createInitialState(46, [
     "house_a",
