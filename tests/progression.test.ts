@@ -47,6 +47,7 @@ const NEUTRAL_MODIFIERS: ResolvedModifiers = {
   ignoreBreak: false,
   towerCostMultiplier: 1,
   heroRespawnHpMultiplier: 1,
+  disableHeroRespawn: false,
 };
 
 function progress(
@@ -67,6 +68,44 @@ test("Given two Sharpened Edge stacks, when modifiers resolve, then multipliers 
   );
 
   assert.ok(Math.abs(result.attackDamageMultiplier - 1.2544) < 1e-12);
+});
+
+test("Given the new Phase 3F common pool, when modifiers resolve, then small low-impact effects are represented", () => {
+  const result = resolveModifiers(
+    CARD_DEFINITIONS,
+    [
+      { cardId: "common_stout_sinew", stacks: 3 },
+      { cardId: "common_quickened_cadence", stacks: 3 },
+      { cardId: "common_tithe_mark", stacks: 3 },
+      { cardId: "common_bright_channel", stacks: 3 },
+      { cardId: "common_far_ward", stacks: 3 },
+      { cardId: "common_warm_embers", stacks: 3 },
+    ],
+    0,
+  );
+
+  assert.equal(result.maxHpBonus, 36);
+  assert.ok(Math.abs(result.attackIntervalMultiplier - 0.884736) < 1e-12);
+  assert.equal(result.tributePerKillBonus, 3);
+  assert.ok(Math.abs(result.divineRegenMultiplier - 1.331) < 1e-12);
+  assert.equal(result.hallDefenseRadiusBonus, 90);
+  assert.equal(result.interWaveHealBonus, 30);
+});
+
+test("Given Phase 3F legendary bargains, when modifiers resolve, then upsides and costs are both typed", () => {
+  const result = resolveModifiers(
+    CARD_DEFINITIONS,
+    [
+      { cardId: "legend_zealots_bargain", stacks: 1 },
+      { cardId: "legend_hollow_crown", stacks: 1 },
+    ],
+    0,
+  );
+
+  assert.equal(result.attackDamageMultiplier, 1.4);
+  assert.equal(result.breakHpRatioDelta, 0.2);
+  assert.equal(result.divineRegenMultiplier, 2);
+  assert.equal(result.disableHeroRespawn, true);
 });
 
 test("Given combat contribution and cumulative XP, when progression is queried, then thresholds are exact", () => {
@@ -141,7 +180,7 @@ test("Given owned and foreign heroes, when eligibility is filtered, then only th
       effect: {},
     },
   ];
-  const owned = [{ cardId: "common_sharpened_edge", stacks: 2 }];
+  const owned = [{ cardId: "common_sharpened_edge", stacks: 3 }];
   const ownedHeroIds = ["hero_ashvale"];
   const eligible = eligibleCards(
     fixtures,
@@ -167,24 +206,36 @@ test("Given owned and foreign heroes, when eligibility is filtered, then only th
   assert.ok(!offer.cardIds.includes("common_sharpened_edge"));
 });
 
-test("Given the Phase 3E card pool, when its budget is inspected, then thirty cards obey their rarity damage ceilings", () => {
+test("Given an unlocked skill-grant card with remaining tier stacks, when eligibility is filtered, then it stays unavailable", () => {
+  const owned = [{ cardId: "divine_grant_chains", stacks: 1 }];
+  const grant = CARD_DEFINITIONS.find(
+    ({ id }) => id === "divine_grant_chains",
+  );
+  const eligible = eligibleCards(
+    CARD_DEFINITIONS,
+    "house_a",
+    owned,
+    ["hero_ashvale"],
+  );
+
+  assert.equal(grant?.rarity, "rare");
+  assert.equal(grant?.maxStacks, 2);
+  assert.ok(!eligible.some(({ id }) => id === "divine_grant_chains"));
+});
+
+test("Given the Phase 3F card pool, when its budget is inspected, then damage cards remain bounded by explicit tradeoffs", () => {
   const damageCards = CARD_DEFINITIONS.filter(
     ({ effect }) => effect.attackDamageMultiplier !== undefined,
   );
 
-  assert.equal(CARD_DEFINITIONS.length, 30);
-  assert.equal(damageCards.length, 2);
-  assert.ok(
-    damageCards.every(
-      ({ effect, rarity }) =>
-        (effect.attackDamageMultiplier ?? 1) <=
-        (
-          rarity === "common"
-            ? 1.08
-            : rarity === "rare"
-              ? 1.15
-              : 1.25
-        ),
-    ),
+  assert.equal(CARD_DEFINITIONS.length, 38);
+  assert.equal(damageCards.length, 3);
+  assert.deepEqual(
+    damageCards.map(({ id }) => id).sort(),
+    [
+      "common_sharpened_edge",
+      "house_a_emberguard",
+      "legend_zealots_bargain",
+    ],
   );
 });

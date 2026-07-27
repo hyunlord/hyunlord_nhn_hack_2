@@ -73,6 +73,50 @@ test("Given a large deterministic sample, when rarities roll, then the 65/27/8 w
   assert.ok(Math.abs(counts.legendary / sampleSize - 0.08) < 0.01);
 });
 
+test("Given the Phase 3F card pool, when rarity composition is inspected, then frequency tiers match the contract", () => {
+  const counts = CARD_DEFINITIONS.reduce(
+    (result, card) => ({
+      ...result,
+      [card.rarity]: result[card.rarity] + 1,
+    }),
+    { common: 0, rare: 0, legendary: 0 },
+  );
+  const reclassifiedIds = [
+    "common_sharpened_edge",
+    "common_drilled_ranks",
+    "common_unbroken_will",
+    "divine_wider_wrath",
+    "divine_open_channel",
+  ];
+
+  assert.equal(CARD_DEFINITIONS.length, 38);
+  assert.deepEqual(counts, {
+    common: 14,
+    rare: 14,
+    legendary: 10,
+  });
+  assert.ok(counts.common > counts.legendary);
+  assert.ok(
+    reclassifiedIds.every((id) =>
+      CARD_DEFINITIONS.find((card) => card.id === id)?.rarity === "common",
+    ),
+  );
+});
+
+test("Given the Phase 3F card pool, when tier stack limits are inspected, then every definition uses the tier maximum", () => {
+  const maxStacksByRarity = {
+    common: 3,
+    rare: 2,
+    legendary: 1,
+  } as const;
+
+  assert.ok(
+    CARD_DEFINITIONS.every(
+      (card) => card.maxStacks === maxStacksByRarity[card.rarity],
+    ),
+  );
+});
+
 test("Given each rarity, when its fallback is resolved, then it only moves downward", () => {
   assert.deepEqual(rarityFallbackOrder("common"), ["common"]);
   assert.deepEqual(rarityFallbackOrder("rare"), ["rare", "common"]);
@@ -102,6 +146,31 @@ test("Given three common rolls and a mixed pool, when an offer generates, then t
   assert.equal(offer.cardIds.length, 3);
   assert.equal(new Set(rarities).size, 2);
   assert.ok(rarities.includes("rare"));
+});
+
+test("Given common cards are exhausted and rare cards remain, when an offer rolls common, then slots are omitted instead of falling upward", () => {
+  const cards = [
+    { ...fixture("common_a", "common"), maxStacks: 3 },
+    { ...fixture("common_b", "common"), maxStacks: 3 },
+    fixture("rare_a", "rare"),
+    fixture("rare_b", "rare"),
+    fixture("rare_c", "rare"),
+  ];
+  const exhausted = {
+    ...progress(),
+    cards: [
+      { cardId: "common_a", stacks: 3 },
+      { cardId: "common_b", stacks: 3 },
+    ],
+  };
+
+  const offer = generateOffer(
+    cards,
+    exhausted,
+    sequenceRng([0.1, 0.1, 0.1, 0.1]),
+  );
+
+  assert.deepEqual(offer.cardIds, []);
 });
 
 test("Given an eligible house card, when offers generate across seeds, then every offer retains the house guarantee", () => {
@@ -175,16 +244,20 @@ test("Given legendary conditions at and around their boundaries, when modifiers 
   );
 });
 
-test("Given the no-retuning guardrail, when rarity assignments are inspected, then Sharpened Edge is rare and all legendaries are one-stack", () => {
-  const sharpened = CARD_DEFINITIONS.find(
-    ({ id }) => id === "common_sharpened_edge",
-  );
-  const legendaries = CARD_DEFINITIONS.filter(
-    ({ rarity }) => rarity === "legendary",
-  );
+test("Given Phase 3F legendary tradeoffs, when descriptions are inspected, then costs and skill constraints are visible", () => {
+  const byId = new Map(CARD_DEFINITIONS.map((card) => [card.id, card]));
 
-  assert.equal(sharpened?.rarity, "rare");
-  assert.equal(sharpened?.effect.attackDamageMultiplier, 1.12);
-  assert.equal(legendaries.length, 8);
-  assert.ok(legendaries.every(({ maxStacks }) => maxStacks === 1));
+  assert.match(byId.get("legend_ash_crown")?.description ?? "", /slower/i);
+  assert.match(byId.get("legend_deeproot")?.description ?? "", /slower/i);
+  assert.match(
+    byId.get("legend_twin_souls")?.description ?? "",
+    /durability/i,
+  );
+  assert.match(byId.get("divine_grant_meteor")?.description ?? "", /55/);
+  assert.match(
+    byId.get("divine_grant_meteor")?.description ?? "",
+    /friendly tower/i,
+  );
+  assert.match(byId.get("divine_grant_resurgence")?.description ?? "", /70/);
+  assert.match(byId.get("divine_grant_resurgence")?.description ?? "", /600/);
 });

@@ -210,6 +210,10 @@ export function respawnHeroes(
     ) {
       return agent;
     }
+    const modifiers = modifiersForAgent(agent, modifiersByHouse);
+    if (modifiers.disableHeroRespawn) {
+      return agent;
+    }
     const hall = nearestSurvivingHall(agent, halls);
     if (hall === null) {
       return agent;
@@ -220,14 +224,7 @@ export function respawnHeroes(
       x: hall.x,
       y: hall.y,
       hp: Math.round(
-        maxHpForAgent(
-          agent,
-          modifiersForAgent(agent, modifiersByHouse),
-        ) *
-          modifiersForAgent(
-            agent,
-            modifiersByHouse,
-          ).heroRespawnHpMultiplier,
+        maxHpForAgent(agent, modifiers) * modifiers.heroRespawnHpMultiplier,
       ),
       state: "idle" as const,
       respawnAtTick: null,

@@ -20,6 +20,9 @@ export function eligibleCards(
     owned.map(({ cardId, stacks }) => [cardId, stacks]),
   );
   return allCards.filter((card) => {
+    const stacks = stacksById.get(card.id) ?? 0;
+    const unusedSkillGrant =
+      card.effect.grantsSkill === undefined || stacks === 0;
     const availableKind =
       card.kind === "common" ||
       card.kind === "divine" ||
@@ -37,7 +40,8 @@ export function eligibleCards(
       );
     return (
       availableKind &&
-      (stacksById.get(card.id) ?? 0) < card.maxStacks
+      unusedSkillGrant &&
+      stacks < card.maxStacks
     );
   });
 }
@@ -159,13 +163,16 @@ export function generateOffer(
     rollRarity(rng),
     rollRarity(rng),
   ];
+  const firstRoll = rolls[0];
   if (
-    rolls[0] === rolls[1] &&
+    firstRoll !== undefined &&
+    firstRoll === rolls[1] &&
     rolls[1] === rolls[2] &&
-    availableRarities.some((rarity) => rarity !== rolls[0])
+    availableRarities.includes(firstRoll) &&
+    availableRarities.some((rarity) => rarity !== firstRoll)
   ) {
     const alternatives = availableRarities.filter(
-      (rarity) => rarity !== rolls[0],
+      (rarity) => rarity !== firstRoll,
     );
     rolls[2] = rollRarity(rng, alternatives);
   }
@@ -195,7 +202,7 @@ export function generateOffer(
           remaining.sort((first, second) => first.id.localeCompare(second.id));
         }
       }
-      selected.unshift(houseCard);
+      selected.push(houseCard);
     }
   }
   return {

@@ -28,6 +28,7 @@ export interface CardEffect {
   ignoreBreak?: boolean;
   towerCostMultiplier?: number;
   heroRespawnHpMultiplier?: number;
+  disableHeroRespawn?: boolean;
 }
 
 export interface CardDefinition {

@@ -105,6 +105,48 @@ test("Given a skill card draft, when it is chosen, then the skill unlocks once a
   );
 });
 
+test("Given every skill grant card, when eligibility is filtered, then grants appear once and remain one-time despite rare tier stacks", () => {
+  const grantIds = [
+    "divine_grant_chains",
+    "divine_grant_sanctuary",
+    "divine_grant_meteor",
+    "divine_grant_resurgence",
+  ];
+  const freshEligible = eligibleCards(
+    CARD_DEFINITIONS,
+    "house_a",
+    [],
+    ["hero_ashvale"],
+  );
+  const afterOneStack = eligibleCards(
+    CARD_DEFINITIONS,
+    "house_a",
+    grantIds.map((cardId) => ({ cardId, stacks: 1 })),
+    ["hero_ashvale"],
+  );
+
+  assert.ok(
+    grantIds.every((id) =>
+      freshEligible.some((card) => card.id === id),
+    ),
+  );
+  assert.equal(
+    CARD_DEFINITIONS.find(({ id }) => id === "divine_grant_chains")
+      ?.maxStacks,
+    2,
+  );
+  assert.equal(
+    CARD_DEFINITIONS.find(({ id }) => id === "divine_grant_sanctuary")
+      ?.maxStacks,
+    2,
+  );
+  assert.ok(
+    grantIds.every(
+      (id) => !afterOneStack.some((card) => card.id === id),
+    ),
+  );
+});
+
 test("Given an unavailable skill state, when engine casting is attempted, then the exact state reference is retained", () => {
   const base = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
   const locked = { ...base, activeThreat: creatureThreat() };

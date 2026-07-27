@@ -166,6 +166,35 @@ test("Given a due hero and no surviving hall, when respawns resolve, then it rem
   assert.strictEqual(result[0], dead);
 });
 
+test("Given Hollow Crown disables a house hero respawn, when the hero is due, then it remains dead beside a surviving hall", () => {
+  const state = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
+  const hero = state.agents.find(({ heroId }) => heroId === "hero_ashvale");
+  if (hero === undefined) {
+    throw new RangeError("Expected a hero fixture.");
+  }
+  const dead = {
+    ...hero,
+    hp: 0,
+    state: "dead" as const,
+    respawnAtTick: 600,
+  };
+  const modifiers = state.houseModifiers.map((entry) =>
+    entry.houseId === hero.houseId
+      ? {
+          ...entry,
+          modifiers: {
+            ...entry.modifiers,
+            disableHeroRespawn: true,
+          },
+        }
+      : entry,
+  );
+
+  const result = respawnHeroes([dead], state.halls, modifiers, 600);
+
+  assert.strictEqual(result[0], dead);
+});
+
 test("Given Ivy has Green Mercy, when she kills inside her aura, then nearby living allies heal without exceeding their effective max HP", () => {
   const state = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
   const ivy = state.agents.find(({ heroId }) => heroId === "hero_greymoor");

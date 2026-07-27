@@ -30,6 +30,7 @@ export interface ResolvedModifiers {
   ignoreBreak: boolean;
   towerCostMultiplier: number;
   heroRespawnHpMultiplier: number;
+  disableHeroRespawn: boolean;
 }
 
 const MULTIPLIER_FIELDS = [
@@ -86,6 +87,7 @@ function neutralModifiers(): ResolvedModifiers {
     ignoreBreak: false,
     towerCostMultiplier: 1,
     heroRespawnHpMultiplier: 1,
+    disableHeroRespawn: false,
   };
 }
 
@@ -109,6 +111,7 @@ export function resolveModifiers(
       result[field] += effect[field] ?? 0;
     }
     result.ignoreBreak ||= effect.ignoreBreak ?? false;
+    result.disableHeroRespawn ||= effect.disableHeroRespawn ?? false;
   }
 
   for (const { cardId, stacks } of owned) {
@@ -123,6 +126,7 @@ export function resolveModifiers(
       result[field] += (effect[field] ?? 0) * stacks;
     }
     result.ignoreBreak ||= effect.ignoreBreak ?? false;
+    result.disableHeroRespawn ||= effect.disableHeroRespawn ?? false;
   }
   return result;
 }
