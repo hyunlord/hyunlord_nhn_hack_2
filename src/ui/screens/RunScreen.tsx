@@ -1,8 +1,13 @@
 import { useEffect } from "react";
 import { GameCanvas } from "../../render/GameCanvas";
 import { useAppFlow } from "../../state/appFlowContext";
-import { GameStoreProvider, useGameStore } from "../../state/gameStore";
+import {
+  GameStoreProvider,
+  gameStoreRunIdentity,
+  useGameStore,
+} from "../../state/gameStore";
 import { validateHouseSelection } from "../../content/houseConfig";
+import { deriveStartingModifierBundle } from "../../content/runConfiguration";
 import { HighlightFeed } from "../components/HighlightFeed";
 import { HUD } from "../components/HUD";
 import { MiracleButtons } from "../components/MiracleButtons";
@@ -53,13 +58,22 @@ export function RunScreen() {
   if (state.runSeed === null || !validation.valid) {
     return null;
   }
+  const startingModifiers = deriveStartingModifierBundle(
+    state.meta.investmentRanks,
+  );
+  const runIdentity = gameStoreRunIdentity({
+    seed: state.runSeed,
+    houseIds: validation.houseIds,
+    startingModifiers,
+  });
 
   return (
     <GameStoreProvider
       houseIds={validation.houseIds}
-      key={`${state.runSeed}:${validation.houseIds.join(",")}`}
+      key={runIdentity}
       onTerminal={(summary) => dispatch({ type: "completeRun", summary })}
       seed={state.runSeed}
+      startingModifiers={startingModifiers}
     >
       <RunWorld />
     </GameStoreProvider>

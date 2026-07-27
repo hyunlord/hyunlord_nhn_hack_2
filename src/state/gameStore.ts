@@ -11,6 +11,10 @@ import {
   type PropsWithChildren,
 } from "react";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
+import {
+  EMPTY_STARTING_MODIFIER_BUNDLE,
+  type StartingModifierBundle,
+} from "../content/runConfiguration";
 import type { MiracleType } from "../divine/divine.types";
 import type { DivineSkillId } from "../divine/skillTypes";
 import type { GameState } from "../engine/engine.types";
@@ -64,20 +68,40 @@ export function gameReducer(
 interface GameStoreProviderProps extends PropsWithChildren {
   readonly seed: number;
   readonly houseIds: HouseSelection;
+  readonly startingModifiers?: StartingModifierBundle;
   readonly onTerminal: (summary: RunSummary) => void;
+}
+
+interface GameStoreRunIdentityInput {
+  readonly seed: number;
+  readonly houseIds: HouseSelection;
+  readonly startingModifiers: StartingModifierBundle;
+}
+
+export function gameStoreRunIdentity({
+  seed,
+  houseIds,
+  startingModifiers,
+}: GameStoreRunIdentityInput): string {
+  return JSON.stringify({ seed, houseIds, startingModifiers });
 }
 
 export function GameStoreProvider({
   children,
   seed,
   houseIds,
+  startingModifiers = EMPTY_STARTING_MODIFIER_BUNDLE,
   onTerminal,
 }: GameStoreProviderProps) {
   const initialWorldReference = useRef<ReturnType<
     typeof createInitialState
   > | null>(null);
   if (initialWorldReference.current === null) {
-    initialWorldReference.current = createInitialState(seed, houseIds);
+    initialWorldReference.current = createInitialState(
+      seed,
+      houseIds,
+      startingModifiers,
+    );
   }
 
   const rngReference = useRef(initialWorldReference.current.rng);

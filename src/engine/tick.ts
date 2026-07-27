@@ -14,6 +14,10 @@ import {
   WAVE_DEFINITIONS,
   type WaveDefinition,
 } from "../content/waveConfig";
+import {
+  EMPTY_STARTING_MODIFIER_BUNDLE,
+  type StartingModifierBundle,
+} from "../content/runConfiguration";
 import type { Rng } from "./prng";
 import { createRng } from "./prng";
 import type { GameState } from "./engine.types";
@@ -322,6 +326,7 @@ function traitEffect(houseId: HouseId): CardEffect {
 export function createInitialState(
   seed: number,
   chosenHouseIds: readonly string[] = DEFAULT_HOUSE_IDS,
+  startingModifiers: StartingModifierBundle = EMPTY_STARTING_MODIFIER_BUNDLE,
 ): {
   state: GameState;
   rng: Rng;
@@ -335,14 +340,30 @@ export function createInitialState(
   const activeSynergies = resolveHouseSynergies(selectedHouseIds);
   const rng = createRng(seed);
   const houses = createHouses(rng, selectedHouseIds);
-  const agents = createAgents(houses, rng);
   const houseBaseEffects = selectedHouseIds.map((houseId) => ({
     houseId,
     effects: [
       traitEffect(houseId),
       ...activeSynergies.map(({ effect }) => effect),
+      ...startingModifiers.globalEffects,
+      ...(startingModifiers.houseEffects.find(
+        (entry) => entry.houseId === houseId,
+      )?.effects ?? []),
     ],
   }));
+  const houseModifiers = houses.map(({ id }) => ({
+    houseId: id,
+    modifiers: resolveModifiers(
+      CARD_DEFINITIONS,
+      [],
+      0,
+      houseBaseEffects.find(({ houseId }) => houseId === id)?.effects ?? [],
+    ),
+  }));
+  const modifiersByHouse = new Map(
+    houseModifiers.map(({ houseId, modifiers }) => [houseId, modifiers]),
+  );
+  const agents = createAgents(houses, rng, modifiersByHouse);
 
   return {
     state: {
@@ -389,16 +410,7 @@ export function createInitialState(
           xp: 0,
           level: 1,
         })),
-      houseModifiers: houses.map(({ id }) => ({
-        houseId: id,
-        modifiers: resolveModifiers(
-          CARD_DEFINITIONS,
-          [],
-          0,
-          houseBaseEffects.find(({ houseId }) => houseId === id)?.effects ??
-            [],
-        ),
-      })),
+      houseModifiers,
       houseBaseEffects,
       activeSynergyIds: activeSynergies.map(({ id }) => id),
       betrayalHouseId: null,

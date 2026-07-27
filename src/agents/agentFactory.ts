@@ -13,6 +13,12 @@ const FULL_TURN = Math.PI * 2;
 const MIN_DISPOSITION = 20;
 const MAX_DISPOSITION = 80;
 
+interface StartingAgentModifiers {
+  readonly maxHpBonus: number;
+  readonly maxHpMultiplier: number;
+  readonly heroMaxHpMultiplier: number;
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -36,7 +42,46 @@ export function createHouses(
   });
 }
 
-export function createAgents(houses: readonly House[], rng: Rng): Agent[] {
+function regularHp(
+  config: (typeof HOUSE_CONFIG)[number],
+  modifiers: StartingAgentModifiers | undefined,
+): number {
+  if (modifiers === undefined) {
+    return Math.round(
+      BALANCE_CONFIG.INITIAL_HP * config.traits.maxHpMultiplier,
+    );
+  }
+  return Math.round(
+    (BALANCE_CONFIG.INITIAL_HP + modifiers.maxHpBonus) *
+      modifiers.maxHpMultiplier,
+  );
+}
+
+function heroHp(
+  definition: (typeof HERO_DEFINITIONS)[number],
+  house: (typeof HOUSE_CONFIG)[number],
+  modifiers: StartingAgentModifiers | undefined,
+): number {
+  if (modifiers === undefined) {
+    return Math.round(
+      BALANCE_CONFIG.INITIAL_HP *
+        house.traits.maxHpMultiplier *
+        definition.hpMultiplier,
+    );
+  }
+  return Math.round(
+    (BALANCE_CONFIG.INITIAL_HP + modifiers.maxHpBonus) *
+      modifiers.maxHpMultiplier *
+      definition.hpMultiplier *
+      modifiers.heroMaxHpMultiplier,
+  );
+}
+
+export function createAgents(
+  houses: readonly House[],
+  rng: Rng,
+  modifiersByHouse: ReadonlyMap<string, StartingAgentModifiers> = new Map(),
+): Agent[] {
   const regularAgents = houses.flatMap((house, houseIndex) => {
     const config = HOUSE_CONFIG.find((entry) => entry.id === house.id);
     const slot = HOUSE_SPAWN_SLOTS[houseIndex];
@@ -84,10 +129,7 @@ export function createAgents(houses: readonly House[], rng: Rng): Agent[] {
           ),
           heading: rng.range(0, FULL_TURN),
           state: "idle",
-          hp: Math.round(
-            BALANCE_CONFIG.INITIAL_HP *
-              config.traits.maxHpMultiplier,
-          ),
+          hp: regularHp(config, modifiersByHouse.get(house.id)),
           lastDamagedTick: -1,
           lastAttackTick: -1,
           isHero: false,
@@ -118,10 +160,10 @@ export function createAgents(houses: readonly House[], rng: Rng): Agent[] {
       y: slot.y,
       heading: 0,
       state: "idle",
-      hp: Math.round(
-        BALANCE_CONFIG.INITIAL_HP *
-          house.traits.maxHpMultiplier *
-          definition.hpMultiplier,
+      hp: heroHp(
+        definition,
+        house,
+        modifiersByHouse.get(definition.houseId),
       ),
       lastDamagedTick: -1,
       lastAttackTick: -1,
