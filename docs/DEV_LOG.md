@@ -353,3 +353,46 @@
   had no generation or heavy compute, and asset generation is next.
 - Automated gates passed during the implementation slices, but final browser QA
   and push have not been run yet.
+
+## 2026-07-28 — Phase 3G-2a UI and frame assets
+
+- Offloaded every generative pass to the existing ComfyUI installation on DGX
+  Spark (`aitopatom-d6bb`). The workflow used SDXL 1.0
+  (`sd_xl_base_1.0.safetensors`) with Pixel Art XL
+  (`pixel-art-xl.safetensors`) at 0.82 model/CLIP strength.
+- Common, rare, and legendary shared the same base prompt and family seed
+  `731946`. Rare and legendary additionally used IPAdapter Plus
+  (`ip-adapter-plus_sdxl_vit-h.safetensors`) with
+  `CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors`, referencing the selected
+  common frame at 0.48 style-and-composition weight.
+- Generated three candidates for each of the eight assets, 24 candidates in
+  total. Rejected card candidates nested extra cards, drifted from the shared
+  silhouette, added unreadable pseudo-text, or overused purple. Rejected house
+  and panel candidates were sprite sheets rather than single frames. Rejected
+  battlefields painted walls or too many well-like focal objects; rejected
+  draft and gauge candidates were too dense or contained multiple stacked
+  panels. All rejected candidates remain under DGX
+  `ComfyUI/output/phase3g2a/`.
+- A learned Pixelization-node batch was abandoned after it saturated the DGX
+  CPU and the host temporarily dropped off Tailscale. Final candidates instead
+  followed the required large-generation path and were snapped to a coarse
+  pixel grid, then resized with nearest-neighbour only. The DGX post-process
+  palette-quantised each final while retaining RGBA output.
+- The prompts requested a flat magenta interior, but SDXL introduced colour
+  drift and nested decorations in some candidates. Chroma-only keying was
+  therefore rejected. The final alpha method uses an exact programmatic
+  geometry mask on DGX: the requested interior and exterior regions are forced
+  to hard alpha zero after pixel-grid conversion, with the border forced
+  opaque. This removes chroma fringe entirely; the three cards share the exact
+  `(x=40, y=56, width=432, height=656)` transparent rectangle and contain zero
+  partial-alpha pixels.
+- `panel_frame.png` uses fixed 64-pixel corners and a repeated 16-pixel source
+  segment across every edge, so the 384-pixel edge spans tile evenly.
+  `draft_backdrop.png` is the intentional exception to hard alpha: its
+  programmatic vignette ranges from alpha 128 at the centre to 191 at the
+  corners.
+- The contact-sheet review kept the cards as one escalating family: restrained
+  brown wood, teal-gray tarnished metal, then gilding with explicit sun, eye,
+  and moon glyphs. It also caused a second pass that removed white spill from
+  the neutral house banner and raised the battlefield from nearly black to a
+  still-flat, low-contrast ground texture.
