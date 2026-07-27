@@ -48,16 +48,13 @@ export function stepAgent(
       const deltaY = intent.towardY - agent.y;
       const distance = Math.hypot(deltaX, deltaY);
       const targetHeading = Math.atan2(deltaY, deltaX);
-      const attackRange = UNIT_CLASSES[agent.unitClass].attackRange;
-      const advanceThreshold =
-        intent.preferredRange < attackRange
-          ? intent.preferredRange * 1.1
-          : attackRange;
-      if (intent.preferredRange <= 0) {
+      const usesStandoffMovement =
+        agent.unitClass === "archer" || agent.unitClass === "spear";
+      if (!usesStandoffMovement || intent.preferredRange <= 0) {
         heading = targetHeading;
         speed =
           classSpeed * BALANCE_CONFIG.AGENT_ENGAGE_SPEED_MULTIPLIER;
-      } else if (distance > advanceThreshold) {
+      } else if (distance > intent.preferredRange * 1.1) {
         heading = targetHeading;
         speed =
           classSpeed * BALANCE_CONFIG.AGENT_ENGAGE_SPEED_MULTIPLIER;

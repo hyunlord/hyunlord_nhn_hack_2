@@ -419,22 +419,26 @@
   and moon glyphs. It also caused a second pass that removed white spill from
   the neutral house banner and raised the battlefield from nearly black to a
   still-flat, low-contrast ground texture.
-- The final 200-seed `abc` balance observation produced 189 victories and 11
-  wave-three defeats: a 94.5% victory rate, median terminal tick 2742, median
-  46 surviving agents, and median 1800 combined hall HP. This is explicitly
-  flagged `OVER 70%`; no additional tuning was made because this slice limits
-  structural balance changes to the requested 36/60/112 wave counts.
+- The final 200-seed `abc` balance observation produced 181 victories and 19
+  wave-three defeats: a 90.5% victory rate, median terminal tick 3035.5,
+  median 30.5 surviving agents, and median 1800 combined hall HP. This is
+  explicitly flagged `OVER 70%`; no additional tuning was made because this
+  slice limits structural balance changes to the requested 36/60/112 wave
+  counts.
 - Isolated performance runs stayed below the 35 ms tick ceiling. Across the
-  `abc`, `bde`, and `adf` trios the overall average was 1.809 ms, worst tick
-  6.913 ms, and peak entity count 281. Their population arcs also remained
-  distinct: `abc` grew into a balanced 40/46/36 line, `bde` retained the
-  largest Stonewake-heavy wall at 50/55/29, and `adf` finished as a mobile
-  44/52/41 force.
+  `abc`, `bde`, and `adf` trios the overall average was 1.674 ms, worst tick
+  6.594 ms, and peak entity count 294. Their population arcs also remained
+  distinct: `abc` finished at 21/34/41, `bde` at 50/42/28, and `adf` at
+  14/47/42.
 - Browser QA at 1280, 768, and 375 px confirmed the activated house/card
   frames, panel nine-slice, gauge, backdrop, class silhouettes, and responsive
   house grid without horizontal overflow. The final warning/error console was
   empty. A visual review caught the tall house-frame source being stretched
   horizontally; the corrected 3:4 card layout passed the follow-up review.
-- Final verification passed 252/252 tests, TypeScript, production build,
+- A final movement audit narrowed standoff retreat/hold behavior to Spearmen
+  and Archers. Warriors and Skirmishers retain their original advance
+  behavior, and the exact 1.1 preferred-range boundary is covered by zero-RNG
+  regression tests.
+- Final verification passed 255/255 tests, TypeScript, production build,
   both determinism paths, the 23-entry manifest check, all eight PNG
   dimension/alpha checks, diff hygiene, and the independent code re-review.

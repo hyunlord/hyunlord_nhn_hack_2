@@ -86,6 +86,26 @@ test("Given an archer at three engagement distances, when it moves, then it adva
   assert.equal(bandRng.draws(), 0);
 });
 
+test("Given a spearman inside the 1.1 preferred-range band, when it engages, then it holds without RNG", () => {
+  const agent = {
+    ...archerAt(79),
+    unitClass: "spear" as const,
+  };
+  const rng = countingRng();
+
+  const moved = stepAgent(agent, rng.rng, {
+    kind: "engage",
+    towardX: 100,
+    towardY: 100,
+    targetId: "creature_0",
+    preferredRange: 20,
+  });
+
+  assert.equal(moved.x, agent.x);
+  assert.equal(moved.y, agent.y);
+  assert.equal(rng.draws(), 0);
+});
+
 test("Given a melee unit just outside attack range, when it engages, then it closes instead of holding", () => {
   const agent = {
     ...archerAt(86),
@@ -103,4 +123,27 @@ test("Given a melee unit just outside attack range, when it engages, then it clo
 
   assert.ok(Math.hypot(100 - moved.x, 100 - moved.y) < 14);
   assert.equal(rng.draws(), 0);
+});
+
+test("Given melee and skirmisher units inside their preferred range, when they engage, then they keep advancing without RNG", () => {
+  const engage = {
+    kind: "engage" as const,
+    towardX: 100,
+    towardY: 100,
+    targetId: "creature_0",
+    preferredRange: 13,
+  };
+
+  for (const unitClass of ["melee", "skirmisher"] as const) {
+    const agent = {
+      ...archerAt(95),
+      unitClass,
+    };
+    const rng = countingRng();
+
+    const moved = stepAgent(agent, rng.rng, engage);
+
+    assert.ok(moved.x > agent.x, unitClass);
+    assert.equal(rng.draws(), 0, unitClass);
+  }
 });
