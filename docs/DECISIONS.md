@@ -400,3 +400,76 @@ Phase 3E changes the shipped power surface, so harness results are structural
 observations only. No wave multiplier, creature count, shop base price, house
 trait, or existing card effect was adjusted to pursue a win-rate target.
 Balancing waits until the remaining content slices are complete.
+
+## 2026-07-27 — Phase 3F rarity and investments
+
+### Rarity means frequency, not a power ladder
+
+The approximate 36-card headline gave way to the explicit keep/reclass/add
+list. The live pool resolves to 38 cards: 14 common, 14 rare, and 10
+legendary. Five unconditional cards moved down from rare to common, six small
+commons filled the frequency floor, and the 65/27/8 weights stayed fixed.
+Common, rare, and legendary stack limits remain 3/2/1, skill-grant cards stay
+effectively one-time once drafted, and common rolls never climb upward. When
+the common tier is exhausted, the offer drops the slot instead of falling
+back into a higher rarity.
+
+### Legendary tradeoffs stay explicit
+
+The new legendaries carry visible costs and traps rather than quiet upside.
+Ash Crown stops Ashvale from breaking but slows its attacks; Deeproot raises
+tribute and tower efficiency but slows Greymoor; Twin Souls halves hero
+respawn time and boosts respawn HP while lowering regular durability;
+Zealot's Bargain adds 40% damage but pushes the break threshold up; Hollow
+Crown doubles divine regeneration but disables the owning house's hero
+respawn, which makes it a wrong-build trap when that hero is the core of the
+plan. Meteor Fall costs 55 divine power and can hit friendly towers, while
+Resurgence costs 70 divine power and carries a 600 tick cooldown.
+
+### Investments stay outside replay state
+
+`content/investmentConfig.ts` owns eleven immutable tracks, and the global
+lane sums to 7261 Legacy to max. `meta/investments.ts` owns cost, rank
+validation, purchase, and effect resolution. `MetaState` v2 adds
+`investmentRanks`; the persistence loader migrates v1 to empty ranks and fails
+closed on malformed or unknown-version data. Before a run mounts, the app
+converts ranks into a plain `StartingModifierBundle` with global effects plus
+per-house effects. That bundle is run input only; `GameState`, `engine/`, and
+the deterministic leaf domains never store meta state.
+
+### Neutral sampling is the balance default
+
+The harness now defaults to `neutral` slot sampling, which uses the dedicated
+choice RNG to sample an available slot uniformly. `first` remains accepted but
+is documented as rarity-biased and unsuitable for balance measurement. The
+report keeps offered and picked rarity counts side by side, and it also prints
+the global investment cost total plus an observed runs-to-max-globals
+estimate. The final default 200-run report records 51.6% common offers with
+50.0% common picks, 37.5% rare offers with 38.6% rare picks, and 10.9%
+legendary offers with 11.4% legendary picks. It averages 137.49 Legacy per
+run, implies 53 observed runs to max globals against the 7261 total global
+cost, and records 51.5% victories as an observation only. A later default
+harness may still supersede these numbers.
+
+### The ledger surface is intentional
+
+The meta screen adds a ledger-style investment action surface rather than a
+new navigation branch. Global and house tracks are separated, each card shows
+rank pips, next cost, effect text, and a disabled reason, and the right rail
+summarizes the active bonuses currently in force. That keeps investment spend
+legible without mixing house-scoped bonuses into the global story.
+
+### Sprite swaps are still a later slice
+
+The canvas path is still primitive-based. `GameCanvas` coordinates the draw
+helpers directly, and the draw modules use `arc`, `fillRect`, `stroke`,
+`moveTo`, and `lineTo`; there is no centralized asset loader, cache, atlas, or
+`drawImage` path yet. `public/assets` currently only contains placeholder
+`.gitkeep` directories. Moving to sprites will therefore need preload/cache/
+atlas work plus draw-module changes, not a simple asset swap.
+
+### Verification remains partial
+
+The earlier phase gate trail is documented as reaching the 193-test mark, but
+the final browser/default-balance gates are still outstanding and should not
+be described as complete.

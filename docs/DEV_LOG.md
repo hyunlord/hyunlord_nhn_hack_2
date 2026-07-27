@@ -284,3 +284,35 @@
   and Resurgence 0.5%. These values were recorded without correction.
 - No work was offloaded to DGX Spark because implementation, tests, local
   simulation, and browser validation remained within local resource limits.
+
+## 2026-07-27 — Phase 3F rarity and investments
+
+- Reworked the card pool into a 38-card 14/14/10 layout after the explicit
+  keep/reclass/add list beat the approximate 36-card headline. Five
+  unconditional cards moved down from rare to common, the common/rare/
+  legendary stack caps stay 3/2/1, and common rolls still never climb upward.
+- Added the new common floor cards plus Zealot's Bargain and Hollow Crown,
+  then attached the visible tradeoffs to Ash Crown, Deeproot, Twin Souls,
+  Meteor Fall, and Resurgence. Hollow Crown is the wrong-build trap: it
+  doubles divine regen but disables the owning house hero's respawn.
+- Added `investmentConfig.ts`, `meta/investments.ts`, `MetaState` v2
+  migration, and the plain starting-bundle handoff so investment ranks never
+  enter `GameState` or the deterministic engine snapshot. The eleven
+  global/house tracks sum to 7261 Legacy for full global maxing.
+- Reworked the balance harness around neutral sampling and the dedicated
+  choice RNG. `first` remains as a rarity-biased legacy mode, the report now
+  shows offered/picked rarity side by side, and the final 200-run default
+  sample landed at 51.6% common offers / 50.0% common picks, 37.5% rare offers
+  / 38.6% rare picks, 10.9% legendary offers / 11.4% legendary picks, 137.49
+  Legacy per run, and 53 observed runs to max globals. Those values remain
+  observations only, not tuning targets.
+- Expanded the meta screen into a scoped ledger with global tracks, house
+  tracks, rank pips, next-cost labels, disabled reasons, and active-bonus
+  summaries.
+- Kept the renderer on primitive canvas draws. There is still no asset
+  loader/cache/atlas or `drawImage` path, and `public/assets` only contains
+  placeholder directories, so any sprite pass needs a separate preload/draw-
+  module slice.
+- Balance tuning was not done in this slice. DGX/heavy compute stayed unused
+  because the local tests and harness were enough for the verification needed
+  here.
