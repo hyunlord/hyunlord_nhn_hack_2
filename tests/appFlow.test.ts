@@ -6,6 +6,7 @@ import {
   createInitialAppState,
 } from "../src/state/appFlow";
 import { createDefaultMetaState } from "../src/meta/legacy";
+import { activeBonusGroups } from "../src/ui/screens/MetaScreen";
 
 function summary(runId = "run-1"): RunSummary {
   return {
@@ -183,4 +184,18 @@ test("Given a locked house investment, when purchase is requested, then the exac
     }),
     state,
   );
+});
+
+test("Given global and house investments, when bonus summary groups are built, then house effects stay scoped by house name", () => {
+  const groups = activeBonusGroups({
+    global_vigor: 1,
+    house_a_ashvale_fury: 1,
+    house_b_thornhold_bulwark: 1,
+  });
+
+  assert.deepEqual(groups, [
+    { heading: "Global", labels: ["Max HP +10"] },
+    { heading: "Ashvale", labels: ["Attack damage +4%"] },
+    { heading: "Thornhold", labels: ["Max HP +15"] },
+  ]);
 });

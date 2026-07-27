@@ -74,9 +74,12 @@ function perRankEffectLabel(effect: CardEffect): string {
   return labels.join("; ");
 }
 
-function activeBonusLabels(
-  investmentRanks: Readonly<Record<string, number>>,
-): readonly string[] {
+export interface ActiveBonusGroup {
+  readonly heading: string;
+  readonly labels: readonly string[];
+}
+
+function effectLabels(investmentRanks: Readonly<Record<string, number>>): readonly string[] {
   const effects = resolveInvestmentEffects(investmentRanks);
   const labels: string[] = [];
   if (effects.maxHpBonus !== 0) {
@@ -98,6 +101,48 @@ function activeBonusLabels(
     labels.push(`Move speed ${multiplierPercent(effects.moveSpeedMultiplier)}`);
   }
   return labels;
+}
+
+function ranksForTracks(
+  investmentRanks: Readonly<Record<string, number>>,
+  tracks: readonly InvestmentTrack[],
+): Readonly<Record<string, number>> {
+  const ranks: Record<string, number> = {};
+  for (const track of tracks) {
+    const rank = investmentRanks[track.id] ?? 0;
+    if (rank > 0) {
+      ranks[track.id] = rank;
+    }
+  }
+  return ranks;
+}
+
+export function activeBonusGroups(
+  investmentRanks: Readonly<Record<string, number>>,
+): readonly ActiveBonusGroup[] {
+  const groups: ActiveBonusGroup[] = [];
+  const globalLabels = effectLabels(
+    ranksForTracks(
+      investmentRanks,
+      INVESTMENT_TRACKS.filter((track) => track.scope === "global"),
+    ),
+  );
+  if (globalLabels.length > 0) {
+    groups.push({ heading: "Global", labels: globalLabels });
+  }
+
+  for (const house of HOUSE_CONFIG) {
+    const houseLabels = effectLabels(
+      ranksForTracks(
+        investmentRanks,
+        INVESTMENT_TRACKS.filter((track) => track.houseId === house.id),
+      ),
+    );
+    if (houseLabels.length > 0) {
+      groups.push({ heading: house.name, labels: houseLabels });
+    }
+  }
+  return groups;
 }
 
 function trackDisabledReason(
@@ -196,7 +241,7 @@ function InvestmentTrackCard({
 export function MetaScreen() {
   const { dispatch, state } = useAppFlow();
   const { meta } = state;
-  const activeBonuses = activeBonusLabels(meta.investmentRanks);
+  const activeBonuses = activeBonusGroups(meta.investmentRanks);
   const globalTracks = INVESTMENT_TRACKS.filter(
     (track) => track.scope === "global",
   );
@@ -258,11 +303,22 @@ export function MetaScreen() {
             {activeBonuses.length === 0 ? (
               <p>No permanent bonuses active yet.</p>
             ) : (
-              <ul>
-                {activeBonuses.map((label) => (
-                  <li key={label}>{label}</li>
+              <div className="investment-summary__groups">
+                {activeBonuses.map((group) => (
+                  <section
+                    aria-label={`${group.heading} active bonuses`}
+                    className="investment-summary__group"
+                    key={group.heading}
+                  >
+                    <h4>{group.heading}</h4>
+                    <ul>
+                      {group.labels.map((label) => (
+                        <li key={label}>{label}</li>
+                      ))}
+                    </ul>
+                  </section>
                 ))}
-              </ul>
+              </div>
             )}
           </aside>
         </div>
