@@ -1,12 +1,50 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { Hall } from "../engine/engine.types";
 import type { House } from "../agents/agentTypes";
+import { drawSprite } from "./assets/drawSprite";
 
 const RUBBLE_COLOR = "#3d3732";
 const HP_TRACK_COLOR = "rgba(14, 12, 10, 0.85)";
 const HP_COLOR = "#d8c879";
 const HP_WIDTH = 44;
 const HP_HEIGHT = 5;
+
+function drawHallPrimitive(
+  context: CanvasRenderingContext2D,
+  hall: Hall,
+  color: string,
+  isDestroyed: boolean,
+): void {
+  context.fillStyle = color;
+  context.strokeStyle = isDestroyed ? "#211d1a" : "#f4e6bd";
+  context.lineWidth = 2;
+  context.beginPath();
+  if (isDestroyed) {
+    context.moveTo(hall.x - 14, hall.y + 10);
+    context.lineTo(hall.x - 8, hall.y - 7);
+    context.lineTo(hall.x + 2, hall.y - 3);
+    context.lineTo(hall.x + 13, hall.y + 11);
+    context.closePath();
+  } else {
+    context.rect(
+      hall.x - BALANCE_CONFIG.HALL_RADIUS,
+      hall.y - BALANCE_CONFIG.HALL_RADIUS,
+      BALANCE_CONFIG.HALL_RADIUS * 2,
+      BALANCE_CONFIG.HALL_RADIUS * 2,
+    );
+    context.moveTo(
+      hall.x - BALANCE_CONFIG.HALL_RADIUS - 4,
+      hall.y - BALANCE_CONFIG.HALL_RADIUS,
+    );
+    context.lineTo(hall.x, hall.y - BALANCE_CONFIG.HALL_RADIUS - 12);
+    context.lineTo(
+      hall.x + BALANCE_CONFIG.HALL_RADIUS + 4,
+      hall.y - BALANCE_CONFIG.HALL_RADIUS,
+    );
+  }
+  context.fill();
+  context.stroke();
+}
 
 export function drawHalls(
   context: CanvasRenderingContext2D,
@@ -17,37 +55,11 @@ export function drawHalls(
   for (const hall of halls) {
     const house = houses.find(({ id }) => id === hall.houseId);
     const isDestroyed = hall.hp <= 0;
-    context.fillStyle = isDestroyed
-      ? RUBBLE_COLOR
-      : (house?.color ?? "#887f70");
-    context.strokeStyle = isDestroyed ? "#211d1a" : "#f4e6bd";
-    context.lineWidth = 2;
-    context.beginPath();
-    if (isDestroyed) {
-      context.moveTo(hall.x - 14, hall.y + 10);
-      context.lineTo(hall.x - 8, hall.y - 7);
-      context.lineTo(hall.x + 2, hall.y - 3);
-      context.lineTo(hall.x + 13, hall.y + 11);
-      context.closePath();
-    } else {
-      context.rect(
-        hall.x - BALANCE_CONFIG.HALL_RADIUS,
-        hall.y - BALANCE_CONFIG.HALL_RADIUS,
-        BALANCE_CONFIG.HALL_RADIUS * 2,
-        BALANCE_CONFIG.HALL_RADIUS * 2,
-      );
-      context.moveTo(
-        hall.x - BALANCE_CONFIG.HALL_RADIUS - 4,
-        hall.y - BALANCE_CONFIG.HALL_RADIUS,
-      );
-      context.lineTo(hall.x, hall.y - BALANCE_CONFIG.HALL_RADIUS - 12);
-      context.lineTo(
-        hall.x + BALANCE_CONFIG.HALL_RADIUS + 4,
-        hall.y - BALANCE_CONFIG.HALL_RADIUS,
-      );
+    const color = isDestroyed ? RUBBLE_COLOR : (house?.color ?? "#887f70");
+    const spriteId = isDestroyed ? "hall_rubble" : "hall";
+    if (!drawSprite(context, spriteId, hall.x, hall.y, { tint: color })) {
+      drawHallPrimitive(context, hall, color, isDestroyed);
     }
-    context.fill();
-    context.stroke();
 
     const hpRatio = Math.max(
       0,

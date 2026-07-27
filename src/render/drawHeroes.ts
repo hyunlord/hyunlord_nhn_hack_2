@@ -2,6 +2,8 @@ import type { Agent, House } from "../agents/agentTypes";
 import { HERO_DEFINITIONS } from "../content/heroConfig";
 import type { ResolvedModifiers } from "../progression/modifiers";
 import { maxHpForAgent } from "../engine/heroEngine";
+import type { SpriteId } from "../content/assetManifest";
+import { drawSprite } from "./assets/drawSprite";
 
 const HERO_RADIUS = 8;
 const HP_BAR_WIDTH = 34;
@@ -13,6 +15,39 @@ type ModifierEntry = {
   readonly houseId: string;
   readonly modifiers: ResolvedModifiers;
 };
+
+function spriteIdForHero(heroId: string | null): SpriteId | null {
+  switch (heroId) {
+    case "hero_ashvale":
+      return "hero_ashvale";
+    case "hero_thornhold":
+      return "hero_thornhold";
+    case "hero_greymoor":
+      return "hero_greymoor";
+    case "hero_duskmere":
+      return "hero_duskmere";
+    case "hero_stonewake":
+      return "hero_stonewake";
+    case "hero_highreach":
+      return "hero_highreach";
+    default:
+      return null;
+  }
+}
+
+function drawHeroPrimitiveBody(
+  context: CanvasRenderingContext2D,
+  hero: Agent,
+  color: string,
+): void {
+  context.beginPath();
+  context.arc(hero.x, hero.y, HERO_RADIUS, 0, Math.PI * 2);
+  context.fillStyle = color;
+  context.fill();
+  context.strokeStyle = "rgba(255, 248, 214, 0.96)";
+  context.lineWidth = 3;
+  context.stroke();
+}
 
 export function drawHeroes(
   context: CanvasRenderingContext2D,
@@ -54,13 +89,13 @@ export function drawHeroes(
       context.stroke();
     }
 
-    context.beginPath();
-    context.arc(hero.x, hero.y, HERO_RADIUS, 0, Math.PI * 2);
-    context.fillStyle = color;
-    context.fill();
-    context.strokeStyle = "rgba(255, 248, 214, 0.96)";
-    context.lineWidth = 3;
-    context.stroke();
+    const spriteId = spriteIdForHero(hero.heroId);
+    if (
+      spriteId === null ||
+      !drawSprite(context, spriteId, hero.x, hero.y, { tint: color })
+    ) {
+      drawHeroPrimitiveBody(context, hero, color);
+    }
     if (
       hero.heroLevelUpTick >= 0 &&
       currentTick - hero.heroLevelUpTick < 40

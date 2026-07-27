@@ -1,5 +1,6 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
-import type { ThreatEvent } from "../threat/threatTypes";
+import type { Creature, DarkMage, ThreatEvent } from "../threat/threatTypes";
+import { drawSprite } from "./assets/drawSprite";
 
 const CREATURE_COLOR = "#6b3f8f";
 const CREATURE_RIM = "#b58ad0";
@@ -8,6 +9,44 @@ const MAGE_PULSE = "rgba(226, 165, 239, 0.65)";
 const MAGE_HP_TRACK = "rgba(26, 22, 19, 0.85)";
 const MAGE_HP_WIDTH = 32;
 const MAGE_HP_HEIGHT = 4;
+
+function drawCreaturePrimitive(
+  context: CanvasRenderingContext2D,
+  creature: Creature,
+): void {
+  context.beginPath();
+  context.arc(
+    creature.x,
+    creature.y,
+    BALANCE_CONFIG.CREATURE_RADIUS,
+    0,
+    Math.PI * 2,
+  );
+  context.fillStyle = CREATURE_COLOR;
+  context.fill();
+  context.lineWidth = 1;
+  context.strokeStyle = CREATURE_RIM;
+  context.stroke();
+}
+
+function drawMagePrimitive(
+  context: CanvasRenderingContext2D,
+  mage: DarkMage,
+): void {
+  context.beginPath();
+  context.arc(
+    mage.x,
+    mage.y,
+    BALANCE_CONFIG.DARK_MAGE_RADIUS,
+    0,
+    Math.PI * 2,
+  );
+  context.fillStyle = MAGE_COLOR;
+  context.fill();
+  context.lineWidth = 1.5;
+  context.strokeStyle = MAGE_PULSE;
+  context.stroke();
+}
 
 export function drawThreats(
   context: CanvasRenderingContext2D,
@@ -21,19 +60,9 @@ export function drawThreats(
   context.save();
   context.globalAlpha = 1;
   for (const creature of threat.creatures) {
-    context.beginPath();
-    context.arc(
-      creature.x,
-      creature.y,
-      BALANCE_CONFIG.CREATURE_RADIUS,
-      0,
-      Math.PI * 2,
-    );
-    context.fillStyle = CREATURE_COLOR;
-    context.fill();
-    context.lineWidth = 1;
-    context.strokeStyle = CREATURE_RIM;
-    context.stroke();
+    if (!drawSprite(context, "creature", creature.x, creature.y)) {
+      drawCreaturePrimitive(context, creature);
+    }
   }
 
   if (threat.mage === null) {
@@ -55,19 +84,9 @@ export function drawThreats(
   context.strokeStyle = MAGE_PULSE;
   context.stroke();
 
-  context.beginPath();
-  context.arc(
-    threat.mage.x,
-    threat.mage.y,
-    BALANCE_CONFIG.DARK_MAGE_RADIUS,
-    0,
-    Math.PI * 2,
-  );
-  context.fillStyle = MAGE_COLOR;
-  context.fill();
-  context.lineWidth = 1.5;
-  context.strokeStyle = MAGE_PULSE;
-  context.stroke();
+  if (!drawSprite(context, "dark_mage", threat.mage.x, threat.mage.y)) {
+    drawMagePrimitive(context, threat.mage);
+  }
 
   const hpRatio = Math.max(
     0,

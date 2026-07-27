@@ -1,6 +1,8 @@
+import { drawSprite } from "./assets/drawSprite";
+
 const GRID_SIZE = 40;
 
-export function drawBackground(
+function drawBackgroundPrimitive(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
@@ -33,4 +35,14 @@ export function drawBackground(
   vignette.addColorStop(1, "rgba(0, 0, 0, 0.62)");
   context.fillStyle = vignette;
   context.fillRect(0, 0, width, height);
+}
+
+export function drawBackground(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+): void {
+  if (!drawSprite(context, "background_field", 0, 0)) {
+    drawBackgroundPrimitive(context, width, height);
+  }
 }

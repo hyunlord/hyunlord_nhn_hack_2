@@ -1,5 +1,32 @@
 import type { Agent, House } from "../agents/agentTypes";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
+import { drawSprite } from "./assets/drawSprite";
+
+function traceAgentBody(
+  context: CanvasRenderingContext2D,
+  agent: Agent,
+): void {
+  context.beginPath();
+  context.arc(
+    agent.x,
+    agent.y,
+    BALANCE_CONFIG.AGENT_RADIUS,
+    0,
+    Math.PI * 2,
+  );
+}
+
+function drawAgentPrimitiveBody(
+  context: CanvasRenderingContext2D,
+  agent: Agent,
+  color: string,
+): void {
+  traceAgentBody(context, agent);
+  context.fillStyle = color;
+  context.globalAlpha = agent.state === "fleeing" ? 0.42 : 1;
+  context.fill();
+  context.globalAlpha = 1;
+}
 
 export function drawAgents(
   context: CanvasRenderingContext2D,
@@ -48,22 +75,21 @@ export function drawAgents(
       continue;
     }
 
-    context.beginPath();
-    context.arc(
-      agent.x,
-      agent.y,
-      BALANCE_CONFIG.AGENT_RADIUS,
-      0,
-      Math.PI * 2,
-    );
-    context.fillStyle = color;
-    context.globalAlpha = agent.state === "fleeing" ? 0.42 : 1;
-    context.fill();
-    context.globalAlpha = 1;
+    const alpha = agent.state === "fleeing" ? 0.42 : 1;
+    const spriteDrawn = drawSprite(context, "agent", agent.x, agent.y, {
+      tint: color,
+      alpha,
+    });
+    if (!spriteDrawn) {
+      drawAgentPrimitiveBody(context, agent, color);
+    }
     const recentlyDamaged =
       agent.lastDamagedTick >= 0 &&
       currentTick - agent.lastDamagedTick < BALANCE_CONFIG.DAMAGE_FLASH_TICKS;
     if (agent.state !== "fleeing") {
+      if (spriteDrawn) {
+        traceAgentBody(context, agent);
+      }
       context.lineWidth =
         recentlyDamaged || agent.state === "helping" ? 2.5 : 1.5;
       context.strokeStyle = recentlyDamaged

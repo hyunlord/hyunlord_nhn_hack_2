@@ -8,8 +8,11 @@ import {
 } from "../build/structures";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { Hall } from "../engine/engine.types";
+import { drawSprite } from "./assets/drawSprite";
 
 type Preview = { readonly x: number; readonly y: number };
+const TOWER_COLOR = "#8f8a7d";
+const TOWER_RUBBLE_COLOR = "#6f6a60";
 
 function drawRange(
   context: CanvasRenderingContext2D,
@@ -24,6 +27,32 @@ function drawRange(
   context.stroke();
 }
 
+function drawTowerPrimitive(
+  context: CanvasRenderingContext2D,
+  tower: Tower,
+): void {
+  context.beginPath();
+  context.moveTo(tower.x, tower.y - TOWER_RADIUS);
+  context.lineTo(tower.x + TOWER_RADIUS, tower.y + TOWER_RADIUS);
+  context.lineTo(tower.x - TOWER_RADIUS, tower.y + TOWER_RADIUS);
+  context.closePath();
+  context.fillStyle = TOWER_COLOR;
+  context.strokeStyle = "rgba(236, 229, 210, 0.78)";
+  context.lineWidth = 2;
+  context.fill();
+  context.stroke();
+}
+
+function drawTowerRubblePrimitive(
+  context: CanvasRenderingContext2D,
+  record: TowerDestroyed,
+): void {
+  context.fillStyle = TOWER_RUBBLE_COLOR;
+  context.fillRect(record.x - 8, record.y + 2, 6, 4);
+  context.fillRect(record.x + 1, record.y - 1, 8, 5);
+  context.fillRect(record.x - 2, record.y - 5, 5, 4);
+}
+
 export function drawTowers(
   context: CanvasRenderingContext2D,
   towers: readonly Tower[],
@@ -35,16 +64,11 @@ export function drawTowers(
     if (tower.lastAttackTick < 0) {
       drawRange(context, tower.x, tower.y, "rgba(202, 196, 180, 0.40)");
     }
-    context.beginPath();
-    context.moveTo(tower.x, tower.y - TOWER_RADIUS);
-    context.lineTo(tower.x + TOWER_RADIUS, tower.y + TOWER_RADIUS);
-    context.lineTo(tower.x - TOWER_RADIUS, tower.y + TOWER_RADIUS);
-    context.closePath();
-    context.fillStyle = "#8f8a7d";
-    context.strokeStyle = "rgba(236, 229, 210, 0.78)";
-    context.lineWidth = 2;
-    context.fill();
-    context.stroke();
+    if (
+      !drawSprite(context, "tower", tower.x, tower.y, { tint: TOWER_COLOR })
+    ) {
+      drawTowerPrimitive(context, tower);
+    }
 
     const width = 26;
     context.fillStyle = "rgba(26, 22, 19, 0.88)";
@@ -70,11 +94,16 @@ export function drawTowerRubble(
       Math.min(1, (record.tick + TOWER_RUBBLE_TICKS - tick) / TOWER_RUBBLE_TICKS),
     );
     context.save();
-    context.globalAlpha = remaining * 0.72;
-    context.fillStyle = "#6f6a60";
-    context.fillRect(record.x - 8, record.y + 2, 6, 4);
-    context.fillRect(record.x + 1, record.y - 1, 8, 5);
-    context.fillRect(record.x - 2, record.y - 5, 5, 4);
+    const alpha = remaining * 0.72;
+    if (
+      !drawSprite(context, "tower_rubble", record.x, record.y, {
+        tint: TOWER_RUBBLE_COLOR,
+        alpha,
+      })
+    ) {
+      context.globalAlpha = alpha;
+      drawTowerRubblePrimitive(context, record);
+    }
     context.restore();
   }
 }
