@@ -25,7 +25,7 @@ test("Given the same sampling seed, when random trio order is built, then the or
 test("Given house CLI modes, when options are parsed, then fixed order and random mode are retained", () => {
   assert.deepEqual(parseHarnessOptions(["40", "--houses=fad"]), {
     runCount: 40,
-    pickMode: "first",
+    pickMode: "neutral",
     shopMode: "auto",
     houseOption: {
       kind: "fixed",

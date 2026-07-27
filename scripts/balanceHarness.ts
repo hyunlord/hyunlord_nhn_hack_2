@@ -1,3 +1,4 @@
+import { pathToFileURL } from "node:url";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import { CARD_DEFINITIONS } from "../src/content/cardConfig";
 import type { HouseSelection } from "../src/content/houseConfig";
@@ -69,6 +70,21 @@ export type RunSample = {
   readonly shopDiagnostics: AutoShopDiagnostics;
   readonly legacyEarned: number;
 };
+
+export function chooseDraftCardId(
+  cardIds: readonly string[],
+  pickMode: PickMode,
+  choiceRoll: number,
+): string | undefined {
+  if (pickMode === "first") {
+    return cardIds[0];
+  }
+  const slotIndex = Math.min(
+    cardIds.length - 1,
+    Math.floor(choiceRoll * cardIds.length),
+  );
+  return cardIds[slotIndex];
+}
 
 class SimulationError extends Error {
   constructor(
@@ -150,10 +166,11 @@ function runSimulation(
         throw new SimulationError(seed, state.tick, "draft has no cards");
       }
       offeredCardIds.push(...offer.cardIds);
-      const cardId =
-        pickMode === "random"
-          ? pickRng.pick(offer.cardIds)
-          : offer.cardIds[0];
+      const cardId = chooseDraftCardId(
+        offer.cardIds,
+        pickMode,
+        pickMode === "first" ? 0 : pickRng.next(),
+      );
       if (cardId === undefined) {
         throw new SimulationError(seed, state.tick, "draft pick is missing");
       }
@@ -290,16 +307,21 @@ function main(): void {
   );
 }
 
-try {
-  main();
-} catch (error) {
-  if (error instanceof HarnessUsageError) {
-    console.error(error.message);
-    process.exitCode = error.exitCode;
-  } else if (error instanceof Error) {
-    console.error(error.message);
-    process.exitCode = 1;
-  } else {
-    throw error;
+if (
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  try {
+    main();
+  } catch (error) {
+    if (error instanceof HarnessUsageError) {
+      console.error(error.message);
+      process.exitCode = error.exitCode;
+    } else if (error instanceof Error) {
+      console.error(error.message);
+      process.exitCode = 1;
+    } else {
+      throw error;
+    }
   }
 }

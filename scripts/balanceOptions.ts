@@ -5,7 +5,7 @@ import type {
 
 const DEFAULT_RUN_COUNT = 200;
 
-export type PickMode = "first" | "random";
+export type PickMode = "neutral" | "first" | "random";
 export type ShopMode = "auto" | "none";
 export type HouseOption =
   | {
@@ -26,7 +26,7 @@ export class HarnessUsageError extends Error {
 
   constructor(readonly argument: string) {
     super(
-      `Invalid balance arguments "${argument}". Expected a positive run count and --pick=first|random, --shop=auto|none, --houses=abc|random.`,
+      `Invalid balance arguments "${argument}". Expected a positive run count and --pick=neutral|first|random, --shop=auto|none, --houses=abc|random. --pick=first is rarity-biased and unsuitable for balance measurement.`,
     );
     this.name = "HarnessUsageError";
   }
@@ -101,14 +101,17 @@ export function parseHarnessOptions(
       !argument.startsWith("--shop=") &&
       !argument.startsWith("--houses="),
   );
-  const pickMode = pickArguments[0]?.slice("--pick=".length) ?? "first";
+  const pickMode =
+    pickArguments[0]?.slice("--pick=".length) ?? "neutral";
   const shopMode = shopArguments[0]?.slice("--shop=".length) ?? "auto";
   if (
     unknownFlags.length > 0 ||
     pickArguments.length > 1 ||
     shopArguments.length > 1 ||
     houseArguments.length > 1 ||
-    (pickMode !== "first" && pickMode !== "random") ||
+    (pickMode !== "neutral" &&
+      pickMode !== "first" &&
+      pickMode !== "random") ||
     (shopMode !== "auto" && shopMode !== "none")
   ) {
     throw new HarnessUsageError(args.join(" "));

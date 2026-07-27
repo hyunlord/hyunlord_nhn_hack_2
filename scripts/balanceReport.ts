@@ -3,9 +3,11 @@ import {
   CARD_DEFINITIONS,
   RARITY_WEIGHTS,
 } from "../src/content/cardConfig";
+import { INVESTMENT_TRACKS } from "../src/content/investmentConfig";
 import { DIVINE_SKILL_DEFINITIONS } from "../src/content/skillConfig";
 import type { CardRarity } from "../src/progression/progression.types";
 import { WAVE_DEFINITIONS } from "../src/content/waveConfig";
+import { investmentCost } from "../src/meta/investments";
 import type {
   HouseOption,
   PickMode,
@@ -241,6 +243,42 @@ function rarityTable(samples: readonly RunSample[]): string {
   );
 }
 
+function globalInvestmentMaxCost(): number {
+  return INVESTMENT_TRACKS.filter(({ scope }) => scope === "global").reduce(
+    (total, track) =>
+      total +
+      Array.from({ length: track.maxRank }, (_, rank) =>
+        investmentCost(track, rank),
+      ).reduce((trackTotal, cost) => trackTotal + cost, 0),
+    0,
+  );
+}
+
+function legacyObservationTable(samples: readonly RunSample[]): string {
+  const maxCost = globalInvestmentMaxCost();
+  const observedAverage = average(
+    samples.map(({ legacyEarned }) => legacyEarned),
+  );
+  const observedRuns =
+    observedAverage === null || observedAverage <= 0
+      ? null
+      : Math.ceil(maxCost / observedAverage);
+  return table(
+    ["Legacy investment observation", "Value"],
+    [
+      ["Total cost to max global investments", `${maxCost}`],
+      [
+        "Observed Legacy per run (average; sample only)",
+        displayAverage(observedAverage),
+      ],
+      [
+        "Observed runs to max globals (average; observation only)",
+        observedRuns === null ? "—" : `${observedRuns}`,
+      ],
+    ],
+  );
+}
+
 function skillTable(samples: readonly RunSample[]): string {
   return table(
     ["Divine skill", "Runs acquired", "Acquisition rate"],
@@ -376,6 +414,7 @@ export function printBalanceReport(
   console.log(waveTable(samples));
   console.log(progressionTable(samples));
   console.log(rarityTable(samples));
+  console.log(legacyObservationTable(samples));
   console.log(skillTable(samples));
   console.log(shopTable(samples));
   console.log(shopDiagnosticTable(samples));
