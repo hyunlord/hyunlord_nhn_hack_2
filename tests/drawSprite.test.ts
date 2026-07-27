@@ -25,10 +25,19 @@ class FakeContext implements SpriteDrawContext<FakeSource> {
   private smoothingEnabled: boolean;
   private alpha: number;
 
-  public constructor(options: { readonly smoothing: boolean; readonly alpha: number }) {
+  public constructor(
+    options: {
+      readonly smoothing: boolean;
+      readonly alpha: number;
+      readonly throwOnDraw?: boolean;
+    },
+  ) {
     this.smoothingEnabled = options.smoothing;
     this.alpha = options.alpha;
+    this.throwOnDraw = options.throwOnDraw ?? false;
   }
+
+  private readonly throwOnDraw: boolean;
 
   public set imageSmoothingEnabled(value: boolean) {
     this.smoothingEnabled = value;
@@ -50,6 +59,9 @@ class FakeContext implements SpriteDrawContext<FakeSource> {
 
   public drawImage(image: FakeSource, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number): void {
     this.recordedOperations.push({ kind: "drawImage", image, sx, sy, sw, sh, dx, dy, dw, dh });
+    if (this.throwOnDraw) {
+      throw new Error("draw failed");
+    }
   }
 
   public save(): void {
@@ -205,6 +217,19 @@ test("Given a ready sprite, when drawing frame defaults, then the 9-argument sou
     { kind: "setSmoothing", value: true },
     { kind: "setAlpha", value: 0.8 },
   ]);
+});
+
+test("Given the canvas rejects a ready sprite, when drawing, then it returns false and restores context state", () => {
+  const { draw } = readyHarness();
+  const canvas = new FakeContext({
+    smoothing: true,
+    alpha: 0.8,
+    throwOnDraw: true,
+  });
+
+  assert.equal(draw(canvas, "hall", 50, 80), false);
+  assert.equal(canvas.imageSmoothingEnabled, true);
+  assert.equal(canvas.globalAlpha, 0.8);
 });
 
 test("Given alpha outside the valid range, when drawing, then alpha is clamped and original state is restored", () => {

@@ -96,7 +96,7 @@ test("Given every sprite file is missing, when all sprites preload, then the pro
   }
 });
 
-test("Given an idle sprite, when image reads happen immediately, then exactly one image request is shared", () => {
+test("Given an idle sprite, when image reads happen, then no image request starts", () => {
   // Given
   const { factory, loader } = makeLoader();
 
@@ -109,14 +109,14 @@ test("Given an idle sprite, when image reads happen immediately, then exactly on
   assert.equal(firstRead, null);
   assert.equal(secondRead, null);
   assert.equal(thirdRead, null);
-  assert.equal(factory.createdCount(), 1);
-  assert.equal(loader.getStatus("hall"), "loading");
+  assert.equal(factory.createdCount(), 0);
+  assert.equal(loader.getStatus("hall"), "idle");
 });
 
 test("Given a sprite image loads, when it is read again, then the exact cached image is returned", () => {
   // Given
   const { factory, loader } = makeLoader();
-  assert.equal(loader.getImage("hall"), null);
+  void loader.preload("hall");
   const image = requireCreatedImage(factory, 0);
 
   // When

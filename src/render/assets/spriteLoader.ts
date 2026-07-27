@@ -83,8 +83,6 @@ export class SpriteLoader<TImage extends SpriteLoadImage> {
       case "ready":
         return entry.image;
       case "idle":
-        void this.startLoad(id, entry);
-        return null;
       case "loading":
       case "missing":
         return null;

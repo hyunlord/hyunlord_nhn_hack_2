@@ -87,8 +87,12 @@ export function createSpriteDrawer<TSource extends SpriteDrawSource>(
       return false;
     }
 
-    drawResolvedSprite(context, sprite);
-    return true;
+    try {
+      drawResolvedSprite(context, sprite);
+      return true;
+    } catch {
+      return false;
+    }
   };
 }
 
