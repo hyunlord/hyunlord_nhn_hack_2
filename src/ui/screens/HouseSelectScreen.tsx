@@ -3,6 +3,10 @@ import {
   HOUSE_SPAWN_SLOTS,
   houseTraitSummary,
 } from "../../content/houseConfig";
+import {
+  frameBackgroundImage,
+  HOUSE_SELECTION_FRAME,
+} from "../../content/framePresentation";
 import { previewHouseSynergies } from "../../content/houseSynergies";
 import { useAppFlow } from "../../state/appFlowContext";
 
@@ -57,14 +61,30 @@ export function HouseSelectScreen() {
               const unlocked = state.meta.unlockedHouses.includes(house.id);
               const order = state.selectedHouseIds.indexOf(house.id);
               const selected = order >= 0;
+              const backgroundImage = frameBackgroundImage(
+                HOUSE_SELECTION_FRAME,
+                selected
+                  ? "color-mix(in srgb, var(--accent) 8%, var(--panel))"
+                  : "var(--panel)",
+              );
               return (
                 <button
                   aria-pressed={selected}
                   className={`selection-card${unlocked ? "" : " selection-card--locked"}`}
+                  data-frame-sprite={HOUSE_SELECTION_FRAME.frameSpriteId}
                   disabled={!unlocked}
                   key={house.id}
                   onClick={() =>
                     dispatch({ type: "toggleHouse", houseId: house.id })
+                  }
+                  style={
+                    backgroundImage === undefined
+                      ? undefined
+                      : {
+                          backgroundImage,
+                          backgroundRepeat: "no-repeat, repeat",
+                          backgroundSize: "100% 100%, auto",
+                        }
                   }
                   type="button"
                 >

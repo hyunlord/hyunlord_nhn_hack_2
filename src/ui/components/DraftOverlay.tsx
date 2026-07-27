@@ -5,9 +5,11 @@ import {
 } from "react";
 import {
   CARD_DEFINITIONS,
-  RARITY_COLORS,
-  RARITY_TEXT_COLORS,
 } from "../../content/cardConfig";
+import {
+  frameBackgroundImage,
+  RARITY_FRAME_PRESENTATION,
+} from "../../content/framePresentation";
 import { HOUSE_CONFIG } from "../../content/houseConfig";
 import { useGameStore } from "../../state/gameStore";
 
@@ -123,13 +125,28 @@ export function DraftOverlay() {
           const stacks =
             progress.cards.find((owned) => owned.cardId === card.id)
               ?.stacks ?? 0;
-          const style: DraftCardStyle = {
-            "--rarity-color": RARITY_COLORS[card.rarity],
-            "--rarity-text-color": RARITY_TEXT_COLORS[card.rarity],
-          };
+          const presentation = RARITY_FRAME_PRESENTATION[card.rarity];
+          const backgroundImage = frameBackgroundImage(
+            presentation,
+            "var(--draft-panel)",
+          );
+          const style: DraftCardStyle =
+            backgroundImage === undefined
+              ? {
+                  "--rarity-color": presentation.borderColor,
+                  "--rarity-text-color": presentation.labelColor,
+                }
+              : {
+                  "--rarity-color": presentation.borderColor,
+                  "--rarity-text-color": presentation.labelColor,
+                  backgroundImage,
+                  backgroundRepeat: "no-repeat, repeat",
+                  backgroundSize: "100% 100%, auto",
+                };
           return (
             <button
               className="draft-card"
+              data-frame-sprite={presentation.frameSpriteId}
               key={card.id}
               onClick={() =>
                 dispatch({

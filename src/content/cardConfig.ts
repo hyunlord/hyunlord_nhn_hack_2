@@ -6,18 +6,6 @@ export const RARITY_WEIGHTS = {
   legendary: 8,
 } as const;
 
-export const RARITY_COLORS = {
-  common: "#9aa0a6",
-  rare: "#5aa9e6",
-  legendary: "#e8b73a",
-} as const;
-
-export const RARITY_TEXT_COLORS = {
-  common: "#50545a",
-  rare: "#1f638f",
-  legendary: "#73520a",
-} as const;
-
 export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "common_sharpened_edge",
