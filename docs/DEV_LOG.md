@@ -128,8 +128,11 @@
   Ashvale at 900 HP and 15 living agents. The displayed tick was 3,910 because
   the UI deliberately continued effect-only ticks while waiting at both manual
   intermission buttons. The destroyed houses had no surviving agents in this
-  natural run, so cross-house movement was verified at the engine integration
-  seam rather than claimed as a visual observation. Console warnings/errors
-  remained empty throughout.
+  natural run. A second browser run used deterministic seed
+  `DEFAULT_SEED + 35`, selected from a 200-seed read-only scan: after
+  Thornhold's hall fell, its sole blue survivor remained visibly outlined as
+  helping in the Greymoor defense, while a 32-HP timid Greymoor agent was in
+  the semi-transparent fleeing state at the surviving hall. Console
+  warnings/errors remained empty throughout both runs.
 - No work was offloaded to DGX Spark because 200 complete local simulations,
   tests, build, and browser QA remained lightweight.
