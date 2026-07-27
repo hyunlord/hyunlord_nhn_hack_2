@@ -25,6 +25,10 @@ export interface LegacyRiteGroup {
   readonly items: readonly LegacyRiteItem[];
 }
 
+export function purchaseInvestmentLabel(trackName: string): string {
+  return `Purchase ${trackName}`;
+}
+
 function multiplierPercent(multiplier: number): string {
   const percent = Math.round((multiplier - 1) * 100);
   return `${percent > 0 ? "+" : ""}${percent}%`;

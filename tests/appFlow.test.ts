@@ -9,6 +9,7 @@ import { createDefaultMetaState } from "../src/meta/legacy";
 import {
   activeBonusGroups,
   legacyRiteGroups,
+  purchaseInvestmentLabel,
 } from "../src/ui/investmentSummary";
 
 function summary(runId = "run-1"): RunSummary {
@@ -235,4 +236,11 @@ test("Given a run with global and unselected house investments, when legacy rite
       ],
     },
   ]);
+});
+
+test("Given an investment track name, when a purchase label is requested, then the accessible action names the track", () => {
+  assert.equal(
+    purchaseInvestmentLabel("Vigor of the Faithful"),
+    "Purchase Vigor of the Faithful",
+  );
 });

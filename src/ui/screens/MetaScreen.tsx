@@ -20,6 +20,7 @@ import { useAppFlow } from "../../state/appFlowContext";
 import {
   activeBonusGroups,
   investmentEffectLabel,
+  purchaseInvestmentLabel,
 } from "../investmentSummary";
 
 function unlockRequirement(
@@ -125,6 +126,7 @@ function InvestmentTrackCard({
         <span>{nextCost === null ? "Max rank" : `Next cost ${nextCost}`}</span>
         <button
           aria-describedby={reason === null ? undefined : `${track.id}-reason`}
+          aria-label={purchaseInvestmentLabel(track.name)}
           disabled={!purchasable}
           onClick={() => onPurchase(track.id)}
           type="button"

@@ -1380,6 +1380,17 @@ button {
     text-align: left;
   }
 
+  .hero-progress-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .hero-progress-row small {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
   .draft-overlay {
     position: relative;
     inset: auto;
