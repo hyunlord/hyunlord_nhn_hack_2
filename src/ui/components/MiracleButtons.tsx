@@ -14,7 +14,7 @@ export function MiracleButtons() {
   const {
     selectedMiracle,
     selectMiracle,
-    state: { divinePower, miracleCooldowns },
+    state: { divinePower, miracleCooldowns, phase },
   } = useGameStore();
 
   return (
@@ -25,7 +25,9 @@ export function MiracleButtons() {
           const definition = MIRACLE_DEFINITIONS[type];
           const cooldown = miracleCooldowns[type];
           const selected = selectedMiracle === type;
-          const enabled = canCast(type, divinePower, cooldown);
+          const enabled =
+            (phase === "preparation" || phase === "wave") &&
+            canCast(type, divinePower, cooldown);
           const style: MiracleButtonStyle = {
             "--miracle-color": definition.color,
           };

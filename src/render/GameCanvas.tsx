@@ -4,6 +4,7 @@ import { useGameStore } from "../state/gameStore";
 import { drawAgents } from "./drawAgents";
 import { drawBackground } from "./drawBackground";
 import { drawEffects } from "./drawEffects";
+import { drawHalls } from "./drawHalls";
 import { drawThreats } from "./drawThreats";
 
 export function GameCanvas() {
@@ -43,6 +44,11 @@ export function GameCanvas() {
         context,
         BALANCE_CONFIG.WORLD_WIDTH,
         BALANCE_CONFIG.WORLD_HEIGHT,
+      );
+      drawHalls(
+        context,
+        stateRef.current.halls,
+        stateRef.current.houses,
       );
       drawAgents(
         context,

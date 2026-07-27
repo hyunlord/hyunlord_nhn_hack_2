@@ -60,6 +60,7 @@ canvas {
 }
 
 .canvas-panel {
+  position: relative;
   grid-column: 1 / -1;
 }
 
@@ -187,12 +188,21 @@ canvas {
 }
 
 .phase-status,
+.run-economy,
 .invasion-status {
   display: flex;
   justify-content: space-between;
   gap: var(--space-4);
   margin-top: var(--space-2);
   font-size: 0.75rem;
+}
+
+.run-economy {
+  color: var(--muted);
+}
+
+.run-economy strong {
+  color: var(--text);
 }
 
 .phase-status strong {
@@ -251,4 +261,90 @@ canvas {
   height: 10px;
   border: 1px solid var(--world-outline);
   border-radius: 50%;
+}
+
+.run-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(calc(100% - var(--space-8)), 500px);
+  padding: var(--space-6);
+  border: 1px solid #d8c879;
+  color: #fff8df;
+  background: rgba(26, 22, 19, 0.94);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.run-overlay__eyebrow {
+  margin: 0 0 var(--space-2);
+  color: #d8c879;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.run-overlay h2 {
+  margin: 0;
+  font-size: clamp(1.25rem, 3vw, 2rem);
+}
+
+.run-overlay p {
+  margin: var(--space-4) 0 0;
+  color: #d8d0bd;
+  line-height: 1.5;
+}
+
+.run-overlay .run-overlay__note {
+  margin-top: var(--space-2);
+  color: #9e9788;
+  font-size: 0.75rem;
+}
+
+.run-overlay button {
+  min-height: 44px;
+  margin-top: var(--space-6);
+  padding: var(--space-2) var(--space-6);
+  border: 1px solid #d8c879;
+  color: #1a1613;
+  background: #d8c879;
+  cursor: pointer;
+}
+
+.run-overlay button:hover {
+  background: #eadb92;
+}
+
+.run-overlay button:focus-visible {
+  outline: 2px solid #fff8df;
+  outline-offset: 3px;
+}
+
+@media (max-width: 520px) {
+  .app-shell {
+    width: min(100% - var(--space-4), 1200px);
+    padding-block: var(--space-4);
+  }
+
+  .scaffold-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .game-canvas {
+    min-height: 200px;
+  }
+
+  .run-overlay {
+    width: calc(100% - var(--space-4));
+    padding: var(--space-4);
+  }
+
+  .house-status-list li {
+    grid-template-columns: 12px 1fr;
+  }
+
+  .house-status-list strong {
+    grid-column: 2;
+  }
 }

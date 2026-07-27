@@ -2,11 +2,11 @@
 
 ## Shared `HouseId` ownership
 
-The goal's sample `threatTypes.ts` imports `HouseId` from `agents`, while the
-hard dependency rule and completion grep prohibit imports between `narrative`
+The initial sample `threatTypes.ts` imported `HouseId` from `agents`, while the
+hard dependency rule and completion grep prohibit imports between `threat`
 and `agents`. The boundary rule wins: `HouseId` is declared in
 `content/houseConfig.ts`, re-exported by `agents/agentTypes.ts`, and imported
-directly by `narrative/threatTypes.ts`. No specified data field changed.
+directly by `threat/threatTypes.ts`. No specified data field changed.
 
 ## Stub return values
 
@@ -142,3 +142,61 @@ array-order and mid-loop casualty bias.
 All three existing miracles remain castable during invasion and observation.
 Their established agent and house effects are unchanged: they do not directly
 damage, heal, or retarget threats in Phase 2C.
+
+## 2026-07-27 — Phase 3A wave-defense skeleton
+
+### Pure reducer supersedes the StrictMode removal
+
+The Phase 2A decision to omit React `StrictMode` contained the symptom but left
+an RNG-consuming reducer. It is superseded. Simulation advancement, wave
+spawning, casting, and restart now compute their complete next state in the
+provider before dispatch. The reducer accepts only a committed snapshot and is
+therefore safe under repeated development invocations. `StrictMode` is restored.
+
+### Wave data owns run length
+
+`WAVE_DEFINITIONS` is the sole run-length source. Transition and victory checks
+use its length, and creature IDs include the wave index. Extending the array
+does not require a parallel literal count in engine code.
+
+### Betrayal is dormant
+
+`assignTraitor` remains as a deterministic, tested function for later
+achievement or unlock work, but `spawnWave` does not call it and every Phase
+3A threat has `traitorHouseId: null`. All houses remain loyal. Randomly
+disabling a player-selected house was judged punitive in the new defense loop.
+
+### Frozen phases use effect-only ticks
+
+Intermission, victory, and defeat increment the clock only so transient visual
+effects can expire. They do not move entities, resolve combat, spawn enemies,
+regenerate divine power, decrement cooldowns, or accept miracle casts. This
+keeps the screen settled without leaving hidden simulation work active.
+
+### Restart seeds advance deterministically
+
+Restart uses `DEFAULT_SEED + run number`. `Math.random` and wall-clock time stay
+outside the simulation while each restart still creates a fresh replayable run.
+
+### Intermission healing is temporary
+
+Living agents recover 30 HP when a non-final wave clears. This is scaffolding,
+not the final economy. The Phase 3C shop replaces it with purchased recovery.
+Dead agents remain dead and the last wave transitions directly to victory.
+
+### Determinism has organic and full-state-machine lanes
+
+The verifier first runs an unmodified no-input simulation to its real defeat
+and compares the complete terminal state across equal seeds. A second lane
+advances preparation and exercises every configured wave for 500 live combat
+ticks, then injects the same deterministic cleared-threat fixture used by the
+transition tests. That lane reaches and compares the full three-wave victory
+state without changing production balance. The two lanes deliberately separate
+organic replay proof from state-machine coverage: no-input runs currently lose
+during wave 1, while combat cadence and agent behavior were explicitly carried
+over unchanged.
+
+### Halls are engine-owned temporarily
+
+Halls are run objectives in `engine.types.ts` for Phase 3A. They are expected
+to move into a `build/` domain with walls and towers in Phase 3C.

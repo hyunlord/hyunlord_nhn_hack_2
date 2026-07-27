@@ -10,22 +10,27 @@ import type {
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import {
   applyDamageToThreat,
-  spawnInvasion,
   stepThreat,
-} from "../narrative/invasionDirector";
-import type { ThreatEvent } from "../narrative/threatTypes";
+} from "../threat/waveDirector";
+import type { ThreatEvent } from "../threat/threatTypes";
 import type { GameState } from "./engine.types";
 import type { Rng } from "./prng";
+import {
+  applyHallDamages,
+  applyThreatDamages,
+} from "./combatDamage";
 
 type Point = { readonly x: number; readonly y: number };
 type ThreatHit = {
   readonly creatureId: string | null;
   readonly amount: number;
 };
-type InvasionStep = Pick<
+type WaveCombatStep = Pick<
   GameState,
-  "phase" | "houses" | "agents" | "activeThreat"
->;
+  "agents" | "halls" | "activeThreat"
+> & {
+  readonly creatureKills: number;
+};
 
 function distanceSquared(first: Point, second: Point): number {
   return (first.x - second.x) ** 2 + (first.y - second.y) ** 2;
@@ -40,7 +45,7 @@ function toThreatPresences(threat: ThreatEvent | null): ThreatPresence[] {
     y,
     hostile: true,
   }));
-  return threat.mage.hp > 0
+  return threat.mage !== null && threat.mage.hp > 0
     ? [
         ...presences,
         { x: threat.mage.x, y: threat.mage.y, hostile: true },
@@ -107,7 +112,7 @@ function applyAgentAttacks(
       x: creature.x,
       y: creature.y,
     })),
-    ...(threat.mage.hp > 0
+    ...(threat.mage !== null && threat.mage.hp > 0
       ? [{
           key: "mage",
           creatureId: null,
@@ -151,84 +156,52 @@ function applyAgentAttacks(
   const damagedThreat = applyDamageToThreat(threat, hits);
   return {
     agents: nextAgents,
-    threat:
-      hits.length === 0
-        ? damagedThreat
-        : { ...damagedThreat, engaged: true },
+    threat: damagedThreat,
   };
 }
 
-function applyThreatDamages(
-  agents: readonly Agent[],
-  damages: readonly {
-    readonly agentId: string;
-    readonly amount: number;
-  }[],
-  tick: number,
-): Agent[] {
-  const totals = new Map<string, number>();
-  for (const damage of damages) {
-    totals.set(
-      damage.agentId,
-      (totals.get(damage.agentId) ?? 0) + damage.amount,
-    );
-  }
-  return agents.map((agent) => {
-    const damage = totals.get(agent.id);
-    if (damage === undefined) {
-      return agent;
-    }
-    const hp = Math.max(0, agent.hp - damage);
-    return {
-      ...agent,
-      hp,
-      state: hp === 0 ? "dead" : agent.state,
-      lastDamagedTick: tick,
-    };
-  });
-}
-
-export function advanceInvasion(
+export function advanceWaveCombat(
   state: GameState,
   tick: number,
   rng: Rng,
-): InvasionStep {
-  const isSpawnTick =
-    tick === BALANCE_CONFIG.INTERVENTION_DURATION_TICKS;
-  const spawnedThreat = isSpawnTick
-    ? spawnInvasion(
-        state.houses.map(({ id }) => id),
-        BALANCE_CONFIG.WORLD_WIDTH,
-        BALANCE_CONFIG.WORLD_HEIGHT,
-        tick,
-        rng,
-      )
-    : state.activeThreat;
-  const houses =
-    isSpawnTick && spawnedThreat !== null
-      ? state.houses.map((house) => ({
-          ...house,
-          isTraitor: house.id === spawnedThreat.traitorHouseId,
-        }))
-      : state.houses;
-  let agents = moveAgents(state.agents, spawnedThreat, rng);
-  let activeThreat = spawnedThreat;
-  if (activeThreat !== null) {
-    const attacks = applyAgentAttacks(agents, activeThreat, tick);
-    const stepped = stepThreat(attacks.threat, attacks.agents, tick);
-    agents = applyThreatDamages(attacks.agents, stepped.damages, tick);
-    activeThreat = stepped.threat;
+): WaveCombatStep {
+  if (state.activeThreat === null) {
+    return {
+      agents: state.agents,
+      halls: state.halls,
+      activeThreat: null,
+      creatureKills: 0,
+    };
   }
-  const observationTick =
-    BALANCE_CONFIG.INTERVENTION_DURATION_TICKS +
-    BALANCE_CONFIG.OBSERVATION_HANDOFF_TICKS;
-  const phase =
-    activeThreat !== null &&
-    (activeThreat.engaged || tick >= observationTick)
-      ? "observation"
-      : isSpawnTick
-        ? "invasion"
-        : state.phase;
 
-  return { phase, houses, agents, activeThreat };
+  const initialCreatureCount = state.activeThreat.creatures.length;
+  const movedAgents = moveAgents(state.agents, state.activeThreat, rng);
+  const attacks = applyAgentAttacks(
+    movedAgents,
+    state.activeThreat,
+    tick,
+  );
+  const stepped = stepThreat(
+    attacks.threat,
+    attacks.agents,
+    state.halls.map(({ houseId, x, y, hp }) => ({
+      id: houseId,
+      x,
+      y,
+      hp,
+    })),
+    tick,
+  );
+
+  return {
+    agents: applyThreatDamages(
+      attacks.agents,
+      stepped.agentDamages,
+      tick,
+    ),
+    halls: applyHallDamages(state.halls, stepped.hallDamages),
+    activeThreat: stepped.threat,
+    creatureKills:
+      initialCreatureCount - stepped.threat.creatures.length,
+  };
 }

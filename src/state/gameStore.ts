@@ -12,21 +12,21 @@ import {
 } from "react";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { MiracleType } from "../divine/divine.types";
-import type { Rng } from "../engine/prng";
 import type { GameState } from "../engine/engine.types";
 import {
   advanceTick,
+  beginNextWave,
   castMiracle,
   createInitialState,
 } from "../engine/tick";
-import type { GameAction, GameStoreValue } from "./gameStore.types";
+import type {
+  CommitStateAction,
+  GameAction,
+  GameStoreValue,
+} from "./gameStore.types";
 
 const TICK_INTERVAL_MS = 1_000 / BALANCE_CONFIG.TICKS_PER_SECOND;
 const MAX_CATCH_UP_TICKS = 5;
-
-interface RngReference {
-  current: Rng;
-}
 
 class GameStoreUnavailableError extends Error {
   public constructor() {
@@ -45,30 +45,10 @@ class UnexpectedGameActionError extends Error {
 const GameStoreContext = createContext<GameStoreValue | undefined>(undefined);
 
 export function gameReducer(
-  state: GameState,
-  action: GameAction,
-  rngReference: RngReference,
+  _state: GameState,
+  action: CommitStateAction,
 ): GameState {
-  switch (action.type) {
-    case "tick":
-      return advanceTick(state, rngReference.current);
-    case "reset": {
-      const initialWorld = createInitialState(action.seed);
-      rngReference.current = initialWorld.rng;
-      return initialWorld.state;
-    }
-    case "castMiracle":
-      return castMiracle(state, {
-        type: action.miracle,
-        targetX: action.x,
-        targetY: action.y,
-        tick: state.tick,
-      });
-    case "selectMiracle":
-      return state;
-    default:
-      throw new UnexpectedGameActionError(action);
-  }
+  return action.next;
 }
 
 export function GameStoreProvider({ children }: PropsWithChildren) {
@@ -82,13 +62,18 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
   }
 
   const rngReference = useRef(initialWorldReference.current.rng);
+  const seedReference = useRef(BALANCE_CONFIG.DEFAULT_SEED);
+  const stateReference = useRef(initialWorldReference.current.state);
   const [selectedMiracle, setSelectedMiracle] =
     useState<MiracleType | null>(null);
-  const [state, simulationDispatch] = useReducer(
-    (currentState: GameState, action: GameAction) =>
-      gameReducer(currentState, action, rngReference),
+  const [state, commitDispatch] = useReducer(
+    gameReducer,
     initialWorldReference.current.state,
   );
+  const commitState = useCallback((next: GameState) => {
+    stateReference.current = next;
+    commitDispatch({ type: "commitState", next });
+  }, []);
   const selectMiracle = useCallback((miracle: MiracleType | null) => {
     setSelectedMiracle(miracle);
   }, []);
@@ -97,21 +82,39 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
       case "selectMiracle":
         setSelectedMiracle(action.miracle);
         return;
-      case "castMiracle":
-        simulationDispatch(action);
+      case "castMiracle": {
+        const current = stateReference.current;
+        commitState(
+          castMiracle(current, {
+            type: action.miracle,
+            targetX: action.x,
+            targetY: action.y,
+            tick: current.tick,
+          }),
+        );
         setSelectedMiracle(null);
         return;
-      case "reset":
-        simulationDispatch(action);
+      }
+      case "beginNextWave":
+        commitState(
+          beginNextWave(
+            stateReference.current,
+            rngReference.current,
+          ),
+        );
+        return;
+      case "restart": {
+        seedReference.current += 1;
+        const initialWorld = createInitialState(seedReference.current);
+        rngReference.current = initialWorld.rng;
+        commitState(initialWorld.state);
         setSelectedMiracle(null);
         return;
-      case "tick":
-        simulationDispatch(action);
-        return;
+      }
       default:
         throw new UnexpectedGameActionError(action);
     }
-  }, []);
+  }, [commitState]);
 
   useEffect(() => {
     let frameId = 0;
@@ -130,7 +133,9 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
           accumulatedTime >= TICK_INTERVAL_MS &&
           ticksThisFrame < MAX_CATCH_UP_TICKS
         ) {
-          dispatch({ type: "tick" });
+          commitState(
+            advanceTick(stateReference.current, rngReference.current),
+          );
           accumulatedTime -= TICK_INTERVAL_MS;
           ticksThisFrame += 1;
         }
@@ -142,7 +147,7 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
 
     frameId = requestAnimationFrame(runFrame);
     return () => cancelAnimationFrame(frameId);
-  }, []);
+  }, [commitState]);
 
   const store = useMemo<GameStoreValue>(
     () => ({

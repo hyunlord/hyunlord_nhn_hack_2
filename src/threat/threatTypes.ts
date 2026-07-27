@@ -13,11 +13,20 @@ export interface ThreatTargetSnapshot {
   state: string;
 }
 
+export interface HallSnapshot {
+  id: string;
+  x: number;
+  y: number;
+  hp: number;
+}
+
 export interface Creature {
   id: string;
   x: number;
   y: number;
   hp: number;
+  agentDamage: number;
+  hallDamage: number;
   lastAttackTick: number;
 }
 
@@ -25,13 +34,15 @@ export interface DarkMage {
   x: number;
   y: number;
   hp: number;
+  hallDamage: number;
+  lastAttackTick: number;
 }
 
 export interface ThreatEvent {
   type: ThreatType;
+  waveIndex: number;
   startTick: number;
   traitorHouseId: string | null;
-  mage: DarkMage;
+  mage: DarkMage | null;
   creatures: Creature[];
-  engaged: boolean;
 }

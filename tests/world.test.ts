@@ -126,10 +126,11 @@ test("Given a world, when advanced, then one immutable deterministic tick occurs
   assert.equal(first.state.tick, 0);
   assert.equal(nextFirst.tick, 1);
   assert.notStrictEqual(nextFirst, first.state);
-  assert.notStrictEqual(nextFirst.agents, first.state.agents);
+  assert.strictEqual(nextFirst.agents, first.state.agents);
   assert.deepEqual(nextFirst, nextSecond);
-  assert.equal(nextFirst.phase, "intervention");
+  assert.equal(nextFirst.phase, "preparation");
   assert.equal(nextFirst.activeThreat, null);
   assert.deepEqual(nextFirst.highlights, []);
-  assert.equal(nextFirst.ending, null);
+  assert.equal(nextFirst.waveIndex, 0);
+  assert.equal(nextFirst.tribute, 0);
 });

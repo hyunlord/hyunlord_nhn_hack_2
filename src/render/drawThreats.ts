@@ -1,5 +1,5 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
-import type { ThreatEvent } from "../narrative/threatTypes";
+import type { ThreatEvent } from "../threat/threatTypes";
 
 const CREATURE_COLOR = "#6b3f8f";
 const CREATURE_RIM = "#b58ad0";
@@ -34,6 +34,11 @@ export function drawThreats(
     context.lineWidth = 1;
     context.strokeStyle = CREATURE_RIM;
     context.stroke();
+  }
+
+  if (threat.mage === null) {
+    context.restore();
+    return;
   }
 
   const pulse =

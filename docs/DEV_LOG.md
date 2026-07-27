@@ -63,3 +63,31 @@
   1,400-tick full-state deterministic replay.
 - No work was offloaded to DGX Spark because the implementation, test, build,
   and browser-playthrough workloads remained lightweight locally.
+
+## 2026-07-27 — Phase 3A wave structure, halls, and run state
+
+- Restored React `StrictMode` after replacing the RNG-consuming reducer with a
+  pure committed-state reducer; all random work now happens in provider-side
+  event handlers or the fixed tick loop.
+- Renamed the narrative enemy module to `threat/`, removed four-branch ending
+  state, retained dormant deterministic traitor assignment, and split threat
+  motion/spawning into focused pure modules.
+- Added three data-driven waves, unique run-wide creature IDs, optional mage
+  spawning, HP/damage scaling, hall targeting, per-kill tribute, and clear
+  rewards.
+- Added one 500-HP hall per house, hall damage and rubble rendering, exact
+  defeat-before-clear priority, preparation/intermission/victory/defeat flow,
+  deterministic restart seeds, and temporary intermission healing.
+- Replaced legacy phase placeholders with a compact wave HUD plus intermission,
+  victory, and defeat overlays. Miracles are disabled while the world is
+  frozen.
+- Extended tests for reducer purity, wave scaling and IDs, hall targeting,
+  every state transition, frozen phases, defeat ties, and configurable run
+  length. Extended deterministic verification through all three waves.
+- Kept carried-over agent disposition, directed movement, combat cadence, and
+  miracle effects unchanged. The baseline no-input run remains too difficult
+  and loses during wave 1; browser QA reached defeat at tick 2,191 with 39
+  agents alive, four tribute, and 12 of 14 creatures remaining. A later
+  balancing pass should address it explicitly.
+- No work was offloaded to DGX Spark because implementation, tests, build, and
+  browser QA were lightweight local workloads.

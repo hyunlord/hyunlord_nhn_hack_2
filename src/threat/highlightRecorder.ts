@@ -14,6 +14,6 @@ export interface Highlight {
 }
 
 export function recordHighlights(): Highlight[] {
-  // TODO: implement in phase 2
+  // TODO: implement with contribution tracking in Phase 3B.
   return [];
 }

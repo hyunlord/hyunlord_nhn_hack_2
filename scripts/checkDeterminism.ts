@@ -1,23 +1,86 @@
 import assert from "node:assert/strict";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
-import { advanceTick, createInitialState } from "../src/engine/tick";
+import { WAVE_DEFINITIONS } from "../src/content/waveConfig";
+import type { GameState } from "../src/engine/engine.types";
+import {
+  advanceTick,
+  beginNextWave,
+  createInitialState,
+} from "../src/engine/tick";
 
-const first = createInitialState(BALANCE_CONFIG.DEFAULT_SEED);
-const second = createInitialState(BALANCE_CONFIG.DEFAULT_SEED);
+const WAVE_EXERCISE_TICKS = 500;
+const MAX_ORGANIC_TICKS = 20_000;
 
-let firstState = first.state;
-let secondState = second.state;
-
-const verificationTicks = 1_400;
-
-for (let tick = 0; tick < verificationTicks; tick += 1) {
-  firstState = advanceTick(firstState, first.rng);
-  secondState = advanceTick(secondState, second.rng);
+function runOrganicRun(seed: number): GameState {
+  const world = createInitialState(seed);
+  let state = world.state;
+  while (
+    state.phase !== "victory" &&
+    state.phase !== "defeat" &&
+    state.tick < MAX_ORGANIC_TICKS
+  ) {
+    state =
+      state.phase === "intermission"
+        ? beginNextWave(state, world.rng)
+        : advanceTick(state, world.rng);
+  }
+  return state;
 }
 
+function runFullStateMachine(seed: number): GameState {
+  const world = createInitialState(seed);
+  let state = world.state;
+  while (state.phase === "preparation") {
+    state = advanceTick(state, world.rng);
+  }
+
+  for (const definition of WAVE_DEFINITIONS) {
+    assert.equal(state.phase, "wave");
+    assert.equal(state.waveIndex, definition.index);
+    for (let tick = 0; tick < WAVE_EXERCISE_TICKS; tick += 1) {
+      state = advanceTick(state, world.rng);
+      assert.notEqual(state.phase, "defeat");
+    }
+
+    if (state.activeThreat === null) {
+      throw new RangeError("Expected an active threat during a wave.");
+    }
+    state = advanceTick(
+      {
+        ...state,
+        activeThreat: {
+          ...state.activeThreat,
+          creatures: [],
+          mage: null,
+        },
+      },
+      world.rng,
+    );
+    if (definition.index < WAVE_DEFINITIONS.length - 1) {
+      assert.equal(state.phase, "intermission");
+      state = beginNextWave(state, world.rng);
+    }
+  }
+  return state;
+}
+
+const firstOrganic = runOrganicRun(BALANCE_CONFIG.DEFAULT_SEED);
+const secondOrganic = runOrganicRun(BALANCE_CONFIG.DEFAULT_SEED);
+assert.deepEqual(firstOrganic, secondOrganic);
+assert.equal(firstOrganic.phase, "defeat");
+assert.ok(firstOrganic.tick < MAX_ORGANIC_TICKS);
+
+const firstState = runFullStateMachine(
+  BALANCE_CONFIG.DEFAULT_SEED,
+);
+const secondState = runFullStateMachine(
+  BALANCE_CONFIG.DEFAULT_SEED,
+);
+
 assert.deepEqual(firstState, secondState);
-assert.equal(firstState.phase, "observation");
-assert.notEqual(firstState.activeThreat, null);
+assert.equal(firstState.phase, "victory");
+assert.equal(firstState.waveIndex, WAVE_DEFINITIONS.length - 1);
+assert.equal(firstState.activeThreat, null);
 assert.ok(
   firstState.agents.every(
     ({ x, y }) =>
@@ -26,10 +89,18 @@ assert.ok(
       y >= BALANCE_CONFIG.AGENT_RADIUS &&
       y <= BALANCE_CONFIG.WORLD_HEIGHT - BALANCE_CONFIG.AGENT_RADIUS,
   ),
-  `Every agent must remain inside the world after ${verificationTicks} ticks.`,
+  "Every agent must remain inside the world after the full run.",
 );
 
 console.log(
-  `Determinism check passed: seed ${BALANCE_CONFIG.DEFAULT_SEED}, ` +
-    `${firstState.agents.length} agents, ${firstState.tick} ticks.`,
+  `Organic determinism passed: seed ${BALANCE_CONFIG.DEFAULT_SEED}, ` +
+    `phase ${firstOrganic.phase}, tick ${firstOrganic.tick}, ` +
+    `tribute ${firstOrganic.tribute}, ` +
+    `halls ${firstOrganic.halls.map(({ hp }) => hp).join("/")}.`,
+);
+console.log(
+  `Full-state-machine determinism passed: seed ${BALANCE_CONFIG.DEFAULT_SEED}, ` +
+    `${WAVE_DEFINITIONS.length} waves, phase ${firstState.phase}, ` +
+    `tick ${firstState.tick}, tribute ${firstState.tribute}, ` +
+    `halls ${firstState.halls.map(({ hp }) => hp).join("/")}.`,
 );
