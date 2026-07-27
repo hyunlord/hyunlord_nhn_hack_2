@@ -1,3 +1,4 @@
+import { cpus } from "node:os";
 import type {
   HouseId,
   HouseSelection,
@@ -18,6 +19,7 @@ export type HarnessOptions = {
   readonly runCount: number;
   readonly pickMode: PickMode;
   readonly shopMode: ShopMode;
+  readonly workerCount: number;
   readonly houseOption: HouseOption;
 };
 
@@ -26,7 +28,7 @@ export class HarnessUsageError extends Error {
 
   constructor(readonly argument: string) {
     super(
-      `Invalid balance arguments "${argument}". Expected a positive run count and --pick=neutral|first|random, --shop=auto|none, --houses=abc|random. --pick=first is rarity-biased and unsuitable for balance measurement.`,
+      `Invalid balance arguments "${argument}". Expected a positive run count and --pick=neutral|first|random, --shop=auto|none, --houses=abc|random, --workers=N. --pick=first is rarity-biased and unsuitable for balance measurement.`,
     );
     this.name = "HarnessUsageError";
   }
@@ -94,21 +96,31 @@ export function parseHarnessOptions(
   const houseArguments = args.filter((argument) =>
     argument.startsWith("--houses="),
   );
+  const workerArguments = args.filter((argument) =>
+    argument.startsWith("--workers="),
+  );
   const unknownFlags = args.filter(
     (argument) =>
       argument.startsWith("--") &&
       !argument.startsWith("--pick=") &&
       !argument.startsWith("--shop=") &&
-      !argument.startsWith("--houses="),
+      !argument.startsWith("--houses=") &&
+      !argument.startsWith("--workers="),
   );
   const pickMode =
     pickArguments[0]?.slice("--pick=".length) ?? "neutral";
   const shopMode = shopArguments[0]?.slice("--shop=".length) ?? "auto";
+  const workerValue =
+    workerArguments[0]?.slice("--workers=".length) ?? `${cpus().length}`;
+  const workerCount = Number(workerValue);
   if (
     unknownFlags.length > 0 ||
     pickArguments.length > 1 ||
     shopArguments.length > 1 ||
     houseArguments.length > 1 ||
+    workerArguments.length > 1 ||
+    !/^[1-9]\d*$/.test(workerValue) ||
+    !Number.isSafeInteger(workerCount) ||
     (pickMode !== "neutral" &&
       pickMode !== "first" &&
       pickMode !== "random") ||
@@ -120,6 +132,7 @@ export function parseHarnessOptions(
     runCount: parseRunCount(args),
     pickMode,
     shopMode,
+    workerCount,
     houseOption: parseHouseOption(houseArguments[0]),
   };
 }

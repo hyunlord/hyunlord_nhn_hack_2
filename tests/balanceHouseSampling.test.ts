@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { cpus } from "node:os";
 import test from "node:test";
 import {
   allHouseTrios,
@@ -27,6 +28,7 @@ test("Given house CLI modes, when options are parsed, then fixed order and rando
     runCount: 40,
     pickMode: "neutral",
     shopMode: "auto",
+    workerCount: cpus().length,
     houseOption: {
       kind: "fixed",
       houseIds: ["house_f", "house_a", "house_d"],
