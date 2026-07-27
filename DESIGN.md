@@ -163,6 +163,18 @@ The content width is capped at 1200px and arranged with CSS Grid.
 - Achievement and discovered-synergy ledgers use the same one-pixel dividers
 - The primary action is isolated at the bottom of the overview
 
+### Investment ledger
+
+- Global tracks and per-house tracks are separate semantic ledger groups
+- Track records show title, description, per-rank effect, rank pips, next cost,
+  and a purchase action
+- Disabled purchases keep the button visible and pair it with a text reason for
+  insufficient Legacy, max rank, or locked house access
+- The running bonus summary lists accumulated active effects in readable labels
+  so permanent progress is visible without requiring player arithmetic
+- The ledger uses the existing panel, border, monospace, and 4px spacing tokens;
+  no shadows or ad hoc color roles are introduced
+
 ### House selection
 
 - Three numbered deployment slots preserve selection order

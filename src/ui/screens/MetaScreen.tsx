@@ -3,11 +3,21 @@ import {
   HOUSE_UNLOCK_DEFINITIONS,
 } from "../../content/metaConfig";
 import {
+  INVESTMENT_TRACKS,
+  type InvestmentTrack,
+} from "../../content/investmentConfig";
+import {
   HOUSE_CONFIG,
   houseTraitSummary,
   type HouseId,
 } from "../../content/houseConfig";
 import { HOUSE_SYNERGIES } from "../../content/houseSynergies";
+import {
+  canPurchase,
+  investmentCost,
+  resolveInvestmentEffects,
+} from "../../meta/investments";
+import type { CardEffect } from "../../progression/progression.types";
 import { useAppFlow } from "../../state/appFlowContext";
 
 function unlockRequirement(
@@ -36,9 +46,160 @@ function unlockRequirement(
   return null;
 }
 
+function multiplierPercent(multiplier: number): string {
+  const percent = Math.round((multiplier - 1) * 100);
+  return `${percent > 0 ? "+" : ""}${percent}%`;
+}
+
+function perRankEffectLabel(effect: CardEffect): string {
+  const labels: string[] = [];
+  if (effect.maxHpBonus !== undefined) {
+    labels.push(`+${effect.maxHpBonus} max HP per rank`);
+  }
+  if (effect.attackDamageMultiplier !== undefined) {
+    labels.push(`${multiplierPercent(effect.attackDamageMultiplier)} attack damage per rank`);
+  }
+  if (effect.divineRegenMultiplier !== undefined) {
+    labels.push(`${multiplierPercent(effect.divineRegenMultiplier)} divine regen per rank`);
+  }
+  if (effect.tributePerKillBonus !== undefined) {
+    labels.push(`+${effect.tributePerKillBonus} tribute per kill per rank`);
+  }
+  if (effect.breakHpRatioDelta !== undefined) {
+    labels.push(`${Math.round(effect.breakHpRatioDelta * 100)} point flee threshold per rank`);
+  }
+  if (effect.moveSpeedMultiplier !== undefined) {
+    labels.push(`${multiplierPercent(effect.moveSpeedMultiplier)} move speed per rank`);
+  }
+  return labels.join("; ");
+}
+
+function activeBonusLabels(
+  investmentRanks: Readonly<Record<string, number>>,
+): readonly string[] {
+  const effects = resolveInvestmentEffects(investmentRanks);
+  const labels: string[] = [];
+  if (effects.maxHpBonus !== 0) {
+    labels.push(`Max HP ${effects.maxHpBonus > 0 ? "+" : ""}${effects.maxHpBonus}`);
+  }
+  if (effects.attackDamageMultiplier !== 1) {
+    labels.push(`Attack damage ${multiplierPercent(effects.attackDamageMultiplier)}`);
+  }
+  if (effects.divineRegenMultiplier !== 1) {
+    labels.push(`Divine regen ${multiplierPercent(effects.divineRegenMultiplier)}`);
+  }
+  if (effects.tributePerKillBonus !== 0) {
+    labels.push(`Tribute per kill +${effects.tributePerKillBonus}`);
+  }
+  if (effects.breakHpRatioDelta !== 0) {
+    labels.push(`Flee threshold ${Math.round(effects.breakHpRatioDelta * 100)} points`);
+  }
+  if (effects.moveSpeedMultiplier !== 1) {
+    labels.push(`Move speed ${multiplierPercent(effects.moveSpeedMultiplier)}`);
+  }
+  return labels;
+}
+
+function trackDisabledReason(
+  track: InvestmentTrack,
+  currentRank: number,
+  legacyPoints: number,
+  unlockedHouses: readonly HouseId[],
+): string | null {
+  if (currentRank >= track.maxRank) {
+    return "Max rank reached";
+  }
+  if (
+    track.scope === "house" &&
+    (track.houseId === undefined || !unlockedHouses.includes(track.houseId))
+  ) {
+    const house = HOUSE_CONFIG.find((candidate) => candidate.id === track.houseId);
+    return `Unlock ${house?.name ?? "this house"} first`;
+  }
+  const cost = investmentCost(track, currentRank);
+  if (legacyPoints < cost) {
+    return `Need ${cost - legacyPoints} more Legacy`;
+  }
+  return null;
+}
+
+function rankPips(currentRank: number, maxRank: number): string {
+  return `${"●".repeat(currentRank)}${"○".repeat(maxRank - currentRank)}`;
+}
+
+function InvestmentTrackCard({
+  currentRank,
+  legacyPoints,
+  onPurchase,
+  track,
+  unlockedHouses,
+}: {
+  readonly currentRank: number;
+  readonly legacyPoints: number;
+  readonly onPurchase: (trackId: string) => void;
+  readonly track: InvestmentTrack;
+  readonly unlockedHouses: readonly HouseId[];
+}) {
+  const reason = trackDisabledReason(
+    track,
+    currentRank,
+    legacyPoints,
+    unlockedHouses,
+  );
+  const nextCost =
+    currentRank >= track.maxRank ? null : investmentCost(track, currentRank);
+  const purchasable = canPurchase(
+    track,
+    currentRank,
+    legacyPoints,
+    unlockedHouses,
+  );
+
+  return (
+    <article className="investment-track">
+      <div className="investment-track__header">
+        <div>
+          <h4>{track.name}</h4>
+          <p>{track.description}</p>
+        </div>
+        <span
+          aria-label={`Rank ${currentRank} of ${track.maxRank}`}
+          className="rank-pips"
+          role="img"
+        >
+          {rankPips(currentRank, track.maxRank)}
+        </span>
+      </div>
+      <p className="investment-track__effect">
+        {perRankEffectLabel(track.effectPerRank)}
+      </p>
+      <div className="investment-track__purchase">
+        <span>{nextCost === null ? "Max rank" : `Next cost ${nextCost}`}</span>
+        <button
+          aria-describedby={reason === null ? undefined : `${track.id}-reason`}
+          disabled={!purchasable}
+          onClick={() => onPurchase(track.id)}
+          type="button"
+        >
+          Purchase
+        </button>
+      </div>
+      {reason === null ? null : (
+        <p className="investment-track__reason" id={`${track.id}-reason`}>
+          {reason}
+        </p>
+      )}
+    </article>
+  );
+}
+
 export function MetaScreen() {
   const { dispatch, state } = useAppFlow();
   const { meta } = state;
+  const activeBonuses = activeBonusLabels(meta.investmentRanks);
+  const globalTracks = INVESTMENT_TRACKS.filter(
+    (track) => track.scope === "global",
+  );
 
   return (
     <main className="app-shell screen-shell" data-screen="meta">
@@ -57,6 +218,105 @@ export function MetaScreen() {
           <div><dt>Best wave</dt><dd>{meta.bestWaveReached}</dd></div>
         </dl>
       </header>
+
+      <section className="ledger-section" aria-labelledby="investments-heading">
+        <div className="section-heading">
+          <p className="eyebrow">Permanent rites</p>
+          <h2 id="investments-heading">Investments</h2>
+        </div>
+        <div className="investment-layout">
+          <section
+            aria-labelledby="global-investments-heading"
+            className="investment-group"
+          >
+            <div className="investment-group__heading">
+              <h3 id="global-investments-heading">Global tracks</h3>
+              <p>Apply to every selected house at the start of each run.</p>
+            </div>
+            <div className="investment-track-list">
+              {globalTracks.map((track) => (
+                <InvestmentTrackCard
+                  currentRank={meta.investmentRanks[track.id] ?? 0}
+                  key={track.id}
+                  legacyPoints={meta.legacyPoints}
+                  onPurchase={(trackId) =>
+                    dispatch({ type: "purchaseInvestment", trackId })
+                  }
+                  track={track}
+                  unlockedHouses={meta.unlockedHouses}
+                />
+              ))}
+            </div>
+          </section>
+
+          <aside
+            aria-labelledby="bonus-summary-heading"
+            className="investment-summary"
+          >
+            <p className="eyebrow">Running total</p>
+            <h3 id="bonus-summary-heading">Active bonuses</h3>
+            {activeBonuses.length === 0 ? (
+              <p>No permanent bonuses active yet.</p>
+            ) : (
+              <ul>
+                {activeBonuses.map((label) => (
+                  <li key={label}>{label}</li>
+                ))}
+              </ul>
+            )}
+          </aside>
+        </div>
+      </section>
+
+      <section className="ledger-section" aria-labelledby="house-investments-heading">
+        <div className="section-heading">
+          <p className="eyebrow">House rites</p>
+          <h2 id="house-investments-heading">Per-house tracks</h2>
+        </div>
+        <div className="house-investment-grid">
+          {HOUSE_CONFIG.map((house) => {
+            const houseTracks = INVESTMENT_TRACKS.filter(
+              (track) => track.houseId === house.id,
+            );
+            const unlocked = meta.unlockedHouses.includes(house.id);
+            return (
+              <section
+                aria-labelledby={`${house.id}-investments-heading`}
+                className={`house-investment${unlocked ? "" : " house-investment--locked"}`}
+                key={house.id}
+              >
+                <div className="house-investment__heading">
+                  <span
+                    aria-hidden="true"
+                    className="house-mark"
+                    style={{ backgroundColor: house.color }}
+                  />
+                  <div>
+                    <h3 id={`${house.id}-investments-heading`}>
+                      {house.name}
+                    </h3>
+                    <p>{unlocked ? "Unlocked" : "Locked house"}</p>
+                  </div>
+                </div>
+                <div className="investment-track-list">
+                  {houseTracks.map((track) => (
+                    <InvestmentTrackCard
+                      currentRank={meta.investmentRanks[track.id] ?? 0}
+                      key={track.id}
+                      legacyPoints={meta.legacyPoints}
+                      onPurchase={(trackId) =>
+                        dispatch({ type: "purchaseInvestment", trackId })
+                      }
+                      track={track}
+                      unlockedHouses={meta.unlockedHouses}
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="ledger-section" aria-labelledby="houses-heading">
         <div className="section-heading">

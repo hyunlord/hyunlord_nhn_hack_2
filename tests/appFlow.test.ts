@@ -169,3 +169,18 @@ test("Given rejected investment purchase actions, when reduced, then the exact a
     state,
   );
 });
+
+test("Given a locked house investment, when purchase is requested, then the exact app state reference is retained", () => {
+  const state = createInitialAppState(
+    { ...createDefaultMetaState(), legacyPoints: 999 },
+    100,
+  );
+
+  assert.strictEqual(
+    appReducer(state, {
+      type: "purchaseInvestment",
+      trackId: "house_d_duskmere_stride",
+    }),
+    state,
+  );
+});

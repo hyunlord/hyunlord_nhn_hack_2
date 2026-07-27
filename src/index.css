@@ -1070,15 +1070,164 @@ button {
   pointer-events: auto;
 }
 
+.investment-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.32fr);
+  gap: var(--space-4);
+}
+
+.investment-group,
+.investment-summary,
+.house-investment {
+  min-width: 0;
+  border: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.investment-group__heading,
+.investment-summary,
+.house-investment__heading {
+  padding: var(--space-4);
+}
+
+.investment-group__heading {
+  border-bottom: 1px solid var(--border);
+}
+
+.investment-group__heading h3,
+.investment-summary h3,
+.house-investment__heading h3,
+.investment-track h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.investment-group__heading p,
+.investment-summary p,
+.house-investment__heading p,
+.investment-track p,
+.investment-track__purchase,
+.investment-track__reason {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.investment-track-list {
+  display: grid;
+}
+
+.investment-track {
+  display: grid;
+  gap: 12px;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.investment-track:last-child {
+  border-bottom: 0;
+}
+
+.investment-track__header,
+.investment-track__purchase,
+.house-investment__heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-2);
+}
+
+.house-investment__heading {
+  grid-template-columns: 12px minmax(0, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+
+.investment-track__header p,
+.investment-track__effect {
+  max-width: 68ch;
+}
+
+.rank-pips {
+  color: var(--accent);
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.investment-track__purchase {
+  align-items: center;
+}
+
+.investment-track__purchase button {
+  min-width: 112px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--accent);
+  color: var(--panel);
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.investment-track__purchase button:disabled {
+  border-color: var(--border);
+  color: var(--muted);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.investment-track__purchase button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.investment-track__reason {
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.investment-summary ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.investment-summary li {
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+}
+
+.house-investment-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.house-investment--locked {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 8px,
+      color-mix(in srgb, var(--border) 20%, transparent) 8px,
+      color-mix(in srgb, var(--border) 20%, transparent) 9px
+    ),
+    var(--panel);
+}
+
 @media (max-width: 900px) {
   .screen-header,
   .ledger-columns,
   .selection-layout,
-  .summary-layout {
+  .summary-layout,
+  .investment-layout {
     grid-template-columns: 1fr;
   }
 
-  .house-roster {
+  .house-roster,
+  .house-investment-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1100,9 +1249,15 @@ button {
 
   .meta-stats,
   .house-roster,
+  .house-investment-grid,
   .selection-slots,
   .selection-roster,
   .summary-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .investment-track__header,
+  .investment-track__purchase {
     grid-template-columns: 1fr;
   }
 
