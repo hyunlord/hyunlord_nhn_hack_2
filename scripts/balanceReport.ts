@@ -1,6 +1,6 @@
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import { WAVE_DEFINITIONS } from "../src/content/waveConfig";
-import type { RunSample } from "./balanceHarness";
+import type { PickMode, RunSample } from "./balanceHarness";
 
 function median(values: readonly number[]): number | null {
   if (values.length === 0) {
@@ -28,6 +28,16 @@ function displayMedian(value: number | null): string {
 
 function rate(count: number, total: number): string {
   return total === 0 ? "—" : `${((count / total) * 100).toFixed(1)}%`;
+}
+
+function average(values: readonly number[]): number | null {
+  return values.length === 0
+    ? null
+    : values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function displayAverage(value: number | null): string {
+  return value === null ? "—" : value.toFixed(2);
 }
 
 function table(
@@ -133,15 +143,49 @@ function waveTable(samples: readonly RunSample[]): string {
   );
 }
 
+function progressionTable(samples: readonly RunSample[]): string {
+  const picks = new Map<string, number>();
+  for (const sample of samples) {
+    for (const cardId of sample.pickedCardIds) {
+      picks.set(cardId, (picks.get(cardId) ?? 0) + 1);
+    }
+  }
+  const mostPicked = [...picks.entries()].sort(
+    ([firstId, firstCount], [secondId, secondCount]) =>
+      secondCount - firstCount || firstId.localeCompare(secondId),
+  )[0];
+  const rows = [
+    [
+      "Drafts per run",
+      displayAverage(average(samples.map(({ draftCount }) => draftCount))),
+    ],
+    [
+      "Final level per house",
+      displayAverage(
+        average(samples.flatMap(({ finalLevels }) => finalLevels)),
+      ),
+    ],
+    [
+      "Most-picked card",
+      mostPicked === undefined
+        ? "—"
+        : `${mostPicked[0]} (${mostPicked[1]})`,
+    ],
+  ];
+  return table(["Progression metric", "Value"], rows);
+}
+
 export function printBalanceReport(
   samples: readonly RunSample[],
   maxTicks: number,
+  pickMode: PickMode,
 ): void {
   console.log(
     `Balance harness: seeds=${samples.length}, start=${BALANCE_CONFIG.DEFAULT_SEED}, ` +
-      `miracles=none, maxTicks=${maxTicks}`,
+      `miracles=none, picks=${pickMode}, maxTicks=${maxTicks}`,
   );
   console.log(outcomeTable(samples));
   console.log(endStateTable(samples));
   console.log(waveTable(samples));
+  console.log(progressionTable(samples));
 }

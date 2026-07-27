@@ -1,6 +1,7 @@
 import { useGameStore } from "../../state/gameStore";
 import { BALANCE_CONFIG } from "../../content/balanceConfig";
 import { WAVE_DEFINITIONS } from "../../content/waveConfig";
+import { LEVEL_THRESHOLDS } from "../../progression/xp";
 
 export function HUD() {
   const { state } = useGameStore();
@@ -57,6 +58,20 @@ export function HUD() {
           const hall = state.halls.find(
             ({ houseId }) => houseId === house.id,
           );
+          const progress = state.houseProgress.find(
+            ({ houseId }) => houseId === house.id,
+          );
+          const level = progress?.level ?? 1;
+          const levelStart = LEVEL_THRESHOLDS[level - 1] ?? 0;
+          const nextThreshold = LEVEL_THRESHOLDS[level];
+          const xpWithinLevel = Math.max(
+            0,
+            (progress?.xp ?? 0) - levelStart,
+          );
+          const xpSpan =
+            nextThreshold === undefined
+              ? 1
+              : nextThreshold - levelStart;
 
           return (
             <li key={house.id}>
@@ -65,11 +80,23 @@ export function HUD() {
                 className="house-swatch"
                 style={{ backgroundColor: house.color }}
               />
-              <span>{house.name}</span>
-              <strong>
-                Hall {hall?.hp ?? 0}/{hall?.maxHp ?? BALANCE_CONFIG.HALL_HP} ·{" "}
-                {livingCount} living
-              </strong>
+              <span className="house-status__name">{house.name}</span>
+              <span className="house-status__details">
+                <strong>
+                  Level {level} · {progress?.xp ?? 0} XP
+                </strong>
+                <span>
+                  Hall {hall?.hp ?? 0}/
+                  {hall?.maxHp ?? BALANCE_CONFIG.HALL_HP} · {livingCount} living
+                </span>
+                <progress
+                  aria-label={`${house.name} XP to next level`}
+                  max={xpSpan}
+                  value={
+                    nextThreshold === undefined ? xpSpan : xpWithinLevel
+                  }
+                />
+              </span>
             </li>
           );
         })}

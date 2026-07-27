@@ -10,6 +10,13 @@ import { createRng } from "./prng";
 import type { GameState } from "./engine.types";
 import { advanceWaveCombat } from "./invasionCombat";
 import { spawnWave } from "../threat/waveDirector";
+import { CARD_DEFINITIONS } from "../content/cardConfig";
+import { resolveModifiers } from "../progression/modifiers";
+import {
+  applyProgressionAwards,
+  divineModifiersForState,
+  modifiersForHouse,
+} from "./progressionEngine";
 
 export { castMiracle } from "./miracleApplication";
 
@@ -64,7 +71,9 @@ function applyTickMaintenance(state: GameState, tick: number): GameState {
     tick,
     divinePower: Math.min(
       BALANCE_CONFIG.DIVINE_POWER_MAX,
-      state.divinePower + BALANCE_CONFIG.DIVINE_POWER_REGEN_PER_TICK,
+      state.divinePower +
+        BALANCE_CONFIG.DIVINE_POWER_REGEN_PER_TICK *
+          divineModifiersForState(state).divineRegenMultiplier,
     ),
     miracleCooldowns: {
       lightning: Math.max(0, state.miracleCooldowns.lightning - 1),
@@ -80,6 +89,7 @@ function applyTickMaintenance(state: GameState, tick: number): GameState {
 export function advanceTick(state: GameState, rng: Rng): GameState {
   const tick = state.tick + 1;
   if (
+    state.phase === "draft" ||
     state.phase === "intermission" ||
     state.phase === "victory" ||
     state.phase === "defeat"
@@ -101,52 +111,79 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
   }
 
   const combat = advanceWaveCombat(state, tick, rng);
+  const cardTribute = combat.creatureKillsByHouse.reduce(
+    (sum, { houseId, kills }) =>
+      sum +
+      kills * modifiersForHouse(state, houseId).tributePerKillBonus,
+    0,
+  );
   const tribute =
     state.tribute +
-    combat.creatureKills * BALANCE_CONFIG.TRIBUTE_PER_CREATURE_KILL;
+    combat.creatureKills * BALANCE_CONFIG.TRIBUTE_PER_CREATURE_KILL +
+    cardTribute;
   const maintained = applyTickMaintenance(
-    { ...state, ...combat, tribute },
+    {
+      ...state,
+      agents: combat.agents,
+      halls: combat.halls,
+      activeThreat: combat.activeThreat,
+      tribute,
+    },
     tick,
   );
+  let resolved: GameState;
   if (combat.halls.every(({ hp }) => hp <= 0)) {
-    return { ...maintained, phase: "defeat" };
+    resolved = { ...maintained, phase: "defeat" };
+  } else {
+    const threatCleared =
+      combat.activeThreat !== null &&
+      combat.activeThreat.creatures.length === 0 &&
+      (combat.activeThreat.mage === null ||
+        combat.activeThreat.mage.hp <= 0);
+    if (!threatCleared) {
+      resolved = maintained;
+    } else {
+      const reward = getWaveDefinition(state.waveIndex).tributeReward;
+      if (isFinalWave(state.waveIndex)) {
+        resolved = {
+          ...maintained,
+          phase: "victory",
+          tribute: tribute + reward,
+          activeThreat: null,
+        };
+      } else {
+        resolved = {
+          ...maintained,
+          phase: "intermission",
+          tribute: tribute + reward,
+          activeThreat: null,
+          agents: maintained.agents.map((agent) => {
+            if (agent.hp <= 0) {
+              return agent;
+            }
+            const modifiers = modifiersForHouse(
+              maintained,
+              agent.houseId,
+            );
+            return {
+              ...agent,
+              hp: Math.min(
+                BALANCE_CONFIG.INITIAL_HP + modifiers.maxHpBonus,
+                agent.hp +
+                  BALANCE_CONFIG.INTERMISSION_AUTO_HEAL +
+                  modifiers.interWaveHealBonus,
+              ),
+            };
+          }),
+        };
+      }
+    }
   }
-
-  const threatCleared =
-    combat.activeThreat !== null &&
-    combat.activeThreat.creatures.length === 0 &&
-    (combat.activeThreat.mage === null ||
-      combat.activeThreat.mage.hp <= 0);
-  if (!threatCleared) {
-    return maintained;
-  }
-
-  const reward = getWaveDefinition(state.waveIndex).tributeReward;
-  if (isFinalWave(state.waveIndex)) {
-    return {
-      ...maintained,
-      phase: "victory",
-      tribute: tribute + reward,
-      activeThreat: null,
-    };
-  }
-  return {
-    ...maintained,
-    phase: "intermission",
-    tribute: tribute + reward,
-    activeThreat: null,
-    agents: maintained.agents.map((agent) =>
-      agent.hp <= 0
-        ? agent
-        : {
-            ...agent,
-            hp: Math.min(
-              BALANCE_CONFIG.INITIAL_HP,
-              agent.hp + BALANCE_CONFIG.INTERMISSION_AUTO_HEAL,
-            ),
-          },
-    ),
-  };
+  return applyProgressionAwards(
+    resolved,
+    combat.xpAwards,
+    rng,
+  );
 }
 
 export function createInitialState(seed: number): {
@@ -161,6 +198,7 @@ export function createInitialState(seed: number): {
     state: {
       tick: 0,
       phase: "preparation",
+      phaseBeforeDraft: null,
       waveIndex: 0,
       tribute: 0,
       houses,
@@ -177,6 +215,17 @@ export function createInitialState(seed: number): {
       divinePower: BALANCE_CONFIG.DIVINE_POWER_START,
       miracleCooldowns: { lightning: 0, blessing: 0, curse: 0 },
       activeEffects: [],
+      houseProgress: houses.map(({ id }) => ({
+        houseId: id,
+        xp: 0,
+        level: 1,
+        cards: [],
+      })),
+      houseModifiers: houses.map(({ id }) => ({
+        houseId: id,
+        modifiers: resolveModifiers(CARD_DEFINITIONS, [], 0),
+      })),
+      pendingDrafts: [],
     },
     rng,
   };

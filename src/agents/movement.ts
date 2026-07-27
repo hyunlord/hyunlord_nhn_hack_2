@@ -1,7 +1,7 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { Rng } from "../content/random";
 import type { AgentIntent } from "./dispositionEngine";
-import type { Agent } from "./agentTypes";
+import type { Agent, AgentModifiers } from "./agentTypes";
 
 const FULL_TURN = Math.PI * 2;
 const TURN_RANGE = 0.8;
@@ -14,6 +14,9 @@ export function stepAgent(
   agent: Agent,
   rng: Rng,
   intent: AgentIntent = { kind: "idle" },
+  modifiers: Pick<AgentModifiers, "moveSpeedMultiplier"> = {
+    moveSpeedMultiplier: 1,
+  },
 ): Agent {
   if (agent.state === "dead") {
     return agent;
@@ -48,6 +51,7 @@ export function stepAgent(
         BALANCE_CONFIG.AGENT_ENGAGE_SPEED_MULTIPLIER;
       break;
   }
+  speed *= modifiers.moveSpeedMultiplier;
 
   const minimum = BALANCE_CONFIG.AGENT_RADIUS;
   const maximumX = BALANCE_CONFIG.WORLD_WIDTH - minimum;

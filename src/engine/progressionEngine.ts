@@ -1,0 +1,249 @@
+import { CARD_DEFINITIONS } from "../content/cardConfig";
+import { generateOffer } from "../progression/cardPool";
+import {
+  resolveModifiers,
+  type ResolvedModifiers,
+} from "../progression/modifiers";
+import { levelForXp } from "../progression/xp";
+import type { DraftOffer } from "../progression/progression.types";
+import type { Rng } from "./prng";
+import type { GameState } from "./engine.types";
+import type { DivineModifiers } from "../divine/divine.types";
+
+export interface ProgressionAward {
+  readonly houseId: string;
+  readonly xp: number;
+}
+
+export function modifiersForHouse(
+  state: GameState,
+  houseId: string,
+): ResolvedModifiers {
+  const result = state.houseModifiers.find(
+    (entry) => entry.houseId === houseId,
+  )?.modifiers;
+  if (result === undefined) {
+    throw new RangeError(`Missing modifiers for ${houseId}.`);
+  }
+  return result;
+}
+
+export function divineModifiersForState(
+  state: GameState,
+): DivineModifiers {
+  return state.houseModifiers.reduce<DivineModifiers>(
+    (combined, { modifiers }) => ({
+      divineRegenMultiplier:
+        combined.divineRegenMultiplier *
+        modifiers.divineRegenMultiplier,
+      divineCostMultiplier:
+        combined.divineCostMultiplier *
+        modifiers.divineCostMultiplier,
+      miracleRadiusMultiplier:
+        combined.miracleRadiusMultiplier *
+        modifiers.miracleRadiusMultiplier,
+      miracleHealMultiplier:
+        combined.miracleHealMultiplier *
+        modifiers.miracleHealMultiplier,
+    }),
+    {
+      divineRegenMultiplier: 1,
+      divineCostMultiplier: 1,
+      miracleRadiusMultiplier: 1,
+      miracleHealMultiplier: 1,
+    },
+  );
+}
+
+function healForMaxHpIncrease(
+  state: GameState,
+  houseId: string,
+  increase: number,
+): GameState["agents"] {
+  if (increase <= 0) {
+    return state.agents;
+  }
+  return state.agents.map((agent) =>
+    agent.houseId === houseId && agent.hp > 0
+      ? { ...agent, hp: agent.hp + increase }
+      : agent,
+  );
+}
+
+function replaceModifiers(
+  state: GameState,
+  houseId: string,
+  modifiers: ResolvedModifiers,
+): GameState["houseModifiers"] {
+  return state.houseModifiers.map((entry) =>
+    entry.houseId === houseId
+      ? { houseId, modifiers }
+      : entry,
+  );
+}
+
+export function applyProgressionAwards(
+  state: GameState,
+  awards: readonly ProgressionAward[],
+  rng: Rng,
+): GameState {
+  const xpByHouse = new Map<string, number>();
+  for (const { houseId, xp } of awards) {
+    if (xp > 0) {
+      xpByHouse.set(houseId, (xpByHouse.get(houseId) ?? 0) + xp);
+    }
+  }
+  if (xpByHouse.size === 0) {
+    return state;
+  }
+
+  let agents = state.agents;
+  let houseModifiers = state.houseModifiers;
+  const offers: DraftOffer[] = [];
+  const houseProgress = state.houseProgress.map((progress) => {
+    const awardedXp = xpByHouse.get(progress.houseId) ?? 0;
+    if (awardedXp === 0) {
+      return progress;
+    }
+    const xp = progress.xp + awardedXp;
+    const level = levelForXp(xp);
+    const updated = { ...progress, xp, level };
+    if (level === progress.level) {
+      return updated;
+    }
+    const previousModifiers = modifiersForHouse(
+      { ...state, houseModifiers },
+      progress.houseId,
+    );
+    const modifiers = resolveModifiers(
+      CARD_DEFINITIONS,
+      updated.cards,
+      level - 1,
+    );
+    agents = healForMaxHpIncrease(
+      { ...state, agents },
+      progress.houseId,
+      modifiers.maxHpBonus - previousModifiers.maxHpBonus,
+    );
+    houseModifiers = replaceModifiers(
+      { ...state, houseModifiers },
+      progress.houseId,
+      modifiers,
+    );
+    let reservedCards = [...updated.cards];
+    for (
+      let reachedLevel = progress.level + 1;
+      reachedLevel <= level;
+      reachedLevel += 1
+    ) {
+      const offer = generateOffer(
+        CARD_DEFINITIONS,
+        {
+          ...updated,
+          level: reachedLevel,
+          cards: reservedCards,
+        },
+        rng,
+      );
+      offers.push(offer);
+      reservedCards = [
+        ...reservedCards,
+        ...offer.cardIds.flatMap((cardId) => {
+          const definition = CARD_DEFINITIONS.find(
+            ({ id }) => id === cardId,
+          );
+          return definition === undefined
+            ? []
+            : [{ cardId, stacks: definition.maxStacks }];
+        }),
+      ];
+    }
+    return updated;
+  });
+
+  offers.sort(
+    (first, second) =>
+      first.houseId.localeCompare(second.houseId) ||
+      first.level - second.level,
+  );
+  if (offers.length === 0) {
+    return { ...state, agents, houseProgress, houseModifiers };
+  }
+  return {
+    ...state,
+    agents,
+    houseProgress,
+    houseModifiers,
+    phase: "draft",
+    phaseBeforeDraft:
+      state.phase === "draft"
+        ? state.phaseBeforeDraft
+        : state.phase,
+    pendingDrafts: [...state.pendingDrafts, ...offers],
+  };
+}
+
+export function chooseDraftCard(
+  state: GameState,
+  offerId: string,
+  cardId: string,
+): GameState {
+  const offer = state.pendingDrafts[0];
+  if (
+    state.phase !== "draft" ||
+    offer === undefined ||
+    offer.id !== offerId ||
+    !offer.cardIds.includes(cardId)
+  ) {
+    return state;
+  }
+  const card = CARD_DEFINITIONS.find(({ id }) => id === cardId);
+  const progressIndex = state.houseProgress.findIndex(
+    ({ houseId }) => houseId === offer.houseId,
+  );
+  const progress = state.houseProgress[progressIndex];
+  if (card === undefined || progress === undefined) {
+    return state;
+  }
+  const existing = progress.cards.find(
+    (owned) => owned.cardId === cardId,
+  );
+  if ((existing?.stacks ?? 0) >= card.maxStacks) {
+    return state;
+  }
+  const cards =
+    existing === undefined
+      ? [...progress.cards, { cardId, stacks: 1 }]
+      : progress.cards.map((owned) =>
+          owned.cardId === cardId
+            ? { ...owned, stacks: owned.stacks + 1 }
+            : owned,
+        );
+  const updatedProgress = { ...progress, cards };
+  const previousModifiers = modifiersForHouse(state, offer.houseId);
+  const modifiers = resolveModifiers(
+    CARD_DEFINITIONS,
+    cards,
+    progress.level - 1,
+  );
+  const houseProgress = [...state.houseProgress];
+  houseProgress[progressIndex] = updatedProgress;
+  const pendingDrafts = state.pendingDrafts.slice(1);
+  return {
+    ...state,
+    agents: healForMaxHpIncrease(
+      state,
+      offer.houseId,
+      modifiers.maxHpBonus - previousModifiers.maxHpBonus,
+    ),
+    houseProgress,
+    houseModifiers: replaceModifiers(state, offer.houseId, modifiers),
+    pendingDrafts,
+    phase:
+      pendingDrafts.length > 0
+        ? "draft"
+        : (state.phaseBeforeDraft ?? "preparation"),
+    phaseBeforeDraft:
+      pendingDrafts.length > 0 ? state.phaseBeforeDraft : null,
+  };
+}

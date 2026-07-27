@@ -19,6 +19,7 @@ import {
   castMiracle,
   createInitialState,
 } from "../engine/tick";
+import { chooseDraftCard } from "../engine/progressionEngine";
 import type {
   CommitStateAction,
   GameAction,
@@ -100,6 +101,15 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
           beginNextWave(
             stateReference.current,
             rngReference.current,
+          ),
+        );
+        return;
+      case "chooseDraftCard":
+        commitState(
+          chooseDraftCard(
+            stateReference.current,
+            action.offerId,
+            action.cardId,
           ),
         );
         return;

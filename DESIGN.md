@@ -32,6 +32,10 @@ restrained blueprint-like interface surrounding a dark, vignetted world map.
 | Mage pulse | threat token | `rgba(226, 165, 239, 0.65)` | Tick-driven mage locator ring |
 | Mage HP track | threat token | `rgba(26, 22, 19, 0.85)` | Mage health background |
 | Helping rim | canvas token | `rgba(255, 250, 230, 0.90)` | Cross-house aid |
+| Draft veil | `--draft-veil` | `rgba(26, 22, 19, 0.86)` | Paused-world overlay |
+| Draft panel | `--draft-panel` | `#fff8df` | Draft card surface |
+| Draft ink | `--draft-ink` | `#252016` | Draft card text |
+| Draft accent | `--draft-accent` | `#d8c879` | Draft borders and labels |
 
 The simulation colors are owned by content configuration so canvas and HUD use
 the same house identity.
@@ -86,6 +90,27 @@ The content width is capped at 1200px and arranged with CSS Grid.
 - Creature and mage status remains readable at zero HP/count without changing
   layout
 
+### House progression
+
+- Every house row exposes its current level and cumulative XP
+- A native progress element shows XP earned within the current level; max-level
+  houses display a full bar
+- House color remains the identity cue while all progression text keeps the
+  existing compact monospace hierarchy
+
+### Level-up draft
+
+- The overlay fills the canvas panel so the paused world remains visible beneath
+  a dark veil
+- The house color, house name, and newly reached level form the header
+- Up to three bordered cards appear side by side at desktop and tablet widths;
+  each includes kind, name, one-sentence description, current stacks, and its
+  `1`/`2`/`3` shortcut
+- At 520px and below the cards stack vertically to preserve readable text and
+  44px minimum targets
+- The overlay is a labeled modal region, announces the queued-draft count, and
+  accepts both pointer selection and number keys
+
 ## 6. Motion & Interaction
 
 The world advances at a fixed 20 ticks per second while canvas painting follows
@@ -98,4 +123,4 @@ mage locator pulse derives from the current tick rather than wall-clock time.
 ## 7. Depth & Surface
 
 The strategy is borders-only. Placeholder surfaces use a one-pixel border and
-no shadows.
+no shadows. Draft cards and the draft veil preserve the same rule.

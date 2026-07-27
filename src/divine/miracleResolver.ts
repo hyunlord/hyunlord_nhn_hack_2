@@ -2,6 +2,7 @@ import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type {
   AgentDamage,
   AgentHeal,
+  DivineModifiers,
   HousePowerDelta,
   MiracleEvent,
   MiracleOutcome,
@@ -26,20 +27,35 @@ export function canCast(
   type: MiracleType,
   divinePower: number,
   cooldownRemaining: number,
+  modifiers: DivineModifiers = {
+    divineRegenMultiplier: 1,
+    divineCostMultiplier: 1,
+    miracleRadiusMultiplier: 1,
+    miracleHealMultiplier: 1,
+  },
 ): boolean {
   return (
-    divinePower >= MIRACLE_DEFINITIONS[type].cost && cooldownRemaining <= 0
+    divinePower >=
+      MIRACLE_DEFINITIONS[type].cost * modifiers.divineCostMultiplier &&
+    cooldownRemaining <= 0
   );
 }
 
 export function resolveMiracle(
   event: MiracleEvent,
   targets: readonly MiracleTargetSnapshot[],
+  modifiers: DivineModifiers = {
+    divineRegenMultiplier: 1,
+    divineCostMultiplier: 1,
+    miracleRadiusMultiplier: 1,
+    miracleHealMultiplier: 1,
+  },
 ): MiracleOutcome {
   const definition = MIRACLE_DEFINITIONS[event.type];
+  const radius = definition.radius * modifiers.miracleRadiusMultiplier;
   const affected = targets.filter(
     (target) =>
-      target.hp > 0 && distanceBetween(event, target) <= definition.radius,
+      target.hp > 0 && distanceBetween(event, target) <= radius,
   );
   const damages: AgentDamage[] = [];
   const heals: AgentHeal[] = [];
@@ -49,9 +65,13 @@ export function resolveMiracle(
     const damage = scaledAmount(
       definition.maxDamage,
       distance,
-      definition.radius,
+      radius,
     );
-    const heal = scaledAmount(definition.maxHeal, distance, definition.radius);
+    const heal = scaledAmount(
+      definition.maxHeal * modifiers.miracleHealMultiplier,
+      distance,
+      radius,
+    );
 
     if (damage > 0) {
       damages.push({ agentId: target.id, amount: damage });
@@ -87,7 +107,7 @@ export function resolveMiracle(
     type: event.type,
     x: event.targetX,
     y: event.targetY,
-    radius: definition.radius,
+    radius,
     color: definition.color,
     startTick: event.tick,
     durationTicks: BALANCE_CONFIG.EFFECT_DURATION_TICKS,

@@ -1,7 +1,6 @@
 import {
   decideIntent,
   intentToState,
-  type AgentIntent,
   type DefenseContext,
 } from "../agents/dispositionEngine";
 import { stepAgent } from "../agents/movement";
@@ -9,11 +8,7 @@ import type {
   Agent,
   ThreatPresence,
 } from "../agents/agentTypes";
-import { BALANCE_CONFIG } from "../content/balanceConfig";
-import {
-  applyDamageToThreat,
-  stepThreat,
-} from "../threat/waveDirector";
+import { stepThreat } from "../threat/waveDirector";
 import type { ThreatEvent } from "../threat/threatTypes";
 import type { GameState, Hall } from "./engine.types";
 import type { Rng } from "./prng";
@@ -21,21 +16,25 @@ import {
   applyHallDamages,
   applyThreatDamages,
 } from "./combatDamage";
+import {
+  applyAgentAttacks,
+  type AgentDecision,
+} from "./agentCombat";
 
 type Point = { readonly x: number; readonly y: number };
-type ThreatHit = {
-  readonly creatureId: string | null;
-  readonly amount: number;
-};
 type WaveCombatStep = Pick<
   GameState,
   "agents" | "halls" | "activeThreat"
 > & {
   readonly creatureKills: number;
-};
-type AgentDecision = {
-  readonly agent: Agent;
-  readonly intent: AgentIntent;
+  readonly xpAwards: {
+    readonly houseId: string;
+    readonly xp: number;
+  }[];
+  readonly creatureKillsByHouse: {
+    readonly houseId: string;
+    readonly kills: number;
+  }[];
 };
 
 function distanceSquared(first: Point, second: Point): number {
@@ -102,16 +101,28 @@ function moveAgents(
   halls: readonly Hall[],
   threat: ThreatEvent | null,
   rng: Rng,
+  modifiersByHouse: GameState["houseModifiers"],
 ): AgentDecision[] {
   const threats = toThreatPresences(threat);
   const decisions = agents.map((agent) => {
     const context = createDefenseContext(agent, halls, threats);
+    const modifiers = modifiersByHouse.find(
+      (entry) => entry.houseId === agent.houseId,
+    )?.modifiers;
+    if (modifiers === undefined) {
+      throw new RangeError(`Missing modifiers for ${agent.houseId}.`);
+    }
     const intent = decideIntent(
       agent,
       context,
       threat?.traitorHouseId === agent.houseId,
+      modifiers,
     );
-    return { agent: stepAgent(agent, rng, intent), intent, context };
+    return {
+      agent: stepAgent(agent, rng, intent, modifiers),
+      intent,
+      context,
+    };
   });
 
   return decisions.map(({ agent, intent, context }) => {
@@ -138,74 +149,6 @@ function moveAgents(
   });
 }
 
-function applyAgentAttacks(
-  decisions: readonly AgentDecision[],
-  threat: ThreatEvent,
-  tick: number,
-): { readonly agents: Agent[]; readonly threat: ThreatEvent } {
-  const hits: ThreatHit[] = [];
-  const targets = [
-    ...threat.creatures.map((creature) => ({
-      key: creature.id,
-      creatureId: creature.id,
-      x: creature.x,
-      y: creature.y,
-    })),
-    ...(threat.mage !== null && threat.mage.hp > 0
-      ? [{
-          key: "mage",
-          creatureId: null,
-          x: threat.mage.x,
-          y: threat.mage.y,
-        }]
-      : []),
-  ];
-  const nextAgents = decisions.map(({ agent, intent }) => {
-    const canAttack =
-      agent.hp > 0 &&
-      (agent.state === "fighting" || agent.state === "helping") &&
-      tick - agent.lastAttackTick >=
-        BALANCE_CONFIG.AGENT_ATTACK_INTERVAL_TICKS;
-    if (!canAttack) {
-      return agent;
-    }
-    const inRangeTargets = targets
-      .filter(
-        (candidate) =>
-          distanceSquared(agent, candidate) <=
-          BALANCE_CONFIG.AGENT_ATTACK_RANGE ** 2,
-      );
-    const focusedTarget =
-      intent.kind === "engage" && intent.targetId !== null
-        ? inRangeTargets.find(
-            (candidate) => candidate.key === intent.targetId,
-          )
-        : undefined;
-    const target = focusedTarget ?? [...inRangeTargets]
-      .sort((first, second) => {
-        const delta =
-          distanceSquared(agent, first) -
-          distanceSquared(agent, second);
-        return delta === 0
-          ? first.key.localeCompare(second.key)
-          : delta;
-      })[0];
-    if (target === undefined) {
-      return agent;
-    }
-    hits.push({
-      creatureId: target.creatureId,
-      amount: BALANCE_CONFIG.AGENT_ATTACK_DAMAGE,
-    });
-    return { ...agent, lastAttackTick: tick };
-  });
-  const damagedThreat = applyDamageToThreat(threat, hits);
-  return {
-    agents: nextAgents,
-    threat: damagedThreat,
-  };
-}
-
 export function advanceWaveCombat(
   state: GameState,
   tick: number,
@@ -217,6 +160,8 @@ export function advanceWaveCombat(
       halls: state.halls,
       activeThreat: null,
       creatureKills: 0,
+      xpAwards: [],
+      creatureKillsByHouse: [],
     };
   }
 
@@ -226,11 +171,19 @@ export function advanceWaveCombat(
     state.halls,
     state.activeThreat,
     rng,
+    state.houseModifiers,
+  );
+  const modifiersByHouse = new Map(
+    state.houseModifiers.map(({ houseId, modifiers }) => [
+      houseId,
+      modifiers,
+    ]),
   );
   const attacks = applyAgentAttacks(
     decisions,
     state.activeThreat,
     tick,
+    modifiersByHouse,
   );
   const stepped = stepThreat(
     attacks.threat,
@@ -254,5 +207,12 @@ export function advanceWaveCombat(
     activeThreat: stepped.threat,
     creatureKills:
       initialCreatureCount - stepped.threat.creatures.length,
+    xpAwards: attacks.xpAwards.map(({ houseId, amount }) => ({
+      houseId,
+      xp: amount,
+    })),
+    creatureKillsByHouse: attacks.creatureKillsByHouse.map(
+      ({ houseId, amount }) => ({ houseId, kills: amount }),
+    ),
   };
 }

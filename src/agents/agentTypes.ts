@@ -36,3 +36,13 @@ export interface ThreatPresence {
   y: number;
   hostile: boolean;
 }
+
+export interface AgentModifiers {
+  readonly attackDamageMultiplier: number;
+  readonly attackIntervalMultiplier: number;
+  readonly maxHpBonus: number;
+  readonly moveSpeedMultiplier: number;
+  readonly threatSenseRadiusBonus: number;
+  readonly breakHpRatioDelta: number;
+  readonly hallDefenseRadiusBonus: number;
+}

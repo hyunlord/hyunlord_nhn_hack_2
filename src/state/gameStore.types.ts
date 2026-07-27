@@ -6,6 +6,7 @@ export type GameAction =
   | { type: "selectMiracle"; miracle: MiracleType | null }
   | { type: "beginNextWave" }
   | { type: "restart" }
+  | { type: "chooseDraftCard"; offerId: string; cardId: string }
   | {
       type: "castMiracle";
       miracle: MiracleType;

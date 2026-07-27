@@ -223,3 +223,51 @@ in wave 3.
 
 Halls are run objectives in `engine.types.ts` for Phase 3A. They are expected
 to move into a `build/` domain with walls and towers in Phase 3C.
+
+## 2026-07-27 — Phase 3B level-up card drafts
+
+### Progression is an independent leaf axis
+
+`progression/` imports only content contracts. It owns XP thresholds, card
+eligibility, deterministic offer generation, and modifier folding, but does
+not know concrete agents, threats, or miracles. Agent and divine axes declare
+the narrow modifier shapes they accept; the engine adapts cached progression
+bundles into those structural contracts.
+
+### Draft offers consume world RNG before commit
+
+Threshold processing and offer generation happen in `advanceTick`, where the
+provider-owned seeded RNG is available. The pure commit reducer still receives
+only a completed snapshot. The balance harness uses a second RNG seeded from
+the run seed exclusively for `--pick=random`, so changing the pick strategy
+does not consume the world stream.
+
+### Exact contribution supersedes simultaneous defender-hit aggregation
+
+The Phase 2C shared-snapshot attack decision is superseded for damage
+application. Defender attacks now resolve sequentially in existing agent-array
+order against the current immutable threat snapshot. This retains deterministic
+target choice while assigning actual non-overkill damage and the 25-XP killing
+blow to the exact attacking house.
+
+### Cached modifiers change only with progression
+
+Each house stores a resolved modifier bundle beside `houseProgress`. Level
+growth and card selection are the only recomputation points. Global divine
+modifiers multiply across all three house bundles because any house may draft a
+divine card; agent modifiers remain scoped to the owning house.
+
+### Draft phase stores its return phase
+
+`draft` is not an alias for intermission. The state records
+`phaseBeforeDraft`, freezes everything except tick/effect expiry, and restores
+the recorded phase after the FIFO queue empties. This preserves a distinct
+intermission seam for Phase 3C's tribute shop.
+
+### Card appeal is preserved; waves absorb the balance correction
+
+The first smoke harness reached 90% victories with default first-card picks.
+Rather than weakening the 14-card pool, wave 2 creature HP scaling increased
+from 1.15 to 1.30 and wave 3 from 1.30 to 1.60. The final 200-seed first-pick
+run measured 52.0% victories and 6.33 drafts per run; random picks also measured
+52.0%, with 6.24 drafts per run.

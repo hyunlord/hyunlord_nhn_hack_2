@@ -1,5 +1,12 @@
 export type MiracleType = "lightning" | "blessing" | "curse";
 
+export interface DivineModifiers {
+  readonly divineRegenMultiplier: number;
+  readonly divineCostMultiplier: number;
+  readonly miracleRadiusMultiplier: number;
+  readonly miracleHealMultiplier: number;
+}
+
 export interface MiracleEvent {
   readonly type: MiracleType;
   readonly targetX: number;

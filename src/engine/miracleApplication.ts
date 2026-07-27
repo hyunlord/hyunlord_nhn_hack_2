@@ -3,6 +3,10 @@ import type { MiracleEvent } from "../divine/divine.types";
 import { canCast, resolveMiracle } from "../divine/miracleResolver";
 import { MIRACLE_DEFINITIONS } from "../divine/miracleTypes";
 import type { GameState } from "./engine.types";
+import {
+  divineModifiersForState,
+  modifiersForHouse,
+} from "./progressionEngine";
 
 export function castMiracle(
   state: GameState,
@@ -12,17 +16,19 @@ export function castMiracle(
     return state;
   }
   const definition = MIRACLE_DEFINITIONS[event.type];
+  const modifiers = divineModifiersForState(state);
   if (
     !canCast(
       event.type,
       state.divinePower,
       state.miracleCooldowns[event.type],
+      modifiers,
     )
   ) {
     return state;
   }
 
-  const outcome = resolveMiracle(event, state.agents);
+  const outcome = resolveMiracle(event, state.agents, modifiers);
   const damagesByAgent = new Map(
     outcome.damages.map(({ agentId, amount }) => [agentId, amount] as const),
   );
@@ -52,7 +58,11 @@ export function castMiracle(
     if (heal !== undefined) {
       return {
         ...agent,
-        hp: Math.min(BALANCE_CONFIG.INITIAL_HP, agent.hp + heal),
+        hp: Math.min(
+          BALANCE_CONFIG.INITIAL_HP +
+            modifiersForHouse(state, agent.houseId).maxHpBonus,
+          agent.hp + heal,
+        ),
       };
     }
 
@@ -72,7 +82,9 @@ export function castMiracle(
     ...state,
     agents,
     houses,
-    divinePower: state.divinePower - definition.cost,
+    divinePower:
+      state.divinePower -
+      definition.cost * modifiers.divineCostMultiplier,
     miracleCooldowns: {
       ...state.miracleCooldowns,
       [event.type]: definition.cooldownTicks,

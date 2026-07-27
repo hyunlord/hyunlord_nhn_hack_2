@@ -3,6 +3,7 @@ import { BALANCE_CONFIG } from "../../content/balanceConfig";
 import { canCast } from "../../divine/miracleResolver";
 import { MIRACLE_DEFINITIONS } from "../../divine/miracleTypes";
 import { useGameStore } from "../../state/gameStore";
+import { divineModifiersForState } from "../../engine/progressionEngine";
 
 const MIRACLE_ORDER = ["lightning", "blessing", "curse"] as const;
 
@@ -14,8 +15,10 @@ export function MiracleButtons() {
   const {
     selectedMiracle,
     selectMiracle,
-    state: { divinePower, miracleCooldowns, phase },
+    state,
   } = useGameStore();
+  const { divinePower, miracleCooldowns, phase } = state;
+  const modifiers = divineModifiersForState(state);
 
   return (
     <section className="miracle-panel" aria-label="Divine miracles">
@@ -27,7 +30,7 @@ export function MiracleButtons() {
           const selected = selectedMiracle === type;
           const enabled =
             (phase === "preparation" || phase === "wave") &&
-            canCast(type, divinePower, cooldown);
+            canCast(type, divinePower, cooldown, modifiers);
           const style: MiracleButtonStyle = {
             "--miracle-color": definition.color,
           };
@@ -43,7 +46,10 @@ export function MiracleButtons() {
               type="button"
             >
               <span>{definition.label}</span>
-              <span className="miracle-cost">{definition.cost} power</span>
+              <span className="miracle-cost">
+                {(definition.cost * modifiers.divineCostMultiplier).toFixed(0)}{" "}
+                power
+              </span>
               {cooldown > 0 ? (
                 <span className="miracle-cooldown">
                   {(cooldown / BALANCE_CONFIG.TICKS_PER_SECOND).toFixed(1)}s

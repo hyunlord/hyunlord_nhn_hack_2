@@ -6,11 +6,17 @@ import type {
 } from "../divine/divine.types";
 import type { Highlight } from "../threat/highlightRecorder";
 import type { ThreatEvent } from "../threat/threatTypes";
+import type {
+  DraftOffer,
+  HouseProgress,
+} from "../progression/progression.types";
+import type { ResolvedModifiers } from "../progression/modifiers";
 
 export type RunPhase =
   | "preparation"
   | "wave"
   | "intermission"
+  | "draft"
   | "victory"
   | "defeat";
 
@@ -25,6 +31,7 @@ export interface Hall {
 export interface GameState {
   tick: number;
   phase: RunPhase;
+  phaseBeforeDraft: Exclude<RunPhase, "draft"> | null;
   waveIndex: number;
   tribute: number;
   houses: House[];
@@ -35,4 +42,10 @@ export interface GameState {
   divinePower: number;
   miracleCooldowns: Record<MiracleType, number>;
   activeEffects: MiracleOutcome[];
+  houseProgress: HouseProgress[];
+  houseModifiers: {
+    houseId: string;
+    modifiers: ResolvedModifiers;
+  }[];
+  pendingDrafts: DraftOffer[];
 }

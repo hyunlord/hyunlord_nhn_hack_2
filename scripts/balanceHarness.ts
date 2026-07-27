@@ -6,6 +6,8 @@ import {
   beginNextWave,
   createInitialState,
 } from "../src/engine/tick";
+import { chooseDraftCard } from "../src/engine/progressionEngine";
+import { createRng } from "../src/engine/prng";
 import { printBalanceReport } from "./balanceReport";
 
 const DEFAULT_RUN_COUNT = 200;
@@ -26,6 +28,14 @@ export type RunSample = {
   readonly survivingAgents: number;
   readonly hallHpRemaining: number;
   readonly waves: readonly WaveSample[];
+  readonly draftCount: number;
+  readonly finalLevels: readonly number[];
+  readonly pickedCardIds: readonly string[];
+};
+export type PickMode = "first" | "random";
+export type HarnessOptions = {
+  readonly runCount: number;
+  readonly pickMode: PickMode;
 };
 
 class HarnessUsageError extends Error {
@@ -49,18 +59,40 @@ class SimulationError extends Error {
 }
 
 export function parseRunCount(args: readonly string[]): number {
-  if (args.length === 0) {
+  const positional = args.filter((argument) => !argument.startsWith("--"));
+  if (positional.length === 0) {
     return DEFAULT_RUN_COUNT;
   }
-  const argument = args.join(" ");
+  const argument = positional.join(" ");
   if (
-    args.length !== 1 ||
+    positional.length !== 1 ||
     !/^[1-9]\d*$/.test(argument) ||
     !Number.isSafeInteger(Number(argument))
   ) {
     throw new HarnessUsageError(argument);
   }
   return Number(argument);
+}
+
+export function parseHarnessOptions(
+  args: readonly string[],
+): HarnessOptions {
+  const pickArgument = args.find((argument) =>
+    argument.startsWith("--pick="),
+  );
+  const unknownFlags = args.filter(
+    (argument) =>
+      argument.startsWith("--") && !argument.startsWith("--pick="),
+  );
+  const pickMode = pickArgument?.slice("--pick=".length) ?? "first";
+  if (
+    unknownFlags.length > 0 ||
+    (pickMode !== "first" && pickMode !== "random") ||
+    args.filter((argument) => argument.startsWith("--pick=")).length > 1
+  ) {
+    throw new HarnessUsageError(args.join(" "));
+  }
+  return { runCount: parseRunCount(args), pickMode };
 }
 
 function terminal(phase: GameState["phase"]): boolean {
@@ -81,14 +113,32 @@ function markReached(
   reached[state.waveIndex] = true;
 }
 
-function runSimulation(seed: number): RunSample {
+function runSimulation(seed: number, pickMode: PickMode): RunSample {
   const world = createInitialState(seed);
+  const pickRng = createRng((seed ^ 0x9e3779b9) >>> 0);
   let state = world.state;
   const reached = WAVE_DEFINITIONS.map(() => false);
   const kills = WAVE_DEFINITIONS.map(() => 0);
   const clearTicks = WAVE_DEFINITIONS.map<number | null>(() => null);
+  const pickedCardIds: string[] = [];
 
   while (!terminal(state.phase) && state.tick < MAX_RUN_TICKS) {
+    if (state.phase === "draft") {
+      const offer = state.pendingDrafts[0];
+      if (offer === undefined || offer.cardIds.length === 0) {
+        throw new SimulationError(seed, state.tick, "draft has no cards");
+      }
+      const cardId =
+        pickMode === "random"
+          ? pickRng.pick(offer.cardIds)
+          : offer.cardIds[0];
+      if (cardId === undefined) {
+        throw new SimulationError(seed, state.tick, "draft pick is missing");
+      }
+      pickedCardIds.push(cardId);
+      state = chooseDraftCard(state, offer.id, cardId);
+      continue;
+    }
     if (state.phase === "intermission") {
       state = beginNextWave(state, world.rng);
       markReached(reached, state, seed);
@@ -151,15 +201,21 @@ function runSimulation(seed: number): RunSample {
       creatureKills: kills[index] ?? 0,
       clearTicks: clearTicks[index] ?? null,
     })),
+    draftCount: pickedCardIds.length,
+    finalLevels: state.houseProgress.map(({ level }) => level),
+    pickedCardIds,
   };
 }
 
 function main(): void {
-  const runCount = parseRunCount(process.argv.slice(2));
-  const samples = Array.from({ length: runCount }, (_, index) =>
-    runSimulation((BALANCE_CONFIG.DEFAULT_SEED + index) >>> 0),
+  const options = parseHarnessOptions(process.argv.slice(2));
+  const samples = Array.from({ length: options.runCount }, (_, index) =>
+    runSimulation(
+      (BALANCE_CONFIG.DEFAULT_SEED + index) >>> 0,
+      options.pickMode,
+    ),
   );
-  printBalanceReport(samples, MAX_RUN_TICKS);
+  printBalanceReport(samples, MAX_RUN_TICKS, options.pickMode);
 }
 
 try {

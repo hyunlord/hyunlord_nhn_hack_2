@@ -7,9 +7,19 @@ import {
   beginNextWave,
   createInitialState,
 } from "../src/engine/tick";
+import { chooseDraftCard } from "../src/engine/progressionEngine";
 
 const WAVE_EXERCISE_TICKS = 500;
 const MAX_ORGANIC_TICKS = 20_000;
+
+function chooseFirst(state: GameState): GameState {
+  const offer = state.pendingDrafts[0];
+  const cardId = offer?.cardIds[0];
+  if (offer === undefined || cardId === undefined) {
+    throw new RangeError("Expected a populated draft offer.");
+  }
+  return chooseDraftCard(state, offer.id, cardId);
+}
 
 function runOrganicRun(seed: number): GameState {
   const world = createInitialState(seed);
@@ -19,10 +29,14 @@ function runOrganicRun(seed: number): GameState {
     state.phase !== "defeat" &&
     state.tick < MAX_ORGANIC_TICKS
   ) {
-    state =
-      state.phase === "intermission"
-        ? beginNextWave(state, world.rng)
-        : advanceTick(state, world.rng);
+    if (state.phase === "draft") {
+      state = chooseFirst(state);
+    } else {
+      state =
+        state.phase === "intermission"
+          ? beginNextWave(state, world.rng)
+          : advanceTick(state, world.rng);
+    }
   }
   return state;
 }
@@ -39,10 +53,14 @@ function runFullStateMachine(seed: number): GameState {
     assert.equal(state.waveIndex, definition.index);
     for (
       let tick = 0;
-      tick < WAVE_EXERCISE_TICKS && state.phase === "wave";
+      tick < WAVE_EXERCISE_TICKS &&
+      (state.phase === "wave" || state.phase === "draft");
       tick += 1
     ) {
-      state = advanceTick(state, world.rng);
+      state =
+        state.phase === "draft"
+          ? chooseFirst(state)
+          : advanceTick(state, world.rng);
       assert.notEqual(state.phase, "defeat");
     }
 

@@ -1,6 +1,7 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type {
   Agent,
+  AgentModifiers,
   AgentState,
   ThreatPresence,
 } from "./agentTypes";
@@ -71,14 +72,30 @@ export function decideIntent(
   agent: Agent,
   context: DefenseContext,
   isTraitorHouse: boolean,
+  modifiers: AgentModifiers = {
+    attackDamageMultiplier: 1,
+    attackIntervalMultiplier: 1,
+    maxHpBonus: 0,
+    moveSpeedMultiplier: 1,
+    threatSenseRadiusBonus: 0,
+    breakHpRatioDelta: 0,
+    hallDefenseRadiusBonus: 0,
+  },
 ): AgentIntent {
   if (agent.state === "dead" || agent.hp <= 0) {
     return { kind: "idle" };
   }
 
   const nearest = nearestThreat(context.threats, agent);
+  const maxHp = BALANCE_CONFIG.INITIAL_HP + modifiers.maxHpBonus;
   const isBroken =
-    agent.hp < BALANCE_CONFIG.INITIAL_HP * BALANCE_CONFIG.AGENT_BREAK_HP_RATIO &&
+    agent.hp <
+      maxHp *
+        Math.max(
+          0,
+          BALANCE_CONFIG.AGENT_BREAK_HP_RATIO +
+            modifiers.breakHpRatioDelta,
+        ) &&
     agent.disposition.aggression <
       BALANCE_CONFIG.AGENT_HOLD_AGGRESSION_THRESHOLD;
   if (isBroken) {
@@ -97,7 +114,8 @@ export function decideIntent(
   const nearby = nearestThreat(
     context.threats,
     agent,
-    BALANCE_CONFIG.AGENT_THREAT_SENSE_RADIUS,
+    BALANCE_CONFIG.AGENT_THREAT_SENSE_RADIUS +
+      modifiers.threatSenseRadiusBonus,
   );
   if (
     isTraitorHouse &&
@@ -115,7 +133,8 @@ export function decideIntent(
     const hallThreat = nearestThreat(
       context.threats,
       context.ownHall,
-      BALANCE_CONFIG.HALL_DEFENSE_RADIUS,
+      BALANCE_CONFIG.HALL_DEFENSE_RADIUS +
+        modifiers.hallDefenseRadiusBonus,
     );
     if (hallThreat !== null) {
       return engage(hallThreat);
@@ -128,7 +147,8 @@ export function decideIntent(
       context.rallyHall,
       context.ownHall === null
         ? Number.POSITIVE_INFINITY
-        : BALANCE_CONFIG.HALL_DEFENSE_RADIUS,
+        : BALANCE_CONFIG.HALL_DEFENSE_RADIUS +
+          modifiers.hallDefenseRadiusBonus,
     );
     if (rallyThreat !== null) {
       return engage(rallyThreat);

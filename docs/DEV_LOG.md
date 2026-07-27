@@ -136,3 +136,39 @@
   warnings/errors remained empty throughout both runs.
 - No work was offloaded to DGX Spark because 200 complete local simulations,
   tests, build, and browser QA remained lightweight.
+
+## 2026-07-27 — Phase 3B level-up card drafts
+
+- Added progression as the sixth simulation axis: exact contribution XP,
+  cumulative five-level thresholds, deterministic house-weighted 1-of-3
+  offers, 14 bounded cards, multiplicative/flat modifier resolution, and
+  automatic per-level damage/HP growth.
+- Added immutable FIFO draft state with explicit return-phase storage,
+  same-reference rejection for invalid choices, immediate max-HP healing,
+  cached per-house modifiers, and effect-only draft ticks.
+- Split agent attack resolution out of the oversized invasion module. Attacks
+  now resolve in stable agent order and attribute actual damage plus the exact
+  killing blow to the attacking house.
+- Applied cards to attack damage/cadence, movement, threat sense, break ratio,
+  hall defense, max HP, intermission healing, tribute, divine regeneration,
+  miracle cost/radius/healing, and affordability display.
+- Added a house-colored, keyboard-accessible draft overlay with responsive
+  three-column desktop/tablet and single-column mobile layouts. HUD rows now
+  expose level, cumulative XP, and progress to the next threshold.
+- Extended deterministic and balance automation with first-card autopick and a
+  separate seeded random-pick stream. The harness reports drafts/run, final
+  level/house, and most-picked cards.
+- An initial 20-seed smoke run produced 90% victories. Per the card-power
+  constraint, wave 2 HP scaling changed from 1.15 to 1.30 and wave 3 from 1.30
+  to 1.60; no card was weakened.
+- Final 200-seed first-pick results: 104 victories (52.0%), 96 wave-3 defeats,
+  6.33 drafts/run, and 3.11 average final level/house. Random-pick results:
+  104 victories (52.0%), 6.24 drafts/run, 3.08 average final level/house, and
+  `divine_open_channel` most picked at 112 selections.
+- Browser play reached organic Greymoor, Thornhold, and Ashvale drafts; number
+  key selection worked, the HUD filled, the world remained visibly dimmed,
+  and computed layouts were three columns at 768/1280 and one scrollable column
+  at 375. Browser logs contained no warnings or errors.
+- No work was offloaded to DGX Spark because implementation, 400 complete
+  simulations, tests, build, and responsive browser QA remained lightweight
+  locally.
