@@ -17,6 +17,8 @@
   --space-4: 16px;
   --space-6: 24px;
   --space-8: 32px;
+  --z-overlay: 2;
+  --z-debug-overlay: 3;
   color: var(--text);
   background: var(--surface);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -859,7 +861,7 @@ button {
   --draft-house: var(--draft-accent);
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: var(--z-overlay);
   display: grid;
   align-content: center;
   gap: var(--space-6);
@@ -961,7 +963,7 @@ button {
 .shop-overlay {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: var(--z-overlay);
   display: grid;
   align-content: center;
   gap: 12px;
@@ -969,6 +971,73 @@ button {
   overflow-y: auto;
   color: #fff8df;
   background: var(--shop-veil);
+}
+
+.sprite-debug-overlay {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: var(--z-debug-overlay);
+  display: grid;
+  gap: var(--space-2);
+  width: min(360px, calc(100vw - var(--space-8)));
+  max-height: min(360px, calc(100dvh - var(--space-8)));
+  padding: var(--space-4);
+  overflow: auto;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--panel);
+}
+
+.sprite-debug-overlay__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.sprite-debug-overlay__header p,
+.sprite-debug-overlay__status,
+.sprite-debug-overlay__missing p {
+  margin: 0;
+}
+
+.sprite-debug-overlay__header p,
+.sprite-debug-overlay__missing p {
+  color: var(--accent);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sprite-debug-overlay__header kbd {
+  padding: 2px 5px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.sprite-debug-overlay__status {
+  font-weight: 700;
+}
+
+.sprite-debug-overlay__missing {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.sprite-debug-overlay__missing ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sprite-debug-overlay__missing li,
+.sprite-debug-overlay__empty {
+  color: var(--muted);
+  font-size: 0.75rem;
 }
 
 .shop-overlay__header,
