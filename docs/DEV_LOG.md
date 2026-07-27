@@ -442,3 +442,30 @@
 - Final verification passed 255/255 tests, TypeScript, production build,
   both determinism paths, the 23-entry manifest check, all eight PNG
   dimension/alpha checks, diff hygiene, and the independent code re-review.
+
+## 2026-07-28 — Phase 3J rough balance restore and parallel harness
+
+- Split balance execution into contiguous worker-thread blocks, defaulting to
+  `os.cpus().length` with a `--workers=N` override. Parent aggregation sorts by
+  seed; regression coverage proves serial and parallel samples and their full
+  formatted output are identical.
+- Added wave start/end population, kills/spawns, clear time, mage-only time,
+  hall damage, divine power use, and regular-class death diagnostics.
+- The untuned `abc` baseline was 90.5% victory. It entered wave three with a
+  median 103.5 agents, killed 112/112 enemies, and spent zero median divine
+  power; waves one and two both cleared 100%.
+- Changed only wave-three creature HP: 5.0→7.5 produced 55.5% victory, then
+  7.5→8.5 produced 44.5%. The final wave-three median is 92/112 kills with
+  hall damage in 98.5% of runs.
+- This is deliberately a playability restore, not the full balance pass.
+  Waves one and two still need a later curve pass informed by hand play-tests;
+  player growth, classes, rosters, cards, shops, heroes, and meta progression
+  were not nerfed.
+- All implementation, installs, tests, builds, balance runs, and browser
+  automation for this slice ran on DGX Spark `aitopatom-d6bb`.
+- The measured untuned 200-seed wall time improved from 2608.10 seconds with
+  one worker to 215.07 seconds with 20 workers, a 12.13× speedup.
+- The 2,000-seed trio sweep took 2261.19 seconds and sampled every trio 100
+  times. `abe` was below 10%; thirteen trios were above 75%. These extremes
+  are recorded for the later full balance pass and were not tuned in this
+  narrow restore.

@@ -138,7 +138,7 @@ test("Given the Phase 3I wave table, when creature counts are read, then only th
       },
       {
         creatureCount: 112,
-        creatureHpMultiplier: 5,
+        creatureHpMultiplier: 8.5,
         creatureDamageMultiplier: 1.2,
         spawnEdges: 3,
         hasMage: true,

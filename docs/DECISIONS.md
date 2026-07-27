@@ -574,3 +574,52 @@ The battlefield background moved into the world asset namespace. House and
 rarity frames are enabled using normalized transparent-content insets, panels
 use the 64-pixel nine-slice corners, and draft backdrop plus divine gauge are
 wired. Missing class sprites keep shape-specific primitive fallbacks.
+
+## 2026-07-28 — Phase 3J rough balance restore
+
+### Diagnosis precedes tuning
+
+The untuned 200-seed `abc` run cleared waves one and two 100% of the time and
+won 90.5% of runs. Median living-agent counts were 76→59, 93→59, and
+103.5→31.5 across the three wave boundaries. Median kills/spawns were 36/36,
+60/60, and 112/112; median clear times were 536.5, 674.5, and 1412 ticks.
+Mage-only time was zero ticks. Hall damage occurred in 1%, 29.5%, and 83.5%
+of the waves, with median damage 0, 0, and 900. Median divine power spent was
+zero. Regular-unit deaths were 50.3% Warriors, 25.2% Spearmen, 5.0% Archers,
+and 19.6% Skirmishers.
+
+The clearest causes were the 103.5-agent median army entering wave three and
+enemy durability that still allowed a median 112/112 kills. The player never
+needed divine power, while the first two waves removed too little strength to
+make the final wave uncertain.
+
+### One enemy-side constant restores a measurable game
+
+Only wave three `creatureHpMultiplier` changed. It moved from 5.0 to 7.5,
+which reduced victory from 90.5% to 55.5%, then from 7.5 to 8.5, which
+reduced victory to 44.5%. Counts, damage, attack timing, hall damage, units,
+heroes, cards, rarity, shops, investments, and growth all remain unchanged.
+
+At 8.5, wave three clears in 44.5% of runs, median kills fall to 92/112,
+hall damage occurs in 98.5% of runs, and median hall damage is 1800. Waves
+one and two still clear 100%; changing their curve would require another
+balance lever and then compensating wave-three work. This pass therefore
+stops at the requested playability target instead of expanding into the full
+balance pass.
+
+### Parallel measurement is deterministic
+
+The harness defaults to the host CPU count, accepts `--workers=N`, gives each
+worker a contiguous seed block, and sorts returned samples by seed. A real
+worker-thread regression test asserts both the complete sample array and the
+formatted report are exactly equal to a one-worker run. This infrastructure is
+measurement-only and does not affect the simulation.
+
+On DGX Spark, the untuned 200-seed serial run took 2608.10 seconds and the
+20-worker run took 215.07 seconds, a 12.13× wall-clock speedup.
+
+The 2,000-seed random-trio sweep gave every one of the 20 trios exactly 100
+runs. `abe` was below the review floor at 9%. Thirteen trios exceeded 75%:
+`abd`, `acd`, `acf`, `ade`, `adf`, `bcd`, `bcf`, `bde`, `bdf`, `cde`,
+`cdf`, `cef`, and `def`. These are observations for the full balance pass,
+not reasons to add trio-specific tuning here.
