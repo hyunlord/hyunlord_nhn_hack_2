@@ -4,8 +4,13 @@ import { WAVE_DEFINITIONS } from "../../content/waveConfig";
 import { LEVEL_THRESHOLDS } from "../../progression/xp";
 import { HERO_LEVEL_THRESHOLDS } from "../../progression/xp";
 import { HERO_DEFINITIONS } from "../../content/heroConfig";
+import type { LegacyRiteGroup } from "../investmentSummary";
 
-export function HUD() {
+export function HUD({
+  legacyRites,
+}: {
+  readonly legacyRites: readonly LegacyRiteGroup[];
+}) {
   const { state } = useGameStore();
 
   return (
@@ -25,6 +30,32 @@ export function HUD() {
         <span>Tribute</span>
         <strong>{state.tribute}</strong>
       </div>
+      {legacyRites.length === 0 ? null : (
+        <section className="legacy-rites" aria-labelledby="legacy-rites-heading">
+          <h3 id="legacy-rites-heading">Legacy rites</h3>
+          <div className="legacy-rites__groups">
+            {legacyRites.map((group) => (
+              <section
+                aria-label={`${group.heading} Legacy rites`}
+                className="legacy-rites__group"
+                key={group.heading}
+              >
+                <h4>{group.heading}</h4>
+                <ul>
+                  {group.items.map((item) => (
+                    <li key={`${group.heading}:${item.name}`}>
+                      <strong>{item.name}</strong>
+                      <span>
+                        {item.rank} · {item.effect}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        </section>
+      )}
       {state.activeThreat === null ? null : (
         <div className="invasion-status" aria-label="Invasion status">
           <span>

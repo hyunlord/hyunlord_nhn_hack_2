@@ -682,6 +682,61 @@ button {
   color: var(--text);
 }
 
+.legacy-rites {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.legacy-rites h3,
+.legacy-rites h4 {
+  margin: 0;
+}
+
+.legacy-rites h3 {
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+.legacy-rites__groups {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.legacy-rites__group {
+  display: grid;
+  gap: 4px;
+}
+
+.legacy-rites__group h4 {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.legacy-rites__group ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legacy-rites__group li {
+  display: grid;
+  gap: 4px;
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+}
+
+.legacy-rites__group li span {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .phase-status strong {
   color: var(--accent);
   text-transform: capitalize;

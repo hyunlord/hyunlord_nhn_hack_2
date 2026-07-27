@@ -6,7 +6,10 @@ import {
   createInitialAppState,
 } from "../src/state/appFlow";
 import { createDefaultMetaState } from "../src/meta/legacy";
-import { activeBonusGroups } from "../src/ui/screens/MetaScreen";
+import {
+  activeBonusGroups,
+  legacyRiteGroups,
+} from "../src/ui/investmentSummary";
 
 function summary(runId = "run-1"): RunSummary {
   return {
@@ -197,5 +200,39 @@ test("Given global and house investments, when bonus summary groups are built, t
     { heading: "Global", labels: ["Max HP +10"] },
     { heading: "Ashvale", labels: ["Attack damage +4%"] },
     { heading: "Thornhold", labels: ["Max HP +15"] },
+  ]);
+});
+
+test("Given a run with global and unselected house investments, when legacy rite groups are built, then only global and selected-house tracks are visible", () => {
+  const groups = legacyRiteGroups(
+    {
+      global_vigor: 1,
+      house_a_ashvale_fury: 1,
+      house_d_duskmere_stride: 1,
+    },
+    ["house_a", "house_b", "house_c"],
+  );
+
+  assert.deepEqual(groups, [
+    {
+      heading: "Global",
+      items: [
+        {
+          effect: "+10 max HP per rank",
+          name: "Vigor of the Faithful",
+          rank: "Rank 1",
+        },
+      ],
+    },
+    {
+      heading: "Ashvale",
+      items: [
+        {
+          effect: "+4% attack damage per rank",
+          name: "Ashvale Fury",
+          rank: "Rank 1",
+        },
+      ],
+    },
   ]);
 });

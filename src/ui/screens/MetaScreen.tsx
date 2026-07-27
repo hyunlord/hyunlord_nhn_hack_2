@@ -15,10 +15,12 @@ import { HOUSE_SYNERGIES } from "../../content/houseSynergies";
 import {
   canPurchase,
   investmentCost,
-  resolveInvestmentEffects,
 } from "../../meta/investments";
-import type { CardEffect } from "../../progression/progression.types";
 import { useAppFlow } from "../../state/appFlowContext";
+import {
+  activeBonusGroups,
+  investmentEffectLabel,
+} from "../investmentSummary";
 
 function unlockRequirement(
   houseId: HouseId,
@@ -44,105 +46,6 @@ function unlockRequirement(
     return `Win ${definition.minimumVictories} run`;
   }
   return null;
-}
-
-function multiplierPercent(multiplier: number): string {
-  const percent = Math.round((multiplier - 1) * 100);
-  return `${percent > 0 ? "+" : ""}${percent}%`;
-}
-
-function perRankEffectLabel(effect: CardEffect): string {
-  const labels: string[] = [];
-  if (effect.maxHpBonus !== undefined) {
-    labels.push(`+${effect.maxHpBonus} max HP per rank`);
-  }
-  if (effect.attackDamageMultiplier !== undefined) {
-    labels.push(`${multiplierPercent(effect.attackDamageMultiplier)} attack damage per rank`);
-  }
-  if (effect.divineRegenMultiplier !== undefined) {
-    labels.push(`${multiplierPercent(effect.divineRegenMultiplier)} divine regen per rank`);
-  }
-  if (effect.tributePerKillBonus !== undefined) {
-    labels.push(`+${effect.tributePerKillBonus} tribute per kill per rank`);
-  }
-  if (effect.breakHpRatioDelta !== undefined) {
-    labels.push(`${Math.round(effect.breakHpRatioDelta * 100)} point flee threshold per rank`);
-  }
-  if (effect.moveSpeedMultiplier !== undefined) {
-    labels.push(`${multiplierPercent(effect.moveSpeedMultiplier)} move speed per rank`);
-  }
-  return labels.join("; ");
-}
-
-export interface ActiveBonusGroup {
-  readonly heading: string;
-  readonly labels: readonly string[];
-}
-
-function effectLabels(investmentRanks: Readonly<Record<string, number>>): readonly string[] {
-  const effects = resolveInvestmentEffects(investmentRanks);
-  const labels: string[] = [];
-  if (effects.maxHpBonus !== 0) {
-    labels.push(`Max HP ${effects.maxHpBonus > 0 ? "+" : ""}${effects.maxHpBonus}`);
-  }
-  if (effects.attackDamageMultiplier !== 1) {
-    labels.push(`Attack damage ${multiplierPercent(effects.attackDamageMultiplier)}`);
-  }
-  if (effects.divineRegenMultiplier !== 1) {
-    labels.push(`Divine regen ${multiplierPercent(effects.divineRegenMultiplier)}`);
-  }
-  if (effects.tributePerKillBonus !== 0) {
-    labels.push(`Tribute per kill +${effects.tributePerKillBonus}`);
-  }
-  if (effects.breakHpRatioDelta !== 0) {
-    labels.push(`Flee threshold ${Math.round(effects.breakHpRatioDelta * 100)} points`);
-  }
-  if (effects.moveSpeedMultiplier !== 1) {
-    labels.push(`Move speed ${multiplierPercent(effects.moveSpeedMultiplier)}`);
-  }
-  return labels;
-}
-
-function ranksForTracks(
-  investmentRanks: Readonly<Record<string, number>>,
-  tracks: readonly InvestmentTrack[],
-): Readonly<Record<string, number>> {
-  const ranks: Record<string, number> = {};
-  for (const track of tracks) {
-    const rank = investmentRanks[track.id] ?? 0;
-    if (rank > 0) {
-      ranks[track.id] = rank;
-    }
-  }
-  return ranks;
-}
-
-export function activeBonusGroups(
-  investmentRanks: Readonly<Record<string, number>>,
-): readonly ActiveBonusGroup[] {
-  const groups: ActiveBonusGroup[] = [];
-  const globalLabels = effectLabels(
-    ranksForTracks(
-      investmentRanks,
-      INVESTMENT_TRACKS.filter((track) => track.scope === "global"),
-    ),
-  );
-  if (globalLabels.length > 0) {
-    groups.push({ heading: "Global", labels: globalLabels });
-  }
-
-  for (const house of HOUSE_CONFIG) {
-    const houseLabels = effectLabels(
-      ranksForTracks(
-        investmentRanks,
-        INVESTMENT_TRACKS.filter((track) => track.houseId === house.id),
-      ),
-    );
-    if (houseLabels.length > 0) {
-      groups.push({ heading: house.name, labels: houseLabels });
-    }
-  }
-  return groups;
 }
 
 function trackDisabledReason(
@@ -216,7 +119,7 @@ function InvestmentTrackCard({
         </span>
       </div>
       <p className="investment-track__effect">
-        {perRankEffectLabel(track.effectPerRank)}
+        {investmentEffectLabel(track.effectPerRank)}
       </p>
       <div className="investment-track__purchase">
         <span>{nextCost === null ? "Max rank" : `Next cost ${nextCost}`}</span>

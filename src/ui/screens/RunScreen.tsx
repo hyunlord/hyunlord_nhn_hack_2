@@ -13,8 +13,16 @@ import { HUD } from "../components/HUD";
 import { MiracleButtons } from "../components/MiracleButtons";
 import { DraftOverlay } from "../components/DraftOverlay";
 import { ShopOverlay } from "../components/ShopOverlay";
+import {
+  legacyRiteGroups,
+  type LegacyRiteGroup,
+} from "../investmentSummary";
 
-function RunWorld() {
+function RunWorld({
+  legacyRites,
+}: {
+  readonly legacyRites: readonly LegacyRiteGroup[];
+}) {
   const { state } = useGameStore();
   return (
     <main className="app-shell">
@@ -34,7 +42,7 @@ function RunWorld() {
           <ShopOverlay />
           <DraftOverlay />
         </div>
-        <HUD />
+        <HUD legacyRites={legacyRites} />
         <MiracleButtons />
         <HighlightFeed />
       </div>
@@ -66,6 +74,10 @@ export function RunScreen() {
     houseIds: validation.houseIds,
     startingModifiers,
   });
+  const legacyRites = legacyRiteGroups(
+    state.meta.investmentRanks,
+    validation.houseIds,
+  );
 
   return (
     <GameStoreProvider
@@ -75,7 +87,7 @@ export function RunScreen() {
       seed={state.runSeed}
       startingModifiers={startingModifiers}
     >
-      <RunWorld />
+      <RunWorld legacyRites={legacyRites} />
     </GameStoreProvider>
   );
 }

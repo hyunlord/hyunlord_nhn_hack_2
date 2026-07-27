@@ -89,6 +89,10 @@ The content width is capped at 1200px and arranged with CSS Grid.
 
 - Tick count and current/max divine-power meter
 - One row per house with configured swatch, living-agent count, and power
+- Legacy rites appear as a compact bordered run summary only when permanent
+  investments are active for global or selected-house tracks
+- Run-visible rites name the track, rank, scope, and per-rank effect without
+  storing MetaState in GameState or implying unselected-house effects apply
 - Existing scaffold spacing and border treatment remain unchanged
 
 ### Unified ability controls
