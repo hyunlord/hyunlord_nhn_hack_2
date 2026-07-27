@@ -28,6 +28,7 @@ test("Given the same seed houses and starting bundle, when a run identity is bui
     houseIds: ["house_a", "house_b", "house_c"],
     startingModifiers: {
       globalEffects: [{ maxHpBonus: 10 }],
+      globalSharedEffects: [],
       houseEffects: [
         {
           houseId: "house_a",
@@ -41,6 +42,7 @@ test("Given the same seed houses and starting bundle, when a run identity is bui
     houseIds: ["house_a", "house_b", "house_c"],
     startingModifiers: {
       globalEffects: [{ maxHpBonus: 10 }],
+      globalSharedEffects: [],
       houseEffects: [
         {
           houseId: "house_a",

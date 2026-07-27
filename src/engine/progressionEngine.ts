@@ -118,10 +118,14 @@ export function divineModifiersForState(
         modifiers.miracleHealMultiplier,
     }),
     {
-      divineRegenMultiplier: 1,
-      divineCostMultiplier: 1,
-      miracleRadiusMultiplier: 1,
-      miracleHealMultiplier: 1,
+      divineRegenMultiplier:
+        state.runSharedModifiers.divineRegenMultiplier,
+      divineCostMultiplier:
+        state.runSharedModifiers.divineCostMultiplier,
+      miracleRadiusMultiplier:
+        state.runSharedModifiers.miracleRadiusMultiplier,
+      miracleHealMultiplier:
+        state.runSharedModifiers.miracleHealMultiplier,
     },
   );
 }

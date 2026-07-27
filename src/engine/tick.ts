@@ -293,7 +293,9 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
                 agent.hp,
                 Math.min(
                   maxHpForAgent(agent, modifiers),
-                  agent.hp + modifiers.interWaveHealBonus,
+                  agent.hp +
+                    maintained.runSharedModifiers.interWaveHealBonus +
+                    modifiers.interWaveHealBonus,
                 ),
               ),
             };
@@ -360,6 +362,12 @@ export function createInitialState(
       houseBaseEffects.find(({ houseId }) => houseId === id)?.effects ?? [],
     ),
   }));
+  const runSharedModifiers = resolveModifiers(
+    CARD_DEFINITIONS,
+    [],
+    0,
+    startingModifiers.globalSharedEffects,
+  );
   const modifiersByHouse = new Map(
     houseModifiers.map(({ houseId, modifiers }) => [houseId, modifiers]),
   );
@@ -411,6 +419,7 @@ export function createInitialState(
           level: 1,
         })),
       houseModifiers,
+      runSharedModifiers,
       houseBaseEffects,
       activeSynergyIds: activeSynergies.map(({ id }) => id),
       betrayalHouseId: null,

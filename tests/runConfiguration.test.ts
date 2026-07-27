@@ -12,6 +12,7 @@ import {
 import {
   applyProgressionAwards,
   chooseDraftCard,
+  divineModifiersForState,
   modifiersForHouse,
 } from "../src/engine/progressionEngine";
 import { createRng, type Rng } from "../src/engine/prng";
@@ -104,6 +105,7 @@ test("Given global and house investment ranks, when a starting bundle is derived
   const bundle = deriveStartingModifierBundle({
     global_vigor: 2,
     global_edge: 2,
+    global_grace: 1,
     house_a_ashvale_fury: 1,
     house_d_duskmere_stride: 2,
   });
@@ -113,6 +115,7 @@ test("Given global and house investment ranks, when a starting bundle is derived
       { maxHpBonus: 20 },
       { attackDamageMultiplier: 1.03 ** 2 },
     ],
+    globalSharedEffects: [{ divineRegenMultiplier: 1.08 }],
     houseEffects: [
       {
         houseId: "house_a",
@@ -132,6 +135,7 @@ test("Given a starting modifier bundle, when a run is created, then global effec
     ["house_a", "house_d", "house_c"],
     {
       globalEffects: [{ maxHpBonus: 20, attackDamageMultiplier: 1.03 ** 2 }],
+      globalSharedEffects: [],
       houseEffects: [
         {
           houseId: "house_a",
@@ -163,6 +167,47 @@ test("Given a starting modifier bundle, when a run is created, then global effec
   assert.equal(duskmere.moveSpeedMultiplier, 1.25 * 1.04 ** 2);
   assert.equal(greymoor.tributePerKillBonus, 1);
   assert.equal(ashvaleAgent?.hp, Math.round((100 + 20) * 1));
+});
+
+test("Given global grace investments, when a normal trio starts, then shared divine regen is applied once and house modifiers stay scoped", () => {
+  const rankOne = createInitialState(
+    4104,
+    DEFAULT_HOUSE_IDS,
+    deriveStartingModifierBundle({
+      global_grace: 1,
+      global_vigor: 1,
+      house_a_ashvale_fury: 1,
+    }),
+  ).state;
+  const rankFour = createInitialState(
+    4105,
+    DEFAULT_HOUSE_IDS,
+    deriveStartingModifierBundle({ global_grace: 4 }),
+  ).state;
+
+  assert.equal(
+    divineModifiersForState(rankOne).divineRegenMultiplier,
+    1.08,
+  );
+  assert.equal(
+    divineModifiersForState(rankFour).divineRegenMultiplier,
+    1.08 ** 4,
+  );
+  for (const houseId of DEFAULT_HOUSE_IDS) {
+    assert.equal(modifiersForHouse(rankOne, houseId).maxHpBonus, 10);
+  }
+  assert.equal(
+    modifiersForHouse(rankOne, "house_a").attackDamageMultiplier,
+    1.1 * 1.04,
+  );
+  assert.equal(
+    modifiersForHouse(rankOne, "house_b").attackDamageMultiplier,
+    1,
+  );
+  assert.equal(
+    modifiersForHouse(rankOne, "house_c").attackDamageMultiplier,
+    1,
+  );
 });
 
 test("Given an ordered mixed trio, when a run is created, then only selected houses, agents, and configured heroes spawn", () => {

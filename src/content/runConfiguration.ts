@@ -9,11 +9,13 @@ export interface StartingHouseModifierEffects {
 
 export interface StartingModifierBundle {
   readonly globalEffects: readonly CardEffect[];
+  readonly globalSharedEffects: readonly CardEffect[];
   readonly houseEffects: readonly StartingHouseModifierEffects[];
 }
 
 export const EMPTY_STARTING_MODIFIER_BUNDLE: StartingModifierBundle = {
   globalEffects: [],
+  globalSharedEffects: [],
   houseEffects: [],
 };
 
@@ -100,10 +102,99 @@ function rankedEffect(effect: CardEffect, rank: number): CardEffect {
   };
 }
 
+function perHouseStartingEffect(effect: CardEffect): CardEffect {
+  return {
+    ...(effect.attackDamageMultiplier === undefined
+      ? {}
+      : { attackDamageMultiplier: effect.attackDamageMultiplier }),
+    ...(effect.attackIntervalMultiplier === undefined
+      ? {}
+      : { attackIntervalMultiplier: effect.attackIntervalMultiplier }),
+    ...(effect.maxHpBonus === undefined
+      ? {}
+      : { maxHpBonus: effect.maxHpBonus }),
+    ...(effect.maxHpMultiplier === undefined
+      ? {}
+      : { maxHpMultiplier: effect.maxHpMultiplier }),
+    ...(effect.moveSpeedMultiplier === undefined
+      ? {}
+      : { moveSpeedMultiplier: effect.moveSpeedMultiplier }),
+    ...(effect.threatSenseRadiusBonus === undefined
+      ? {}
+      : { threatSenseRadiusBonus: effect.threatSenseRadiusBonus }),
+    ...(effect.breakHpRatioDelta === undefined
+      ? {}
+      : { breakHpRatioDelta: effect.breakHpRatioDelta }),
+    ...(effect.hallDefenseRadiusBonus === undefined
+      ? {}
+      : { hallDefenseRadiusBonus: effect.hallDefenseRadiusBonus }),
+    ...(effect.tributePerKillBonus === undefined
+      ? {}
+      : { tributePerKillBonus: effect.tributePerKillBonus }),
+    ...(effect.heroDamageMultiplier === undefined
+      ? {}
+      : { heroDamageMultiplier: effect.heroDamageMultiplier }),
+    ...(effect.heroMaxHpMultiplier === undefined
+      ? {}
+      : { heroMaxHpMultiplier: effect.heroMaxHpMultiplier }),
+    ...(effect.heroRespawnTicksMultiplier === undefined
+      ? {}
+      : {
+          heroRespawnTicksMultiplier:
+            effect.heroRespawnTicksMultiplier,
+        }),
+    ...(effect.heroAuraRadiusBonus === undefined
+      ? {}
+      : { heroAuraRadiusBonus: effect.heroAuraRadiusBonus }),
+    ...(effect.heroOnKillHeal === undefined
+      ? {}
+      : { heroOnKillHeal: effect.heroOnKillHeal }),
+    ...(effect.divinePowerPerAgentDeath === undefined
+      ? {}
+      : {
+          divinePowerPerAgentDeath:
+            effect.divinePowerPerAgentDeath,
+        }),
+    ...(effect.ignoreBreak === undefined
+      ? {}
+      : { ignoreBreak: effect.ignoreBreak }),
+    ...(effect.towerCostMultiplier === undefined
+      ? {}
+      : { towerCostMultiplier: effect.towerCostMultiplier }),
+    ...(effect.heroRespawnHpMultiplier === undefined
+      ? {}
+      : { heroRespawnHpMultiplier: effect.heroRespawnHpMultiplier }),
+    ...(effect.disableHeroRespawn === undefined
+      ? {}
+      : { disableHeroRespawn: effect.disableHeroRespawn }),
+  };
+}
+
+function sharedStartingEffect(effect: CardEffect): CardEffect {
+  return {
+    ...(effect.divineRegenMultiplier === undefined
+      ? {}
+      : { divineRegenMultiplier: effect.divineRegenMultiplier }),
+    ...(effect.divineCostMultiplier === undefined
+      ? {}
+      : { divineCostMultiplier: effect.divineCostMultiplier }),
+    ...(effect.miracleRadiusMultiplier === undefined
+      ? {}
+      : { miracleRadiusMultiplier: effect.miracleRadiusMultiplier }),
+    ...(effect.miracleHealMultiplier === undefined
+      ? {}
+      : { miracleHealMultiplier: effect.miracleHealMultiplier }),
+    ...(effect.interWaveHealBonus === undefined
+      ? {}
+      : { interWaveHealBonus: effect.interWaveHealBonus }),
+  };
+}
+
 export function deriveStartingModifierBundle(
   investmentRanks: Readonly<Record<string, number>>,
 ): StartingModifierBundle {
   const globalEffects: CardEffect[] = [];
+  const globalSharedEffects: CardEffect[] = [];
   const houseEffects = new Map<HouseId, CardEffect[]>();
 
   for (const track of INVESTMENT_TRACKS) {
@@ -113,7 +204,14 @@ export function deriveStartingModifierBundle(
     }
     const effect = rankedEffect(track.effectPerRank, rank);
     if (track.scope === "global") {
-      globalEffects.push(effect);
+      const perHouseEffect = perHouseStartingEffect(effect);
+      const sharedEffect = sharedStartingEffect(effect);
+      if (Object.keys(perHouseEffect).length > 0) {
+        globalEffects.push(perHouseEffect);
+      }
+      if (Object.keys(sharedEffect).length > 0) {
+        globalSharedEffects.push(sharedEffect);
+      }
       continue;
     }
     if (track.houseId === undefined) {
@@ -126,6 +224,7 @@ export function deriveStartingModifierBundle(
 
   return {
     globalEffects,
+    globalSharedEffects,
     houseEffects: [...houseEffects.entries()].map(([houseId, effects]) => ({
       houseId,
       effects,

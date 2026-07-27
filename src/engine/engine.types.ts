@@ -72,6 +72,7 @@ export interface GameState {
     houseId: string;
     modifiers: ResolvedModifiers;
   }[];
+  runSharedModifiers: ResolvedModifiers;
   houseBaseEffects: {
     houseId: HouseId;
     effects: readonly CardEffect[];
