@@ -213,3 +213,37 @@
   Browser warnings/errors remained empty.
 - No work was offloaded to DGX Spark because the deterministic simulation,
   tests, build, and responsive browser QA remained lightweight locally.
+
+## 2026-07-27 — Phase 3D houses, synergies, and Legacy
+
+- Removed destroyed towers from live placement/combat state in ascending ID
+  order and added deterministic 80-tick rubble records. Destroyed structures
+  now free both their capacity slot and former ground.
+- Replaced the one-pass auto-shop with a deterministic tower-weighted
+  round-robin cycle and per-category failure diagnostics. The 200-seed default
+  run recorded zero placement failures; affordability, not geometry, was the
+  remaining limiter.
+- Expanded the roster to six houses with ordered three-house deployment,
+  selected-only heroes, exact base traits, four pair synergies, and two
+  terminally discoverable hidden combinations.
+- Added seeded wave-three betrayal for eligible alliances, unnamed in-run
+  presentation, stable terminal summaries, and hero-less wave-two tracking.
+- Added versioned local Legacy persistence, exact reward itemization, six
+  achievements, three purchasable house unlocks, free Stonewake betrayal
+  unlock, duplicate-run protection, retry, and summary flows.
+- Replaced the terminal canvas overlay with responsive Legacy, selection, run,
+  and summary screens. Selection previews public and discovered synergies;
+  persistent state stays outside the replayable simulation.
+- Extended the balance CLI with fixed ordered `--houses=a,b,c` and
+  deterministic `--houses=random` coverage of all 20 trios, per-trio victory
+  rates, median Legacy, and over-70% flags.
+- Retuned tower price growth from 1.40 to 1.15 and wave-three HP scaling from
+  4.0 to 5.0. The authoritative 200-seed default run produced 77 victories
+  (38.5%), 2.04 towers per run, and 22 median tribute after the final shop.
+  The 400-seed all-trio run flagged no combination above 70%; `abc` and `abe`
+  tied for strongest at 45.0% in their 20-seed slices.
+- All 131 tests, both determinism lanes, TypeScript, and the production build
+  passed before browser QA.
+- No work was offloaded to DGX Spark because Phase 3D required no heavy compute
+  or generated assets. The planned 3E sprite pass can replace draw helpers
+  without changing simulation state.

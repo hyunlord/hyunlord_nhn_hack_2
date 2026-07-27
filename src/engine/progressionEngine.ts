@@ -29,6 +29,19 @@ export function modifiersForHouse(
   return result;
 }
 
+function baseEffectsForHouse(
+  state: GameState,
+  houseId: string,
+) {
+  const effects = state.houseBaseEffects.find(
+    (entry) => entry.houseId === houseId,
+  )?.effects;
+  if (effects === undefined) {
+    throw new RangeError(`Missing base effects for ${houseId}.`);
+  }
+  return effects;
+}
+
 export function divineModifiersForState(
   state: GameState,
 ): DivineModifiers {
@@ -135,6 +148,7 @@ export function applyProgressionAwards(
       CARD_DEFINITIONS,
       updated.cards,
       level - 1,
+      baseEffectsForHouse(state, progress.houseId),
     );
     agents = healForEffectiveMaxHpIncrease(
       { ...state, agents },
@@ -243,6 +257,7 @@ export function chooseDraftCard(
     CARD_DEFINITIONS,
     cards,
     progress.level - 1,
+    baseEffectsForHouse(state, offer.houseId),
   );
   const houseProgress = [...state.houseProgress];
   houseProgress[progressIndex] = updatedProgress;

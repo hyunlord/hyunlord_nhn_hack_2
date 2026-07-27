@@ -7,7 +7,11 @@ import { drawEffects } from "./drawEffects";
 import { drawHalls } from "./drawHalls";
 import { drawHeroes } from "./drawHeroes";
 import { drawThreats } from "./drawThreats";
-import { drawTowerPreview, drawTowers } from "./drawTowers";
+import {
+  drawTowerPreview,
+  drawTowerRubble,
+  drawTowers,
+} from "./drawTowers";
 
 export function GameCanvas() {
   const {
@@ -69,6 +73,11 @@ export function GameCanvas() {
         stateRef.current.houses,
       );
       drawTowers(context, stateRef.current.towers);
+      drawTowerRubble(
+        context,
+        stateRef.current.towerRubble,
+        stateRef.current.tick,
+      );
       drawAgents(
         context,
         stateRef.current.agents,

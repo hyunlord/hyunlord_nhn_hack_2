@@ -1,6 +1,7 @@
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import { WAVE_DEFINITIONS } from "../src/content/waveConfig";
 import type {
+  HouseOption,
   PickMode,
   RunSample,
   ShopMode,
@@ -199,23 +200,106 @@ function progressionTable(samples: readonly RunSample[]): string {
 
 function shopTable(samples: readonly RunSample[]): string {
   return table(
-    ["Shop metric", "Average"],
+    ["Shop metric", "Average", "Median"],
     [
       [
         "Towers built per run",
         displayAverage(average(samples.map(({ towersBuilt }) => towersBuilt))),
+        displayMedian(median(samples.map(({ towersBuilt }) => towersBuilt))),
       ],
       [
-        "Tribute unspent at run end",
+        "Tribute unspent after final shop",
         displayAverage(
           average(samples.map(({ tributeUnspent }) => tributeUnspent)),
+        ),
+        displayMedian(
+          median(samples.map(({ tributeUnspent }) => tributeUnspent)),
         ),
       ],
       [
         "Hero deaths per run",
         displayAverage(average(samples.map(({ heroDeaths }) => heroDeaths))),
+        displayMedian(median(samples.map(({ heroDeaths }) => heroDeaths))),
       ],
     ],
+  );
+}
+
+function shopDiagnosticTable(samples: readonly RunSample[]): string {
+  const itemIds = Object.keys(
+    samples[0]?.shopDiagnostics ?? {},
+  ) as (keyof RunSample["shopDiagnostics"])[];
+  return table(
+    [
+      "Shop item",
+      "Attempts",
+      "Success",
+      "Unaffordable",
+      "Unavailable",
+      "Placement failed",
+    ],
+    itemIds.map((itemId) => [
+      itemId,
+      `${samples.reduce(
+        (sum, sample) =>
+          sum + sample.shopDiagnostics[itemId].attempted,
+        0,
+      )}`,
+      `${samples.reduce(
+        (sum, sample) =>
+          sum + sample.shopDiagnostics[itemId].succeeded,
+        0,
+      )}`,
+      `${samples.reduce(
+        (sum, sample) =>
+          sum + sample.shopDiagnostics[itemId].unaffordable,
+        0,
+      )}`,
+      `${samples.reduce(
+        (sum, sample) =>
+          sum + sample.shopDiagnostics[itemId].domainUnavailable,
+        0,
+      )}`,
+      `${samples.reduce(
+        (sum, sample) =>
+          sum + sample.shopDiagnostics[itemId].placementFailed,
+        0,
+      )}`,
+    ]),
+  );
+}
+
+function trioLabel(sample: RunSample): string {
+  return sample.selectedHouseIds
+    .map((houseId) => houseId.slice("house_".length))
+    .join("");
+}
+
+function houseTable(samples: readonly RunSample[]): string {
+  const grouped = new Map<string, RunSample[]>();
+  for (const sample of samples) {
+    const label = trioLabel(sample);
+    grouped.set(label, [...(grouped.get(label) ?? []), sample]);
+  }
+  return table(
+    ["Trio", "Runs", "Victory rate", "Median Legacy", "Balance flag"],
+    [...grouped.entries()]
+      .sort(([first], [second]) => first.localeCompare(second))
+      .map(([label, trioSamples]) => {
+        const victories = trioSamples.filter(
+          ({ outcome }) => outcome.kind === "victory",
+        ).length;
+        const victoryRate = (victories / trioSamples.length) * 100;
+        return [
+          label,
+          `${trioSamples.length}`,
+          rate(victories, trioSamples.length),
+          displayMedian(
+            median(trioSamples.map(({ legacyEarned }) => legacyEarned)),
+          ),
+          victoryRate > 70 ? "OVER 70%" : "",
+        ];
+      }),
   );
 }
 
@@ -224,14 +308,19 @@ export function printBalanceReport(
   maxTicks: number,
   pickMode: PickMode,
   shopMode: ShopMode,
+  houseOption: HouseOption,
 ): void {
+  const houseMode =
+    houseOption.kind === "random" ? "random-all-20" : houseOption.label;
   console.log(
     `Balance harness: seeds=${samples.length}, start=${BALANCE_CONFIG.DEFAULT_SEED}, ` +
-      `miracles=none, picks=${pickMode}, shop=${shopMode}, maxTicks=${maxTicks}`,
+      `miracles=none, picks=${pickMode}, shop=${shopMode}, houses=${houseMode}, maxTicks=${maxTicks}`,
   );
   console.log(outcomeTable(samples));
   console.log(endStateTable(samples));
   console.log(waveTable(samples));
   console.log(progressionTable(samples));
   console.log(shopTable(samples));
+  console.log(shopDiagnosticTable(samples));
+  console.log(houseTable(samples));
 }

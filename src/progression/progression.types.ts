@@ -4,6 +4,7 @@ export interface CardEffect {
   attackDamageMultiplier?: number;
   attackIntervalMultiplier?: number;
   maxHpBonus?: number;
+  maxHpMultiplier?: number;
   moveSpeedMultiplier?: number;
   threatSenseRadiusBonus?: number;
   breakHpRatioDelta?: number;

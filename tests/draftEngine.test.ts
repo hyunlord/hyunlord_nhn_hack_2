@@ -245,6 +245,6 @@ test("Given Bren selects Iron Body, when effective max HP rises, then only his h
 
   assert.equal(
     result.agents.find(({ id }) => id === bren.id)?.hp,
-    213,
+    235,
   );
 });

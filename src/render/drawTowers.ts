@@ -1,8 +1,9 @@
-import type { Tower } from "../build/build.types";
+import type { Tower, TowerDestroyed } from "../build/build.types";
 import {
   TOWER_HP,
   TOWER_RADIUS,
   TOWER_RANGE,
+  TOWER_RUBBLE_TICKS,
   validateTowerPlacement,
 } from "../build/structures";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
@@ -55,6 +56,26 @@ export function drawTowers(
       width * Math.max(0, Math.min(1, tower.hp / TOWER_HP)),
       3,
     );
+  }
+}
+
+export function drawTowerRubble(
+  context: CanvasRenderingContext2D,
+  rubble: readonly TowerDestroyed[],
+  tick: number,
+): void {
+  for (const record of rubble) {
+    const remaining = Math.max(
+      0,
+      Math.min(1, (record.tick + TOWER_RUBBLE_TICKS - tick) / TOWER_RUBBLE_TICKS),
+    );
+    context.save();
+    context.globalAlpha = remaining * 0.72;
+    context.fillStyle = "#6f6a60";
+    context.fillRect(record.x - 8, record.y + 2, 6, 4);
+    context.fillRect(record.x + 1, record.y - 1, 8, 5);
+    context.fillRect(record.x - 2, record.y - 5, 5, 4);
+    context.restore();
   }
 }
 

@@ -1,5 +1,8 @@
 import type { Agent, House } from "../agents/agentTypes";
-import type { HouseId } from "../content/houseConfig";
+import type {
+  HouseId,
+  HouseSelection,
+} from "../content/houseConfig";
 import type {
   MiracleOutcome,
   MiracleType,
@@ -7,6 +10,7 @@ import type {
 import type { Highlight } from "../threat/highlightRecorder";
 import type { ThreatEvent } from "../threat/threatTypes";
 import type {
+  CardEffect,
   DraftOffer,
   HouseProgress,
 } from "../progression/progression.types";
@@ -14,6 +18,7 @@ import type { ResolvedModifiers } from "../progression/modifiers";
 import type {
   ShopPurchases,
   Tower,
+  TowerDestroyed,
 } from "../build/build.types";
 
 export type RunPhase =
@@ -39,6 +44,8 @@ export interface WaveSummary {
 
 export interface GameState {
   tick: number;
+  runSeed: number;
+  selectedHouseIds: HouseSelection;
   phase: RunPhase;
   phaseBeforeDraft: Exclude<RunPhase, "draft"> | null;
   waveIndex: number;
@@ -56,8 +63,16 @@ export interface GameState {
     houseId: string;
     modifiers: ResolvedModifiers;
   }[];
+  houseBaseEffects: {
+    houseId: HouseId;
+    effects: readonly CardEffect[];
+  }[];
+  activeSynergyIds: string[];
+  betrayalHouseId: HouseId | null;
+  heroLessWave2Clear: boolean;
   pendingDrafts: DraftOffer[];
   towers: Tower[];
+  towerRubble: TowerDestroyed[];
   shopPurchases: ShopPurchases;
   runUpgrades: {
     attackDamageMultiplier: number;

@@ -50,6 +50,7 @@ export function maxHpForAgent(
       : hero.hpMultiplier * modifiers.heroMaxHpMultiplier;
   return Math.round(
     (BALANCE_CONFIG.INITIAL_HP + modifiers.maxHpBonus) *
+      modifiers.maxHpMultiplier *
       heroMultiplier,
   );
 }

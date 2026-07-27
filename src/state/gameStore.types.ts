@@ -6,7 +6,6 @@ import type { ShopItemId } from "../build/build.types";
 export type GameAction =
   | { type: "selectMiracle"; miracle: MiracleType | null }
   | { type: "beginNextWave" }
-  | { type: "restart" }
   | { type: "chooseDraftCard"; offerId: string; cardId: string }
   | {
       type: "purchaseShopItem";

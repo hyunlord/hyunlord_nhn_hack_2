@@ -46,10 +46,10 @@ function findNearestHall(
   return findNearestById(origin, halls);
 }
 
-export function assignTraitor(
-  houseIds: readonly string[],
+export function assignTraitor<T extends string>(
+  houseIds: readonly T[],
   rng: Rng,
-): string {
+): T {
   return rng.pick([...houseIds].sort());
 }
 

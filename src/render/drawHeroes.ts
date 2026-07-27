@@ -6,6 +6,8 @@ import { maxHpForAgent } from "../engine/heroEngine";
 const HERO_RADIUS = 8;
 const HP_BAR_WIDTH = 34;
 const HP_BAR_HEIGHT = 4;
+const LABEL_HEIGHT = 12;
+const LABEL_PADDING_X = 3;
 
 type ModifierEntry = {
   readonly houseId: string;
@@ -74,8 +76,17 @@ export function drawHeroes(
 
     context.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
     context.textAlign = "center";
-    context.textBaseline = "bottom";
+    context.textBaseline = "top";
+    const labelY = hero.y + HERO_RADIUS + 12;
+    const labelWidth = context.measureText(definition.name).width;
+    context.fillStyle = "rgba(26, 22, 19, 0.88)";
+    context.fillRect(
+      hero.x - labelWidth / 2 - LABEL_PADDING_X,
+      labelY - 1,
+      labelWidth + LABEL_PADDING_X * 2,
+      LABEL_HEIGHT,
+    );
     context.fillStyle = "rgba(255, 253, 246, 0.96)";
-    context.fillText(definition.name, hero.x, barY - 2);
+    context.fillText(definition.name, hero.x, labelY);
   }
 }

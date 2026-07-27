@@ -2,7 +2,10 @@ import type { Agent } from "../agents/agentTypes";
 import type { ResolvedModifiers } from "../progression/modifiers";
 import type { Hall } from "./engine.types";
 import { scheduleHeroDeath } from "./heroEngine";
-import type { Tower } from "../build/build.types";
+import type {
+  Tower,
+  TowerDestroyed,
+} from "../build/build.types";
 
 interface AgentDamage {
   readonly agentId: string;
@@ -17,6 +20,11 @@ interface HallDamage {
 interface TowerDamage {
   readonly structureId: string;
   readonly amount: number;
+}
+
+interface TowerDamageResult {
+  readonly towers: Tower[];
+  readonly destroyed: TowerDestroyed[];
 }
 
 export function applyThreatDamages(
@@ -83,7 +91,8 @@ export function applyHallDamages(
 export function applyTowerDamages(
   towers: readonly Tower[],
   damages: readonly TowerDamage[],
-): Tower[] {
+  tick: number,
+): TowerDamageResult {
   const totals = new Map<string, number>();
   for (const damage of damages) {
     totals.set(
@@ -91,11 +100,24 @@ export function applyTowerDamages(
       (totals.get(damage.structureId) ?? 0) + damage.amount,
     );
   }
-  return towers.map((tower) => ({
-    ...tower,
-    hp: Math.max(
+  const living: Tower[] = [];
+  const destroyed: TowerDestroyed[] = [];
+  for (const tower of towers) {
+    const hp = Math.max(
       0,
       tower.hp - (totals.get(tower.id) ?? 0),
-    ),
-  }));
+    );
+    if (hp > 0) {
+      living.push({ ...tower, hp });
+      continue;
+    }
+    destroyed.push({
+      id: tower.id,
+      x: tower.x,
+      y: tower.y,
+      tick,
+    });
+  }
+  destroyed.sort((first, second) => first.id.localeCompare(second.id));
+  return { towers: living, destroyed };
 }

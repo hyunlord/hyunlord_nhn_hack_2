@@ -12,6 +12,7 @@ export const TOWER_CONFIG = {
   TOWER_RADIUS: 10,
   TOWER_MIN_SPACING: 60,
   TOWER_MAX_COUNT: 6,
+  TOWER_RUBBLE_TICKS: 80,
 } as const;
 
 export const {
@@ -22,6 +23,7 @@ export const {
   TOWER_RADIUS,
   TOWER_MIN_SPACING,
   TOWER_MAX_COUNT,
+  TOWER_RUBBLE_TICKS,
 } = TOWER_CONFIG;
 
 function distanceSquared(

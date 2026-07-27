@@ -21,6 +21,9 @@ restrained blueprint-like interface surrounding a dark, vignetted world map.
 | Ashvale | content config | `#d4693f` | House agents and HUD swatch |
 | Thornhold | content config | `#4f8fbf` | House agents and HUD swatch |
 | Greymoor | content config | `#7bb06a` | House agents and HUD swatch |
+| Duskmere | content config | `#8c68ba` | House agents and roster swatch |
+| Stonewake | content config | `#77818d` | House agents and roster swatch |
+| Highreach | content config | `#d3a942` | House agents and roster swatch |
 | Lightning | divine config | `#ffd76a` | Lightning button and effect |
 | Blessing | divine config | `#8fe3b0` | Blessing button and effect |
 | Curse | divine config | `#b06ad4` | Curse button and effect |
@@ -107,8 +110,8 @@ The content width is capped at 1200px and arranged with CSS Grid.
 
 ### Heroes
 
-- Heroes use an 8px body, a three-pixel pale outline, name label, and
-  always-visible HP bar
+- Heroes use an 8px body, a three-pixel pale outline, HP bar above, and a
+  high-contrast name plate below so labels never collide with health tracks
 - Greymoor's support radius is shown with a restrained green fill and outline
 - Heroes render after regular agents so their silhouette remains readable
 
@@ -134,6 +137,38 @@ The content width is capped at 1200px and arranged with CSS Grid.
 - The overlay is a labeled modal region, announces the queued-draft count, and
   accepts both pointer selection and number keys
 
+### Legacy overview
+
+- A compact ledger leads with Legacy balance, runs, victories, and best wave
+- Six house records share one roster grid; locked records expose both price and
+  prerequisite without hiding their permanent traits
+- Achievement and discovered-synergy ledgers use the same one-pixel dividers
+- The primary action is isolated at the bottom of the overview
+
+### House selection
+
+- Three numbered deployment slots preserve selection order
+- Every house remains visible; locked houses are disabled and marked with a
+  restrained diagonal hatch
+- A live intelligence panel reveals public synergies and only previously
+  discovered hidden synergies
+- Confirmation stays disabled until exactly three unlocked houses are selected
+
+### Run summary
+
+- The outcome headline is paired with a factual run ledger, not a celebratory
+  illustration
+- Legacy earnings are itemized by base, waves, victory, surviving agents,
+  surviving halls, and newly earned achievements
+- Retry preserves the ordered trio with a fresh seed; return exits to the
+  persistent Legacy overview
+
+### Betrayal notice
+
+- A bordered notice appears above the world while betrayal is active
+- The traitor remains unnamed during the run
+- The notice uses text and border contrast so meaning does not depend on color
+
 ## 6. Motion & Interaction
 
 The world advances at a fixed 20 ticks per second while canvas painting follows
@@ -142,6 +177,8 @@ continuously. Miracle effects use expanding rings and opacity only; no blur,
 shadow, or per-pixel animation is added. The canvas cursor becomes a crosshair
 only while a miracle is selected. Threat motion follows simulation ticks; the
 mage locator pulse derives from the current tick rather than wall-clock time.
+Screen transitions use no entrance animation. Hover and focus feedback is
+limited to color, border, and background changes.
 
 ## 7. Depth & Surface
 

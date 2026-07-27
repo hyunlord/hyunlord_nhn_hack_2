@@ -1,9 +1,9 @@
 # Architecture
 
 This repository is a browser-based fantasy wave-defense god-sim built with
-Vite, React, TypeScript, and raw Canvas 2D. Phase 3B wraps the deterministic
-agent and miracle foundations in a three-wave roguelite run with halls,
-intermissions, level-up card drafts, and terminal victory or defeat.
+Vite, React, TypeScript, and raw Canvas 2D. Phase 3D wraps the deterministic
+three-wave defense run in a persistent Legacy loop with ordered house
+selection, terminal summaries, achievements, and unlocks.
 
 ## Runtime structure
 
@@ -32,15 +32,16 @@ src/
 │   ├── prng.ts
 │   └── tick.ts
 ├── state/               # React provider and pure commit reducer
+├── meta/                # versioned persistent progression outside GameState
 ├── render/              # Canvas 2D rendering
 ├── ui/                  # React HUD, controls, and run overlays
 └── content/             # houses, balance, waves, and shared RNG contract
 ```
 
-`agents`, `divine`, `threat`, `progression`, and `build` are independent
+`agents`, `divine`, `threat`, `progression`, `build`, and `meta` are independent
 pure-TypeScript leaves. They do not import one another or import `engine`.
 Alongside `content` and the integrating `engine`, build is the seventh
-simulation axis.
+simulation axis and meta is the eighth application axis.
 `engine` may combine structural snapshots and outcomes. React, DOM, and Canvas
 APIs remain outside all simulation directories.
 
@@ -49,6 +50,13 @@ validation. The integrating engine owns live hall/tower snapshots and composes
 their combat effects. Tower-placement mode and its hover point are transient
 React store state, so cancelling or moving a preview cannot alter the
 replayable simulation snapshot.
+
+`meta/` owns Legacy calculation, achievement evaluation, house purchases, and
+versioned localStorage validation. It consumes only plain terminal
+`RunSummary` data. Persistent state never enters `GameState`, the seeded RNG,
+or tick resolution, so a save cannot alter replay behavior. The top-level
+`appPhase` context coordinates `meta -> select -> run -> summary`; only the run
+phase mounts the simulation provider.
 
 ## State and randomness
 
@@ -114,9 +122,11 @@ agents outside the home leash return before resuming idle wandering.
 
 ## Rendering
 
-Canvas draw order is background → halls → towers → agents → heroes → threats →
-effects, followed by the transient tower preview. Halls remain visible as
-rubble at zero HP. Rendering reads immutable snapshots and never consumes RNG
-or advances the simulation. React owns only presentation and user actions:
-miracle selection/casting, draft selection, intermission purchases and tower
-placement, continuation, and deterministically seeded restart.
+Canvas draw order is background → halls → tower rubble → living towers → agents
+→ heroes → threats → effects, followed by the transient tower preview. Halls
+remain visible as rubble at zero HP; destroyed towers leave a timed visual
+record but no longer occupy a placement slot. Rendering reads immutable
+snapshots and never consumes RNG or advances the simulation. React owns only
+presentation and user actions: house selection, miracle selection/casting,
+draft selection, intermission purchases and tower placement, continuation,
+summary processing, and retry with a fresh deterministic seed.

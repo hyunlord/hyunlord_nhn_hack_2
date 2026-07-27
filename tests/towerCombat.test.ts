@@ -60,16 +60,44 @@ test("Given equidistant hostiles, when a tower cadence is ready, then it targets
   );
 });
 
-test("Given accumulated creature damage reaches tower HP, when structure damage resolves, then the tower can be destroyed", () => {
-  const tower = createTower("tower_01", 100, 100);
+test("Given lethal damage across unordered tower ids, when structure damage resolves, then living order is retained and destruction records are id-sorted", () => {
+  const towerB = createTower("tower_b", 100, 100);
+  const towerC = createTower("tower_c", 200, 100);
+  const towerD = createTower("tower_d", 250, 100);
+  const towerA = createTower("tower_a", 300, 100);
   const result = applyTowerDamages(
-    [tower],
+    [towerB, towerC, towerD, towerA],
     [
-      { structureId: tower.id, amount: 120 },
-      { structureId: tower.id, amount: 180 },
+      { structureId: towerB.id, amount: 120 },
+      { structureId: towerB.id, amount: 180 },
+      { structureId: towerA.id, amount: TOWER_CONFIG.TOWER_HP },
     ],
+    37,
   );
 
-  assert.equal(result[0]?.hp, 0);
-  assert.equal(tower.hp, TOWER_CONFIG.TOWER_HP);
+  assert.deepEqual(result.towers.map(({ id }) => id), [
+    "tower_c",
+    "tower_d",
+  ]);
+  assert.deepEqual(result.destroyed, [
+    { id: "tower_a", x: 300, y: 100, tick: 37 },
+    { id: "tower_b", x: 100, y: 100, tick: 37 },
+  ]);
+  assert.equal(towerB.hp, TOWER_CONFIG.TOWER_HP);
+});
+
+test("Given the same towers, damages, and tick, when structure damage resolves twice, then the partition is deterministic", () => {
+  const towers = [
+    createTower("tower_02", 100, 100),
+    createTower("tower_01", 200, 100),
+  ];
+  const damages = [
+    { structureId: "tower_01", amount: TOWER_CONFIG.TOWER_HP },
+    { structureId: "tower_02", amount: 10 },
+  ];
+
+  const first = applyTowerDamages(towers, damages, 42);
+  const second = applyTowerDamages(towers, damages, 42);
+
+  assert.deepEqual(first, second);
 });

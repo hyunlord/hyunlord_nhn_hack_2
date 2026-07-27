@@ -32,7 +32,7 @@ export const SHOP_CATALOG: readonly ShopItem[] = [
     name: "Raise Tower",
     description: "Enter placement mode for a defensive tower.",
     baseCost: 70,
-    costGrowth: 1.4,
+    costGrowth: 1.15,
     repeatable: true,
     needsPlacement: true,
   },

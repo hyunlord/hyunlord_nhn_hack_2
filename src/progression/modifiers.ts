@@ -9,6 +9,7 @@ export interface ResolvedModifiers {
   attackDamageMultiplier: number;
   attackIntervalMultiplier: number;
   maxHpBonus: number;
+  maxHpMultiplier: number;
   moveSpeedMultiplier: number;
   threatSenseRadiusBonus: number;
   breakHpRatioDelta: number;
@@ -29,6 +30,7 @@ export interface ResolvedModifiers {
 const MULTIPLIER_FIELDS = [
   "attackDamageMultiplier",
   "attackIntervalMultiplier",
+  "maxHpMultiplier",
   "moveSpeedMultiplier",
   "divineRegenMultiplier",
   "divineCostMultiplier",
@@ -55,6 +57,7 @@ function neutralModifiers(): ResolvedModifiers {
     attackDamageMultiplier: 1,
     attackIntervalMultiplier: 1,
     maxHpBonus: 0,
+    maxHpMultiplier: 1,
     moveSpeedMultiplier: 1,
     threatSenseRadiusBonus: 0,
     breakHpRatioDelta: 0,
@@ -77,12 +80,22 @@ export function resolveModifiers(
   allCards: readonly CardDefinition[],
   owned: readonly OwnedCard[],
   autoLevelBonus: number,
+  baseEffects: readonly CardEffect[] = [],
 ): ResolvedModifiers {
   const result = neutralModifiers();
   result.attackDamageMultiplier *=
     BALANCE_CONFIG.AUTO_LEVEL_DAMAGE_MULTIPLIER ** autoLevelBonus;
   result.maxHpBonus +=
     BALANCE_CONFIG.AUTO_LEVEL_HP_BONUS * autoLevelBonus;
+
+  for (const effect of baseEffects) {
+    for (const field of MULTIPLIER_FIELDS) {
+      result[field] *= effect[field] ?? 1;
+    }
+    for (const field of BONUS_FIELDS) {
+      result[field] += effect[field] ?? 0;
+    }
+  }
 
   for (const { cardId, stacks } of owned) {
     const effect = allCards.find(({ id }) => id === cardId)?.effect;

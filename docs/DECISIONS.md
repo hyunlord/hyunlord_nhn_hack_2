@@ -315,3 +315,44 @@ The final wave definitions use creature count/HP multipliers of
 `1.0`, `1.1`, and `1.2`. The foreign-hall reinforcement threshold is 45
 pixels and waves enter from one, two, then three edges. Shop prices and hero
 stats were not tuned away from their specification.
+
+## 2026-07-27 — Phase 3D persistent Legacy loop
+
+### Persistent progression stays outside replay state
+
+The simulation emits one plain terminal `RunSummary`; meta code applies it
+idempotently by stable run ID. Legacy points, unlocks, achievements, discovered
+hidden synergies, and lifetime counters live in a versioned localStorage
+record, never in `GameState`. Retry preserves the ordered trio but advances the
+seed, so persistence cannot contaminate deterministic replay.
+
+### House order is gameplay data
+
+Selection requires exactly three unique unlocked houses. The first, second, and
+third picks map to left, right, and bottom-center spawn slots. Traits and
+order-independent pair synergies are folded into the existing modifier cache;
+only selected houses and their configured heroes are created.
+
+### Betrayal returns as a seeded wave-three event
+
+Eligible alliances roll immediately before wave-three spawning. The chosen
+traitor is deterministic, presentation does not name it during the run, and the
+terminal summary may reveal it and grant the one-time Stonewake unlock. Hidden
+synergies likewise become persistent knowledge only through terminal summary
+processing.
+
+### Auto-shop measurements use spendable residue
+
+The Phase 3C priority pass starved towers; diagnostics found zero placement
+failures and concentrated failures in affordability. The harness now uses a
+tower-weighted round-robin cycle, retains its cursor between intermissions, and
+continues until a complete unsuccessful cycle. "Unspent tribute" is measured
+after the final actual shop, excluding final-wave income that has no remaining
+purchase phase.
+
+### Only measured constants moved
+
+Tower price growth changed from `1.40` to `1.15`. Wave-three creature HP changed
+from `4.0` to `5.0`; its damage multiplier remains `1.2`. The final 200-seed
+default report measured 38.5% victories, 2.04 towers per run, and 22 median
+tribute after the final shop.

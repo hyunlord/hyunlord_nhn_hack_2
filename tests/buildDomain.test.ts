@@ -15,7 +15,7 @@ test("Given shop purchases, when prices resolve, then exact growth curves are ro
   assert.equal(priceForItem("recruit_squad", EMPTY_PURCHASES), 40);
   assert.equal(
     priceForItem("raise_tower", { ...EMPTY_PURCHASES, raise_tower: 2 }),
-    137,
+    93,
   );
   assert.equal(
     priceForItem("sharpen_arms", {

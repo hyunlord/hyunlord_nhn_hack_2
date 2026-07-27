@@ -34,7 +34,7 @@ export const WAVE_DEFINITIONS: readonly WaveDefinition[] = [
     index: 2,
     label: "The Mage Comes",
     creatureCount: 64,
-    creatureHpMultiplier: 4,
+    creatureHpMultiplier: 5,
     creatureDamageMultiplier: 1.2,
     spawnEdges: 3,
     hasMage: true,

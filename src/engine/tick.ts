@@ -1,6 +1,15 @@
 import { createAgents, createHouses } from "../agents/agentFactory";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
-import { HOUSE_CONFIG } from "../content/houseConfig";
+import {
+  DEFAULT_HOUSE_IDS,
+  HOUSE_CONFIG,
+  expandHouseSelection,
+  validateHouseSelection,
+  type HouseId,
+} from "../content/houseConfig";
+import {
+  resolveHouseSynergies,
+} from "../content/houseSynergies";
 import {
   WAVE_DEFINITIONS,
   type WaveDefinition,
@@ -9,7 +18,10 @@ import type { Rng } from "./prng";
 import { createRng } from "./prng";
 import type { GameState } from "./engine.types";
 import { advanceWaveCombat } from "./invasionCombat";
-import { spawnWave } from "../threat/waveDirector";
+import {
+  assignTraitor,
+  spawnWave,
+} from "../threat/waveDirector";
 import { CARD_DEFINITIONS } from "../content/cardConfig";
 import { resolveModifiers } from "../progression/modifiers";
 import {
@@ -19,6 +31,8 @@ import {
 } from "./progressionEngine";
 import { maxHpForAgent, respawnHeroes } from "./heroEngine";
 import { EMPTY_PURCHASES } from "../build/shop";
+import { TOWER_RUBBLE_TICKS } from "../build/structures";
+import type { CardEffect } from "../progression/progression.types";
 
 export { castMiracle } from "./miracleApplication";
 
@@ -42,6 +56,21 @@ function spawnConfiguredWave(
   waveIndex: number,
   rng: Rng,
 ): GameState {
+  const betrayalEligible =
+    waveIndex === 2 &&
+    state.selectedHouseIds.includes("house_a") &&
+    state.selectedHouseIds.includes("house_f");
+  const traitorHouseId: HouseId | null =
+    betrayalEligible && rng.next() < 0.25
+      ? assignTraitor(["house_a", "house_f"] as const, rng)
+      : null;
+  const threat = spawnWave(
+    getWaveDefinition(waveIndex),
+    BALANCE_CONFIG.WORLD_WIDTH,
+    BALANCE_CONFIG.WORLD_HEIGHT,
+    state.tick,
+    rng,
+  );
   return {
     ...state,
     phase: "wave",
@@ -50,13 +79,8 @@ function spawnConfiguredWave(
       livingAgents: state.agents.filter(({ hp }) => hp > 0).length,
       hallHp: state.halls.reduce((sum, { hp }) => sum + hp, 0),
     },
-    activeThreat: spawnWave(
-      getWaveDefinition(waveIndex),
-      BALANCE_CONFIG.WORLD_WIDTH,
-      BALANCE_CONFIG.WORLD_HEIGHT,
-      state.tick,
-      rng,
-    ),
+    activeThreat: { ...threat, traitorHouseId },
+    betrayalHouseId: traitorHouseId ?? state.betrayalHouseId,
   };
 }
 
@@ -89,6 +113,9 @@ function applyTickMaintenance(state: GameState, tick: number): GameState {
     activeEffects: state.activeEffects.filter(
       (effect) => tick < effect.startTick + effect.durationTicks,
     ),
+    towerRubble: state.towerRubble.filter(
+      (rubble) => tick < rubble.tick + TOWER_RUBBLE_TICKS,
+    ),
   };
 }
 
@@ -114,6 +141,9 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
       tick,
       activeEffects: state.activeEffects.filter(
         (effect) => tick < effect.startTick + effect.durationTicks,
+      ),
+      towerRubble: state.towerRubble.filter(
+        (rubble) => tick < rubble.tick + TOWER_RUBBLE_TICKS,
       ),
     };
   }
@@ -148,6 +178,7 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
       agents: combat.agents,
       halls: combat.halls,
       towers: combat.towers,
+      towerRubble: [...state.towerRubble, ...combat.destroyedTowers],
       activeThreat: combat.activeThreat,
       tribute,
       heroDeaths,
@@ -166,6 +197,14 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
       if (!threatCleared) {
         resolved = maintained;
       } else {
+        const selectedHeroes = maintained.agents.filter(
+          ({ isHero }) => isHero,
+        );
+        const heroLessWave2Clear =
+          maintained.heroLessWave2Clear ||
+          (state.waveIndex === 1 &&
+            selectedHeroes.length > 0 &&
+            selectedHeroes.every(({ hp }) => hp <= 0));
         const lastWaveSummary =
           state.waveStartSnapshot === null
             ? null
@@ -188,6 +227,7 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
             phase: "victory",
             tribute: tribute + reward,
             activeThreat: null,
+            heroLessWave2Clear,
             lastWaveSummary,
             waveStartSnapshot: null,
           };
@@ -197,6 +237,7 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
           phase: "intermission",
             tribute: tribute + reward,
             activeThreat: null,
+            heroLessWave2Clear,
             lastWaveSummary,
             waveStartSnapshot: null,
             agents: maintained.agents.map((agent) => {
@@ -227,26 +268,59 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
   );
 }
 
-export function createInitialState(seed: number): {
+function traitEffect(houseId: HouseId): CardEffect {
+  const config = HOUSE_CONFIG.find(({ id }) => id === houseId);
+  if (config === undefined) {
+    throw new RangeError(`Missing house configuration for ${houseId}.`);
+  }
+  return {
+    attackDamageMultiplier: config.traits.attackDamageMultiplier,
+    attackIntervalMultiplier: config.traits.attackIntervalMultiplier,
+    maxHpMultiplier: config.traits.maxHpMultiplier,
+    moveSpeedMultiplier: config.traits.moveSpeedMultiplier,
+    tributePerKillBonus: config.traits.tributePerKillBonus,
+  };
+}
+
+export function createInitialState(
+  seed: number,
+  chosenHouseIds: readonly string[] = DEFAULT_HOUSE_IDS,
+): {
   state: GameState;
   rng: Rng;
 } {
+  const validation = validateHouseSelection(chosenHouseIds);
+  if (!validation.valid) {
+    throw new RangeError(`Invalid house selection: ${validation.reason}.`);
+  }
+  const selectedHouseIds = validation.houseIds;
+  const placements = expandHouseSelection(selectedHouseIds);
+  const activeSynergies = resolveHouseSynergies(selectedHouseIds);
   const rng = createRng(seed);
-  const houses = createHouses(rng);
+  const houses = createHouses(rng, selectedHouseIds);
   const agents = createAgents(houses, rng);
+  const houseBaseEffects = selectedHouseIds.map((houseId) => ({
+    houseId,
+    effects: [
+      traitEffect(houseId),
+      ...activeSynergies.map(({ effect }) => effect),
+    ],
+  }));
 
   return {
     state: {
       tick: 0,
+      runSeed: seed,
+      selectedHouseIds,
       phase: "preparation",
       phaseBeforeDraft: null,
       waveIndex: 0,
       tribute: 0,
       houses,
-      halls: HOUSE_CONFIG.map(({ id, spawnX, spawnY }) => ({
-        houseId: id,
-        x: spawnX,
-        y: spawnY,
+      halls: placements.map(({ houseId, slot }) => ({
+        houseId,
+        x: slot.x,
+        y: slot.y,
         hp: BALANCE_CONFIG.HALL_HP,
         maxHp: BALANCE_CONFIG.HALL_HP,
       })),
@@ -264,10 +338,21 @@ export function createInitialState(seed: number): {
       })),
       houseModifiers: houses.map(({ id }) => ({
         houseId: id,
-        modifiers: resolveModifiers(CARD_DEFINITIONS, [], 0),
+        modifiers: resolveModifiers(
+          CARD_DEFINITIONS,
+          [],
+          0,
+          houseBaseEffects.find(({ houseId }) => houseId === id)?.effects ??
+            [],
+        ),
       })),
+      houseBaseEffects,
+      activeSynergyIds: activeSynergies.map(({ id }) => id),
+      betrayalHouseId: null,
+      heroLessWave2Clear: false,
       pendingDrafts: [],
       towers: [],
+      towerRubble: [],
       shopPurchases: { ...EMPTY_PURCHASES },
       runUpgrades: { attackDamageMultiplier: 1 },
       lastWaveSummary: null,

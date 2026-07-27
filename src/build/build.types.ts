@@ -14,6 +14,13 @@ export interface Tower {
   readonly lastAttackTick: number;
 }
 
+export interface TowerDestroyed {
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  readonly tick: number;
+}
+
 export interface BuildHallSnapshot {
   readonly id: string;
   readonly x: number;

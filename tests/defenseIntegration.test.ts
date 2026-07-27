@@ -1,8 +1,73 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
+import type { HouseId } from "../src/content/houseConfig";
 import { advanceWaveCombat } from "../src/engine/invasionCombat";
 import { createInitialState } from "../src/engine/tick";
+
+function combatStateForHouse(houseId: HouseId, hp: number) {
+  const world = createInitialState(BALANCE_CONFIG.DEFAULT_SEED, [
+    "house_e",
+    "house_d",
+    "house_f",
+  ]);
+  const source = world.state.agents.find(
+    (agent) => agent.houseId === houseId && !agent.isHero,
+  );
+  if (source === undefined) {
+    throw new RangeError(`Expected a ${houseId} agent fixture.`);
+  }
+  const agent = {
+    ...source,
+    x: 100,
+    y: 100,
+    hp,
+    disposition: { aggression: 0, loyalty: 80 },
+  };
+  return {
+    world,
+    state: {
+      ...world.state,
+      phase: "wave" as const,
+      agents: [agent],
+      activeThreat: {
+        type: "monster_horde" as const,
+        waveIndex: 0,
+        startTick: 0,
+        traitorHouseId: null,
+        mage: null,
+        creatures: [{
+          id: "nearby_attacker",
+          x: 110,
+          y: 100,
+          hp: BALANCE_CONFIG.CREATURE_HP,
+          agentDamage: BALANCE_CONFIG.CREATURE_ATTACK_DAMAGE,
+          hallDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+          lastAttackTick: -1,
+        }],
+      },
+    },
+  };
+}
+
+test("Given fragile and durable house agents near their break thresholds, when combat advances, then house HP traits govern whether they flee", () => {
+  const stonewake = combatStateForHouse("house_e", 40);
+  const duskmere = combatStateForHouse("house_d", 32);
+
+  const stonewakeResult = advanceWaveCombat(
+    stonewake.state,
+    1,
+    stonewake.world.rng,
+  );
+  const duskmereResult = advanceWaveCombat(
+    duskmere.state,
+    1,
+    duskmere.world.rng,
+  );
+
+  assert.equal(stonewakeResult.agents[0]?.state, "fleeing");
+  assert.equal(duskmereResult.agents[0]?.state, "fighting");
+});
 
 test("Given an agent whose hall is destroyed, when a foreign hall is attacked, then combat wiring sends it to help", () => {
   const world = createInitialState(BALANCE_CONFIG.DEFAULT_SEED);

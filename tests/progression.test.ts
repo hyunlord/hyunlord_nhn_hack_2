@@ -26,6 +26,7 @@ const NEUTRAL_MODIFIERS: ResolvedModifiers = {
   attackDamageMultiplier: 1,
   attackIntervalMultiplier: 1,
   maxHpBonus: 0,
+  maxHpMultiplier: 1,
   moveSpeedMultiplier: 1,
   threatSenseRadiusBonus: 0,
   breakHpRatioDelta: 0,

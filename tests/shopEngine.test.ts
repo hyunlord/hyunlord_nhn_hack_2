@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import {
+  TOWER_CONFIG,
+  createTower,
+} from "../src/build/structures";
+import { applyTowerDamages } from "../src/engine/combatDamage";
 import { createInitialState } from "../src/engine/tick";
 import type { GameState } from "../src/engine/engine.types";
 import {
@@ -99,6 +104,35 @@ test("Given valid and invalid tower positions, when placement commits, then only
   assert.equal(valid.towers[0]?.hp, 300);
   assert.equal(valid.shopPurchases.raise_tower, 1);
   assert.equal(valid.tribute, state.tribute - 70);
+});
+
+test("Given a max-count tower field loses one tower, when a replacement is purchased, then only living towers constrain count and spacing", () => {
+  const initial = intermissionState();
+  const towers = Array.from(
+    { length: TOWER_CONFIG.TOWER_MAX_COUNT },
+    (_, index) => createTower(`tower_${index}`, 60 + index * 80, 520),
+  );
+  const damage = applyTowerDamages(
+    towers,
+    [
+      {
+        structureId: "tower_0",
+        amount: TOWER_CONFIG.TOWER_HP,
+      },
+    ],
+    73,
+  );
+  const state = {
+    ...initial,
+    towers: damage.towers,
+  };
+
+  const result = purchaseTowerAt(state, 800, 520);
+
+  assert.equal(damage.destroyed.length, 1);
+  assert.equal(result.towers.length, TOWER_CONFIG.TOWER_MAX_COUNT);
+  assert.equal(result.towers.at(-1)?.x, 800);
+  assert.equal(result.towers.at(-1)?.y, 520);
 });
 
 test("Given a damaged army, hall, and dead hero, when matching purchases resolve, then exact effects apply deterministically", () => {

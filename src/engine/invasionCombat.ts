@@ -29,6 +29,7 @@ import {
 } from "./heroEngine";
 import { applyTowerAttacks } from "./towerCombat";
 import { TOWER_RADIUS } from "../build/structures";
+import type { TowerDestroyed } from "../build/build.types";
 
 type Point = { readonly x: number; readonly y: number };
 type WaveCombatStep = Pick<
@@ -45,6 +46,7 @@ type WaveCombatStep = Pick<
     readonly houseId: string;
     readonly kills: number;
   }[];
+  readonly destroyedTowers: TowerDestroyed[];
 };
 
 function distanceSquared(first: Point, second: Point): number {
@@ -78,6 +80,7 @@ function createDefenseContext(
   agent: Agent,
   halls: readonly Hall[],
   threats: readonly ThreatPresence[],
+  hallDefenseRadiusBonus: number,
 ): DefenseContext {
   const ownHall =
     halls.find(
@@ -105,7 +108,8 @@ function createDefenseContext(
         (threat) =>
           threat.hostile &&
           distanceSquared(threat, hall) <=
-            BALANCE_CONFIG.HALL_DEFENSE_RADIUS ** 2,
+            (BALANCE_CONFIG.HALL_DEFENSE_RADIUS +
+              hallDefenseRadiusBonus) ** 2,
       ).length,
     }))
     .filter(({ hostileCount }) => hostileCount > 0);
@@ -130,20 +134,27 @@ function moveAgents(
 ): AgentDecision[] {
   const threats = toThreatPresences(threat);
   const decisions = agents.map((agent) => {
-    const context = createDefenseContext(agent, halls, threats);
     const modifiers = modifiersByHouse.find(
       (entry) => entry.houseId === agent.houseId,
     )?.modifiers;
     if (modifiers === undefined) {
       throw new RangeError(`Missing modifiers for ${agent.houseId}.`);
     }
+    const context = createDefenseContext(
+      agent,
+      halls,
+      threats,
+      modifiers.hallDefenseRadiusBonus,
+    );
     const intent = decideIntent(
       agent,
       context,
       threat?.traitorHouseId === agent.houseId,
       {
         ...modifiers,
-        maxHpMultiplier: heroMaxHpMultiplierForAgent(agent),
+        maxHpMultiplier:
+          modifiers.maxHpMultiplier *
+          heroMaxHpMultiplierForAgent(agent),
       },
     );
     return {
@@ -195,6 +206,7 @@ export function advanceWaveCombat(
       creatureKills: 0,
       xpAwards: [],
       creatureKillsByHouse: [],
+      destroyedTowers: [],
     };
   }
 
@@ -247,6 +259,12 @@ export function advanceWaveCombat(
     })),
   );
 
+  const towerDamage = applyTowerDamages(
+    towerAttacks.towers,
+    stepped.structureDamages,
+    tick,
+  );
+
   return {
     agents: applyThreatDamages(
       attacks.agents,
@@ -255,10 +273,7 @@ export function advanceWaveCombat(
       state.houseModifiers,
     ),
     halls: applyHallDamages(state.halls, stepped.hallDamages),
-    towers: applyTowerDamages(
-      towerAttacks.towers,
-      stepped.structureDamages,
-    ),
+    towers: towerDamage.towers,
     activeThreat: stepped.threat,
     creatureKills:
       initialCreatureCount - stepped.threat.creatures.length,
@@ -269,5 +284,6 @@ export function advanceWaveCombat(
     creatureKillsByHouse: attacks.creatureKillsByHouse.map(
       ({ houseId, amount }) => ({ houseId, kills: amount }),
     ),
+    destroyedTowers: towerDamage.destroyed,
   };
 }

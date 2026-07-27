@@ -13,6 +13,7 @@ import {
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { MiracleType } from "../divine/divine.types";
 import type { GameState } from "../engine/engine.types";
+import { createRunSummary } from "../engine/runSummary";
 import {
   advanceTick,
   beginNextWave,
@@ -29,6 +30,8 @@ import type {
   GameAction,
   GameStoreValue,
 } from "./gameStore.types";
+import type { HouseSelection } from "../content/houseConfig";
+import type { RunSummary } from "../content/runSummary";
 
 const TICK_INTERVAL_MS = 1_000 / BALANCE_CONFIG.TICKS_PER_SECOND;
 const MAX_CATCH_UP_TICKS = 5;
@@ -56,19 +59,28 @@ export function gameReducer(
   return action.next;
 }
 
-export function GameStoreProvider({ children }: PropsWithChildren) {
+interface GameStoreProviderProps extends PropsWithChildren {
+  readonly seed: number;
+  readonly houseIds: HouseSelection;
+  readonly onTerminal: (summary: RunSummary) => void;
+}
+
+export function GameStoreProvider({
+  children,
+  seed,
+  houseIds,
+  onTerminal,
+}: GameStoreProviderProps) {
   const initialWorldReference = useRef<ReturnType<
     typeof createInitialState
   > | null>(null);
   if (initialWorldReference.current === null) {
-    initialWorldReference.current = createInitialState(
-      BALANCE_CONFIG.DEFAULT_SEED,
-    );
+    initialWorldReference.current = createInitialState(seed, houseIds);
   }
 
   const rngReference = useRef(initialWorldReference.current.rng);
-  const seedReference = useRef(BALANCE_CONFIG.DEFAULT_SEED);
   const stateReference = useRef(initialWorldReference.current.state);
+  const notifiedRunIdReference = useRef<string | null>(null);
   const [selectedMiracle, setSelectedMiracle] =
     useState<MiracleType | null>(null);
   const [towerPlacementActive, setTowerPlacementActive] =
@@ -158,20 +170,22 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
         }
         return;
       }
-      case "restart": {
-        seedReference.current += 1;
-        const initialWorld = createInitialState(seedReference.current);
-        rngReference.current = initialWorld.rng;
-        commitState(initialWorld.state);
-        setSelectedMiracle(null);
-        setTowerPlacementActive(false);
-        setTowerPreview(null);
-        return;
-      }
       default:
         throw new UnexpectedGameActionError(action);
     }
   }, [commitState]);
+
+  useEffect(() => {
+    if (state.phase !== "victory" && state.phase !== "defeat") {
+      return;
+    }
+    const summary = createRunSummary(state);
+    if (notifiedRunIdReference.current === summary.runId) {
+      return;
+    }
+    notifiedRunIdReference.current = summary.runId;
+    onTerminal(summary);
+  }, [onTerminal, state]);
 
   useEffect(() => {
     let frameId = 0;
