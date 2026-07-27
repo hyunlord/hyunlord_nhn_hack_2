@@ -31,8 +31,8 @@ export function stepAgent(
       break;
     case "flee":
       heading = Math.atan2(
-        agent.y - intent.fromY,
-        agent.x - intent.fromX,
+        intent.towardY - agent.y,
+        intent.towardX - agent.x,
       );
       speed =
         BALANCE_CONFIG.WANDER_SPEED *

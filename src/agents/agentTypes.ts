@@ -31,6 +31,7 @@ export interface Agent {
 }
 
 export interface ThreatPresence {
+  id: string;
   x: number;
   y: number;
   hostile: boolean;

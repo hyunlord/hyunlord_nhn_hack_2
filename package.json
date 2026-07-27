@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "balance": "tsx scripts/balanceHarness.ts",
     "check:determinism": "tsx scripts/checkDeterminism.ts",
     "preview": "vite preview",
     "test": "tsx --test tests/*.test.ts",

@@ -72,8 +72,9 @@ wave ── all halls destroyed ──→ defeat
 
 On each wave tick the engine:
 
-1. derives structural threat presences and hall snapshots;
-2. decides and applies agent movement;
+1. derives ID-bearing structural threat presences and per-agent hall contexts;
+2. decides personal response, hall defense, reinforcement, or retreat and
+   applies directed movement;
 3. resolves simultaneous defender attacks;
 4. advances creatures and the optional mage;
 5. aggregates agent and hall damage;
@@ -83,6 +84,12 @@ On each wave tick the engine:
 Creatures prioritize a living agent within aggro range, then the nearest
 surviving hall. The mage ignores agents and moves directly toward a hall.
 Distance ties and returned damage arrays are ordered by stable IDs.
+
+Agents whose hall survives defend threats near that objective even when the
+threat is outside personal sense range. Once their hall falls, they rally to
+the nearest surviving hall and enter the helping state while engaging its
+attackers. Low-HP timid agents fall back toward that same rally point, and
+agents outside the home leash return before resuming idle wandering.
 
 ## Rendering
 

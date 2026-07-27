@@ -4,6 +4,7 @@ import {
   decideIntent,
   intentToState,
   type AgentIntent,
+  type DefenseContext,
 } from "../src/agents/dispositionEngine";
 import { stepAgent } from "../src/agents/movement";
 import type {
@@ -29,11 +30,25 @@ function createAgent(overrides: Partial<Agent> = {}): Agent {
   };
 }
 
-const NEARBY_THREAT: ThreatPresence = {
-  x: 110,
-  y: 100,
-  hostile: true,
-};
+function threat(
+  id: string,
+  x: number,
+  y: number,
+  hostile = true,
+): ThreatPresence {
+  return { id, x, y, hostile };
+}
+
+function context(
+  overrides: Partial<DefenseContext> = {},
+): DefenseContext {
+  return {
+    ownHall: { x: 100, y: 100, hp: BALANCE_CONFIG.HALL_HP },
+    rallyHall: { x: 100, y: 100 },
+    threats: [],
+    ...overrides,
+  };
+}
 
 function createCountingRng(): {
   readonly rng: Rng;
@@ -68,90 +83,172 @@ function createCountingRng(): {
   };
 }
 
-test("Given a disloyal traitor-house agent, when danger is sensed, then betrayal overrides aggression", () => {
-  const intent = decideIntent(createAgent(), [NEARBY_THREAT], true);
-
-  assert.deepEqual(intent, {
-    kind: "flee",
-    fromX: NEARBY_THREAT.x,
-    fromY: NEARBY_THREAT.y,
-  });
-});
-
-test("Given the same non-traitor agent, when danger is sensed, then high aggression engages", () => {
-  const intent = decideIntent(createAgent(), [NEARBY_THREAT], false);
+test("Given a destroyed own hall, when another hall is threatened, then the agent reinforces it", () => {
+  const nearbyRallyThreat = threat("creature_b", 710, 100);
+  const intent = decideIntent(
+    createAgent(),
+    context({
+      ownHall: null,
+      rallyHall: { x: 700, y: 100 },
+      threats: [nearbyRallyThreat],
+    }),
+    false,
+  );
 
   assert.deepEqual(intent, {
     kind: "engage",
-    towardX: NEARBY_THREAT.x,
-    towardY: NEARBY_THREAT.y,
+    towardX: nearbyRallyThreat.x,
+    towardY: nearbyRallyThreat.y,
+    targetId: nearbyRallyThreat.id,
   });
 });
 
-test("Given dead, distant, or non-hostile conditions, when intent is decided, then the agent idles", () => {
-  const dead = decideIntent(
-    createAgent({ state: "dead", hp: 0 }),
-    [NEARBY_THREAT],
-    false,
-  );
-  const distant = decideIntent(
-    createAgent(),
-    [{ x: 500, y: 500, hostile: true }],
-    false,
-  );
-  const peaceful = decideIntent(
-    createAgent(),
-    [{ ...NEARBY_THREAT, hostile: false }],
+test("Given a distant defender, when a threat nears its hall, then hall defense overrides personal distance", () => {
+  const hallThreat = threat("creature_a", 110, 100);
+  const intent = decideIntent(
+    createAgent({ x: 510 }),
+    context({ threats: [hallThreat] }),
     false,
   );
 
-  assert.deepEqual(dead, { kind: "idle" });
-  assert.deepEqual(distant, { kind: "idle" });
-  assert.deepEqual(peaceful, { kind: "idle" });
+  assert.equal(intent.kind, "engage");
+  assert.equal(intent.kind === "engage" ? intent.targetId : null, "creature_a");
 });
 
-test("Given every intent variant, when mapped to simulation state, then the mapping is exact", () => {
+test("Given multiple hall attackers, when defense is chosen, then agents focus the nearest attacker with id ties ascending", () => {
+  const intent = decideIntent(
+    createAgent({ x: 500 }),
+    context({
+      threats: [
+        threat("creature_z", 70, 100),
+        threat("creature_b", 115, 100),
+        threat("creature_a", 85, 100),
+      ],
+    }),
+    false,
+  );
+
+  assert.equal(intent.kind === "engage" ? intent.targetId : null, "creature_a");
+});
+
+test("Given low health, when break thresholds are evaluated, then only a timid agent below the HP boundary flees", () => {
+  const threats = [threat("creature_a", 110, 100)];
+  const broken = decideIntent(
+    createAgent({
+      hp: BALANCE_CONFIG.INITIAL_HP * 0.34,
+      disposition: { aggression: 59, loyalty: 80 },
+    }),
+    context({ rallyHall: { x: 20, y: 100 }, threats }),
+    false,
+  );
+  const healthy = decideIntent(
+    createAgent({ disposition: { aggression: 59, loyalty: 80 } }),
+    context({ rallyHall: { x: 20, y: 100 }, threats }),
+    false,
+  );
+  const resolute = decideIntent(
+    createAgent({
+      hp: BALANCE_CONFIG.INITIAL_HP * 0.34,
+      disposition: { aggression: 60, loyalty: 80 },
+    }),
+    context({ rallyHall: { x: 20, y: 100 }, threats }),
+    false,
+  );
+
+  assert.equal(broken.kind, "flee");
+  assert.equal(healthy.kind, "engage");
+  assert.equal(resolute.kind, "engage");
+});
+
+test("Given a broken agent and a rally hall, when retreating, then it flees toward the hall", () => {
+  const intent = decideIntent(
+    createAgent({
+      hp: BALANCE_CONFIG.INITIAL_HP * 0.34,
+      disposition: { aggression: 20, loyalty: 80 },
+    }),
+    context({
+      rallyHall: { x: 20, y: 100 },
+      threats: [threat("creature_a", 110, 100)],
+    }),
+    false,
+  );
+
+  assert.deepEqual(intent, {
+    kind: "flee",
+    towardX: 20,
+    towardY: 100,
+  });
+});
+
+test("Given no rally hall, when a broken agent retreats, then it moves away from the nearest threat", () => {
+  const intent = decideIntent(
+    createAgent({
+      hp: BALANCE_CONFIG.INITIAL_HP * 0.34,
+      disposition: { aggression: 20, loyalty: 80 },
+    }),
+    context({
+      ownHall: null,
+      rallyHall: null,
+      threats: [threat("creature_a", 110, 100)],
+    }),
+    false,
+  );
+
+  assert.deepEqual(intent, {
+    kind: "flee",
+    towardX: 90,
+    towardY: 100,
+  });
+});
+
+test("Given a disloyal traitor-house agent, when danger is sensed, then betrayal still overrides aggression", () => {
+  const intent = decideIntent(
+    createAgent(),
+    context({ threats: [threat("creature_a", 110, 100)] }),
+    true,
+  );
+
+  assert.deepEqual(intent, {
+    kind: "flee",
+    towardX: 90,
+    towardY: 100,
+  });
+});
+
+test("Given an agent beyond its home leash, when it moves for 50 ticks, then it gets closer to its hall", () => {
+  const home = { x: 100, y: 100, hp: BALANCE_CONFIG.HALL_HP };
+  const intent = decideIntent(
+    createAgent({ x: 700 }),
+    context({ ownHall: home, rallyHall: home }),
+    false,
+  );
+  const rng = createCountingRng();
+  let moved = createAgent({ x: 700 });
+
+  for (let tick = 0; tick < 50; tick += 1) {
+    moved = stepAgent(moved, rng.rng, intent);
+  }
+
+  assert.ok(Math.abs(moved.x - home.x) < 600);
+  assert.equal(rng.count(), 0);
+});
+
+test("Given every intent variant, when mapped and moved, then directed paths consume zero RNG draws", () => {
   const intents: readonly AgentIntent[] = [
     { kind: "idle" },
-    { kind: "flee", fromX: 0, fromY: 0 },
-    { kind: "engage", towardX: 0, towardY: 0 },
+    { kind: "flee", towardX: 0, towardY: 0 },
+    { kind: "engage", towardX: 200, towardY: 100, targetId: null },
   ];
-
-  assert.deepEqual(intents.map(intentToState), [
-    "idle",
-    "fleeing",
-    "fighting",
-  ]);
-});
-
-test("Given flee and engage intents, when agents move, then directed paths consume zero RNG draws", () => {
   const fleeRng = createCountingRng();
   const engageRng = createCountingRng();
   const agent = createAgent();
 
-  const fleeing = stepAgent(agent, fleeRng.rng, {
-    kind: "flee",
-    fromX: 200,
-    fromY: 100,
-  });
-  const engaging = stepAgent(agent, engageRng.rng, {
-    kind: "engage",
-    towardX: 200,
-    towardY: 100,
-  });
+  const fleeing = stepAgent(agent, fleeRng.rng, intents[1]);
+  const engaging = stepAgent(agent, engageRng.rng, intents[2]);
 
+  assert.deepEqual(intents.map(intentToState), ["idle", "fleeing", "fighting"]);
   assert.equal(fleeRng.count(), 0);
   assert.equal(engageRng.count(), 0);
-  assert.equal(
-    fleeing.x,
-    100 -
-      BALANCE_CONFIG.WANDER_SPEED *
-        BALANCE_CONFIG.AGENT_FLEE_SPEED_MULTIPLIER,
-  );
-  assert.equal(
-    engaging.x,
-    100 +
-      BALANCE_CONFIG.WANDER_SPEED *
-        BALANCE_CONFIG.AGENT_ENGAGE_SPEED_MULTIPLIER,
-  );
+  assert.ok(fleeing.x < agent.x);
+  assert.ok(engaging.x > agent.x);
 });

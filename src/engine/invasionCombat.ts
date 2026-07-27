@@ -1,6 +1,8 @@
 import {
   decideIntent,
   intentToState,
+  type AgentIntent,
+  type DefenseContext,
 } from "../agents/dispositionEngine";
 import { stepAgent } from "../agents/movement";
 import type {
@@ -13,7 +15,7 @@ import {
   stepThreat,
 } from "../threat/waveDirector";
 import type { ThreatEvent } from "../threat/threatTypes";
-import type { GameState } from "./engine.types";
+import type { GameState, Hall } from "./engine.types";
 import type { Rng } from "./prng";
 import {
   applyHallDamages,
@@ -31,6 +33,10 @@ type WaveCombatStep = Pick<
 > & {
   readonly creatureKills: number;
 };
+type AgentDecision = {
+  readonly agent: Agent;
+  readonly intent: AgentIntent;
+};
 
 function distanceSquared(first: Point, second: Point): number {
   return (first.x - second.x) ** 2 + (first.y - second.y) ** 2;
@@ -40,7 +46,8 @@ function toThreatPresences(threat: ThreatEvent | null): ThreatPresence[] {
   if (threat === null) {
     return [];
   }
-  const presences = threat.creatures.map(({ x, y }) => ({
+  const presences = threat.creatures.map(({ id, x, y }) => ({
+    id,
     x,
     y,
     hostile: true,
@@ -48,59 +55,91 @@ function toThreatPresences(threat: ThreatEvent | null): ThreatPresence[] {
   return threat.mage !== null && threat.mage.hp > 0
     ? [
         ...presences,
-        { x: threat.mage.x, y: threat.mage.y, hostile: true },
+        {
+          id: "mage",
+          x: threat.mage.x,
+          y: threat.mage.y,
+          hostile: true,
+        },
       ]
     : presences;
 }
 
-function moveAgents(
-  agents: readonly Agent[],
-  threat: ThreatEvent | null,
-  rng: Rng,
-): Agent[] {
-  const threats = toThreatPresences(threat);
-  const decisions = agents.map((agent) => {
-    const intent = decideIntent(
-      agent,
-      threats,
-      threat?.traitorHouseId === agent.houseId,
-    );
-    return { agent: stepAgent(agent, rng, intent), intent };
-  });
-  const movedAgents = decisions.map(({ agent }) => agent);
-
-  return decisions.map(({ agent, intent }) => {
-    if (agent.state === "dead") {
-      return agent;
-    }
-    const state = intentToState(intent);
-    if (intent.kind !== "engage") {
-      return { ...agent, state };
-    }
-    const target = { x: intent.towardX, y: intent.towardY };
-    const nearestVictim = [...movedAgents]
-      .filter((candidate) => candidate.state !== "dead" && candidate.hp > 0)
+function createDefenseContext(
+  agent: Agent,
+  halls: readonly Hall[],
+  threats: readonly ThreatPresence[],
+): DefenseContext {
+  const ownHall =
+    halls.find(
+      (hall) => hall.houseId === agent.houseId && hall.hp > 0,
+    ) ?? null;
+  const rallyHall =
+    ownHall ??
+    [...halls]
+      .filter((hall) => hall.hp > 0)
       .sort((first, second) => {
         const delta =
-          distanceSquared(first, target) -
-          distanceSquared(second, target);
+          distanceSquared(agent, first) - distanceSquared(agent, second);
         return delta === 0
-          ? first.id.localeCompare(second.id)
+          ? first.houseId.localeCompare(second.houseId)
           : delta;
-      })[0];
+      })[0] ??
+    null;
+  return {
+    ownHall:
+      ownHall === null
+        ? null
+        : { x: ownHall.x, y: ownHall.y, hp: ownHall.hp },
+    rallyHall:
+      rallyHall === null ? null : { x: rallyHall.x, y: rallyHall.y },
+    threats,
+  };
+}
+
+function moveAgents(
+  agents: readonly Agent[],
+  halls: readonly Hall[],
+  threat: ThreatEvent | null,
+  rng: Rng,
+): AgentDecision[] {
+  const threats = toThreatPresences(threat);
+  const decisions = agents.map((agent) => {
+    const context = createDefenseContext(agent, halls, threats);
+    const intent = decideIntent(
+      agent,
+      context,
+      threat?.traitorHouseId === agent.houseId,
+    );
+    return { agent: stepAgent(agent, rng, intent), intent, context };
+  });
+
+  return decisions.map(({ agent, intent, context }) => {
+    if (agent.state === "dead") {
+      return { agent, intent };
+    }
+    const state = intentToState(intent);
+    if (intent.kind !== "engage" || intent.targetId === null) {
+      return {
+        agent: {
+          ...agent,
+          state: intent.kind === "engage" ? "idle" : state,
+        },
+        intent,
+      };
+    }
     return {
-      ...agent,
-      state:
-        nearestVictim !== undefined &&
-        nearestVictim.houseId !== agent.houseId
-          ? "helping"
-          : state,
+      agent: {
+        ...agent,
+        state: context.ownHall === null ? "helping" : state,
+      },
+      intent,
     };
   });
 }
 
 function applyAgentAttacks(
-  agents: readonly Agent[],
+  decisions: readonly AgentDecision[],
   threat: ThreatEvent,
   tick: number,
 ): { readonly agents: Agent[]; readonly threat: ThreatEvent } {
@@ -121,7 +160,7 @@ function applyAgentAttacks(
         }]
       : []),
   ];
-  const nextAgents = agents.map((agent) => {
+  const nextAgents = decisions.map(({ agent, intent }) => {
     const canAttack =
       agent.hp > 0 &&
       (agent.state === "fighting" || agent.state === "helping") &&
@@ -130,12 +169,19 @@ function applyAgentAttacks(
     if (!canAttack) {
       return agent;
     }
-    const target = [...targets]
+    const inRangeTargets = targets
       .filter(
         (candidate) =>
           distanceSquared(agent, candidate) <=
           BALANCE_CONFIG.AGENT_ATTACK_RANGE ** 2,
-      )
+      );
+    const focusedTarget =
+      intent.kind === "engage" && intent.targetId !== null
+        ? inRangeTargets.find(
+            (candidate) => candidate.key === intent.targetId,
+          )
+        : undefined;
+    const target = focusedTarget ?? [...inRangeTargets]
       .sort((first, second) => {
         const delta =
           distanceSquared(agent, first) -
@@ -175,9 +221,14 @@ export function advanceWaveCombat(
   }
 
   const initialCreatureCount = state.activeThreat.creatures.length;
-  const movedAgents = moveAgents(state.agents, state.activeThreat, rng);
+  const decisions = moveAgents(
+    state.agents,
+    state.halls,
+    state.activeThreat,
+    rng,
+  );
   const attacks = applyAgentAttacks(
-    movedAgents,
+    decisions,
     state.activeThreat,
     tick,
   );

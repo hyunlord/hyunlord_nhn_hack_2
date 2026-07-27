@@ -186,15 +186,38 @@ Dead agents remain dead and the last wave transitions directly to victory.
 
 ### Determinism has organic and full-state-machine lanes
 
-The verifier first runs an unmodified no-input simulation to its real defeat
-and compares the complete terminal state across equal seeds. A second lane
-advances preparation and exercises every configured wave for 500 live combat
-ticks, then injects the same deterministic cleared-threat fixture used by the
-transition tests. That lane reaches and compares the full three-wave victory
-state without changing production balance. The two lanes deliberately separate
-organic replay proof from state-machine coverage: no-input runs currently lose
-during wave 1, while combat cadence and agent behavior were explicitly carried
-over unchanged.
+The verifier first runs an unmodified no-input simulation to either terminal
+outcome and compares the complete state across equal seeds. A second lane
+exercises up to 500 live combat ticks per configured wave, then injects the
+same deterministic cleared-threat fixture used by transition tests only when
+the wave has not already cleared. The two lanes deliberately separate organic
+replay proof from complete state-machine coverage without assuming balance
+must produce a particular outcome for the default seed.
+
+### Defense is objective-centered and deterministic
+
+Agents first react to personal danger, then defend their own hall, reinforce
+the nearest surviving hall after losing their own, and finally return inside a
+130-pixel home leash. Hall defense selects the threat nearest the defended
+hall, with ascending threat ID as the distance tie-break. That target identity
+flows into attack resolution so focus fire is behavioral rather than merely a
+movement hint. Wounded timid agents below 35% HP retreat toward a surviving
+rally hall; directed engage, return, and retreat paths consume no RNG.
+
+### Phase 3A-fix balance uses measured no-miracle runs
+
+The requested starting values were applied first. Across 200 seeds they
+cleared wave 1 in every run but produced 0 victories: 113 runs fell in wave 2
+and 87 in wave 3. Agent attack damage was the only post-baseline parameter
+changed, from 9 to 20. This preserves enemy cadence and objective durability
+while reducing accumulated combat attrition.
+
+The final 200-seed harness measured 69 victories (34.5%), inside the 25–50%
+target band. Waves 1 and 2 cleared in all 200 runs; wave 3 cleared in 69. The
+median terminal tick was 2,603, while victorious runs ended at a median of
+2,383 ticks. Phase 3B draft pacing should therefore reserve roughly two minutes
+for a typical 20 Hz no-input run, with the main decision pressure concentrated
+in wave 3.
 
 ### Halls are engine-owned temporarily
 

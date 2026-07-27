@@ -97,3 +97,39 @@
   hall-approach path and the first configured HP multiplier directly.
 - No work was offloaded to DGX Spark because implementation, tests, build, and
   browser QA were lightweight local workloads.
+
+## 2026-07-27 — Phase 3A-fix defensive behavior and balance
+
+- Replaced the personal aggression lottery with deterministic, ordered
+  behavior: broken-agent retreat, dormant betrayal, nearby engagement, own-hall
+  defense, cross-house rally, and home-leash return.
+- Carried stable threat IDs through intent and attack resolution so defenders
+  focus the attacker nearest their hall with ascending-ID ties.
+- Added rally-directed fleeing without RNG, living-hall context construction,
+  and a helping state for agents reinforcing another house after their own hall
+  is destroyed.
+- Split the oversized wave test module into spawning and threat-behavior seams,
+  then added pure threshold/order/movement tests plus engine-level rally wiring
+  coverage.
+- Added `npm run balance -- [runs]`, a no-miracle headless harness with automatic
+  intermissions, crash-only non-zero exits, terminal outcome distribution,
+  conditional per-wave medians, and terminal run-length metrics.
+- The exact requested baseline produced 0/200 victories. The only subsequent
+  retune was `AGENT_ATTACK_DAMAGE: 9 -> 20`; all other requested starting
+  values remained unchanged.
+- Final 200-seed results: 69 victory (34.5%), 131 wave-3 defeat (65.5%), zero
+  wave-1 or wave-2 defeats; median terminal tick 2,603. Wave clear medians were
+  213.5, 414.5, and 1,456 ticks, with wave 3 cleared in 69 runs.
+- The default organic seed now wins at tick 2,826 with hall HP `900/0/0`.
+  Determinism verification accepts either terminal outcome and still forces
+  complete configurable state-machine coverage when organic combat does not.
+- StrictMode browser play cleared waves 1 and 2, showed defenders visibly
+  clustering around surviving halls during wave 3, and reached victory with
+  Ashvale at 900 HP and 15 living agents. The displayed tick was 3,910 because
+  the UI deliberately continued effect-only ticks while waiting at both manual
+  intermission buttons. The destroyed houses had no surviving agents in this
+  natural run, so cross-house movement was verified at the engine integration
+  seam rather than claimed as a visual observation. Console warnings/errors
+  remained empty throughout.
+- No work was offloaded to DGX Spark because 200 complete local simulations,
+  tests, build, and browser QA remained lightweight.
