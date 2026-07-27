@@ -11,6 +11,7 @@ function createAgent(overrides: Partial<Agent> = {}): Agent {
   return {
     id: "house_a_00",
     houseId: "house_a",
+    unitClass: "melee",
     disposition: { aggression: 50, loyalty: 50 },
     x: 100,
     y: 100,
@@ -70,16 +71,16 @@ test("Given equal seeds, when values are sampled, then PRNG output is identical"
   assert.equal(createRng(7).pick(["a"]), "a");
 });
 
-test("Given configured houses, when a world is created, then 60 regular agents and three heroes spawn in stable order", () => {
+test("Given configured houses, when a world is created, then configured regular populations and three heroes spawn in stable order", () => {
   const rng = createRng(BALANCE_CONFIG.DEFAULT_SEED);
   const houses = createHouses(rng);
   const agents = createAgents(houses, rng);
 
   assert.equal(houses.length, 3);
-  assert.equal(agents.length, 63);
+  assert.equal(agents.length, 76);
   assert.equal(agents[0]?.id, "house_a_00");
-  assert.equal(agents[59]?.id, "house_c_19");
-  assert.equal(agents[60]?.id, "hero_ashvale");
+  assert.equal(agents[72]?.id, "house_c_24");
+  assert.equal(agents[73]?.id, "hero_ashvale");
   assert.ok(
     agents.filter(({ isHero }) => !isHero).every(
       (agent) =>

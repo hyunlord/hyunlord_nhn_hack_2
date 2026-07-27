@@ -32,12 +32,14 @@ import {
   applyHeroProgressAwards,
   applyProgressionAwards,
   divineModifiersForState,
+  modifiersForAgent,
   modifiersForHouse,
 } from "./progressionEngine";
 import { maxHpForAgent, respawnHeroes } from "./heroEngine";
 import { EMPTY_PURCHASES } from "../build/shop";
 import { TOWER_RUBBLE_TICKS } from "../build/structures";
 import type { CardEffect } from "../progression/progression.types";
+import { recruitForWaveStart } from "./population";
 
 export { castMiracle } from "./miracleApplication";
 export { castSkill } from "./skillApplication";
@@ -77,6 +79,7 @@ function spawnConfiguredWave(
     state.tick,
     rng,
   );
+  state = recruitForWaveStart(state, waveIndex, rng);
   return {
     ...state,
     phase: "wave",
@@ -128,6 +131,9 @@ function applyTickMaintenance(state: GameState, tick: number): GameState {
     activeEffects: state.activeEffects.filter(
       (effect) => tick < effect.startTick + effect.durationTicks,
     ),
+    rangedAttackEffects: state.rangedAttackEffects.filter(
+      (effect) => tick < effect.startTick + effect.durationTicks,
+    ),
     towerRubble: state.towerRubble.filter(
       (rubble) => tick < rubble.tick + TOWER_RUBBLE_TICKS,
     ),
@@ -139,7 +145,11 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
   const respawnedAgents = respawnHeroes(
     state.agents,
     state.halls,
-    state.houseModifiers,
+    state.agents.map((agent) => ({
+      agentId: agent.id,
+      houseId: agent.houseId,
+      modifiers: modifiersForAgent(state, agent),
+    })),
     tick,
   );
   if (respawnedAgents !== state.agents) {
@@ -155,6 +165,9 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
       ...state,
       tick,
       activeEffects: state.activeEffects.filter(
+        (effect) => tick < effect.startTick + effect.durationTicks,
+      ),
+      rangedAttackEffects: state.rangedAttackEffects.filter(
         (effect) => tick < effect.startTick + effect.durationTicks,
       ),
       towerRubble: state.towerRubble.filter(
@@ -215,6 +228,7 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
       towers: combat.towers,
       towerRubble: [...state.towerRubble, ...combat.destroyedTowers],
       activeThreat: combat.activeThreat,
+      rangedAttackEffects: combat.rangedAttackEffects,
       tribute,
       heroDeaths,
       divinePower: Math.min(
@@ -283,10 +297,7 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
             if (agent.hp <= 0) {
               return agent;
             }
-            const modifiers = modifiersForHouse(
-              maintained,
-              agent.houseId,
-            );
+            const modifiers = modifiersForAgent(maintained, agent);
             return {
               ...agent,
               hp: Math.max(
@@ -403,6 +414,7 @@ export function createInitialState(
         resurgence: 0,
       },
       activeEffects: [],
+      rangedAttackEffects: [],
       houseProgress: houses.map(({ id }) => ({
         houseId: id,
         xp: 0,
@@ -432,6 +444,7 @@ export function createInitialState(
       lastWaveSummary: null,
       waveStartSnapshot: null,
       heroDeaths: 0,
+      populationHistory: [],
     },
     rng,
   };

@@ -7,6 +7,40 @@ interface DivineVisualEffect {
   readonly durationTicks: number;
 }
 
+export function drawRangedAttackEffects(
+  context: CanvasRenderingContext2D,
+  effects: readonly {
+    readonly houseId: string;
+    readonly fromX: number;
+    readonly fromY: number;
+    readonly toX: number;
+    readonly toY: number;
+    readonly startTick: number;
+    readonly durationTicks: number;
+  }[],
+  colorsByHouse: ReadonlyMap<string, string>,
+  currentTick: number,
+): void {
+  context.lineWidth = 0.8;
+  for (const effect of effects) {
+    const age = currentTick - effect.startTick;
+    if (age < 0 || age >= effect.durationTicks) {
+      continue;
+    }
+    const color = colorsByHouse.get(effect.houseId);
+    if (color === undefined) {
+      continue;
+    }
+    context.beginPath();
+    context.moveTo(effect.fromX, effect.fromY);
+    context.lineTo(effect.toX, effect.toY);
+    context.globalAlpha = 1 - age / effect.durationTicks;
+    context.strokeStyle = color;
+    context.stroke();
+  }
+  context.globalAlpha = 1;
+}
+
 export function drawEffects(
   context: CanvasRenderingContext2D,
   effects: readonly DivineVisualEffect[],

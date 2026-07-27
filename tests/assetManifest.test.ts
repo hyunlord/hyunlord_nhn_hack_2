@@ -14,6 +14,10 @@ const EXPECTED_SPRITE_IDS: readonly SpriteId[] = [
   "tower",
   "tower_rubble",
   "agent",
+  "agent_melee",
+  "agent_spear",
+  "agent_archer",
+  "agent_skirmisher",
   "creature",
   "dark_mage",
   "hero_ashvale",
@@ -49,6 +53,10 @@ const EXPECTED_SPRITE_SRCS: Readonly<Record<SpriteId, string>> = {
   tower: "/assets/world/tower.png",
   tower_rubble: "/assets/world/tower_rubble.png",
   agent: "/assets/world/agent.png",
+  agent_melee: "/assets/world/agent_melee.png",
+  agent_spear: "/assets/world/agent_spear.png",
+  agent_archer: "/assets/world/agent_archer.png",
+  agent_skirmisher: "/assets/world/agent_skirmisher.png",
   creature: "/assets/world/creature.png",
   dark_mage: "/assets/world/dark_mage.png",
   hero_ashvale: "/assets/world/hero_ashvale.png",
@@ -112,6 +120,24 @@ test("Given world token sprites, when render sizes are read, then they mirror ga
   assert.equal(
     SPRITE_MANIFEST.agent.renderHeight,
     BALANCE_CONFIG.AGENT_RADIUS * 2,
+  );
+  assert.deepEqual(
+    [
+      SPRITE_MANIFEST.agent_melee.renderWidth,
+      SPRITE_MANIFEST.agent_spear.renderWidth,
+      SPRITE_MANIFEST.agent_archer.renderWidth,
+      SPRITE_MANIFEST.agent_skirmisher.renderWidth,
+    ],
+    [8, 9, 7, 6],
+  );
+  assert.deepEqual(
+    [
+      SPRITE_MANIFEST.agent_melee.renderHeight,
+      SPRITE_MANIFEST.agent_spear.renderHeight,
+      SPRITE_MANIFEST.agent_archer.renderHeight,
+      SPRITE_MANIFEST.agent_skirmisher.renderHeight,
+    ],
+    [8, 9, 7, 6],
   );
 });
 

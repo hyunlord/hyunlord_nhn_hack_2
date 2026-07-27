@@ -1,4 +1,5 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
+import type { UnitClassId } from "../content/unitClassConfig";
 import type {
   CardDefinition,
   CardEffect,
@@ -96,6 +97,7 @@ export function resolveModifiers(
   owned: readonly OwnedCard[],
   autoLevelBonus: number,
   baseEffects: readonly CardEffect[] = [],
+  unitClass?: UnitClassId,
 ): ResolvedModifiers {
   const result = neutralModifiers();
   result.attackDamageMultiplier *=
@@ -104,6 +106,12 @@ export function resolveModifiers(
     BALANCE_CONFIG.AUTO_LEVEL_HP_BONUS * autoLevelBonus;
 
   for (const effect of baseEffects) {
+    if (
+      effect.unitClass !== undefined &&
+      effect.unitClass !== unitClass
+    ) {
+      continue;
+    }
     for (const field of MULTIPLIER_FIELDS) {
       result[field] *= effect[field] ?? 1;
     }
@@ -117,6 +125,12 @@ export function resolveModifiers(
   for (const { cardId, stacks } of owned) {
     const effect = allCards.find(({ id }) => id === cardId)?.effect;
     if (effect === undefined) {
+      continue;
+    }
+    if (
+      effect.unitClass !== undefined &&
+      effect.unitClass !== unitClass
+    ) {
       continue;
     }
     for (const field of MULTIPLIER_FIELDS) {

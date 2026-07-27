@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import { HERO_DEFINITIONS } from "../src/content/heroConfig";
+import { UNIT_CLASSES } from "../src/content/unitClassConfig";
 import {
   combatBonusesForAgents,
   maxHpForAgent,
@@ -19,7 +20,7 @@ test("Given a new run, when agents are created, then one configured hero per hou
   const state = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
   const heroes = state.agents.filter(({ isHero }) => isHero);
 
-  assert.equal(state.agents.length, 63);
+  assert.equal(state.agents.length, 76);
   assert.deepEqual(
     heroes.map(({ heroId, houseId }) => ({ heroId, houseId })),
     HERO_DEFINITIONS.map(({ id, houseId }) => ({
@@ -212,9 +213,6 @@ test("Given Ivy has Green Mercy, when she kills inside her aura, then nearby liv
         }
       : entry,
   );
-  const modifiersByHouse = new Map(
-    modifiers.map(({ houseId, modifiers: value }) => [houseId, value]),
-  );
   const positionedIvy = {
     ...ivy,
     x: 100,
@@ -228,6 +226,17 @@ test("Given Ivy has Green Mercy, when she kills inside her aura, then nearby liv
     y: 100,
     hp: 50,
   };
+  const modifiersByAgent = new Map(
+    [positionedIvy, positionedAlly].map((agent) => {
+      const value = modifiers.find(
+        ({ houseId }) => houseId === agent.houseId,
+      )?.modifiers;
+      if (value === undefined) {
+        throw new RangeError(`Expected modifiers for ${agent.houseId}.`);
+      }
+      return [agent.id, value] as const;
+    }),
+  );
   const threat = {
     type: "monster_horde" as const,
     waveIndex: 0,
@@ -262,6 +271,7 @@ test("Given Ivy has Green Mercy, when she kills inside her aura, then nearby liv
           targetId: "creature_target",
           towardX: 105,
           towardY: 100,
+          preferredRange: 13,
         },
       },
       {
@@ -270,8 +280,8 @@ test("Given Ivy has Green Mercy, when she kills inside her aura, then nearby liv
       },
     ],
     threat,
-    BALANCE_CONFIG.AGENT_ATTACK_INTERVAL_TICKS,
-    modifiersByHouse,
+    UNIT_CLASSES.melee.attackIntervalTicks,
+    modifiersByAgent,
     bonuses,
   );
 

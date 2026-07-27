@@ -1,4 +1,5 @@
 import { pathToFileURL } from "node:url";
+import { performance } from "node:perf_hooks";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import { CARD_DEFINITIONS } from "../src/content/cardConfig";
 import type { HouseSelection } from "../src/content/houseConfig";
@@ -71,6 +72,14 @@ export type RunSample = {
   readonly legacyEarned: number;
 };
 
+export type SimulationObserver = {
+  readonly onTick?: (
+    before: GameState,
+    after: GameState,
+    elapsedMs: number,
+  ) => void;
+};
+
 export function chooseDraftCardId(
   cardIds: readonly string[],
   pickMode: PickMode,
@@ -140,11 +149,12 @@ function mergeShopDiagnostics(
   ) as AutoShopDiagnostics;
 }
 
-function runSimulation(
+export function runSimulation(
   seed: number,
   pickMode: PickMode,
   shopMode: ShopMode,
   houseIds: HouseSelection,
+  observer: SimulationObserver = {},
 ): RunSample {
   const world = createInitialState(seed, houseIds);
   const pickRng = createRng((seed ^ 0x9e3779b9) >>> 0);
@@ -200,7 +210,9 @@ function runSimulation(
     if (autoSkill.castSkillId !== null) {
       skillCasts += 1;
     }
+    const tickStartedAt = performance.now();
     const next = advanceTick(state, world.rng);
+    const tickElapsedMs = performance.now() - tickStartedAt;
     if (before.phase === "preparation" && next.phase === "wave") {
       markReached(reached, next, seed);
     }
@@ -238,6 +250,7 @@ function runSimulation(
       }
     }
     state = next;
+    observer.onTick?.(before, next, tickElapsedMs);
   }
 
   if (!terminal(state.phase)) {

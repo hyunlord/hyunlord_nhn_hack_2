@@ -13,6 +13,7 @@ const LABEL_PADDING_X = 3;
 
 type ModifierEntry = {
   readonly houseId: string;
+  readonly agentId?: string;
   readonly modifiers: ResolvedModifiers;
 };
 
@@ -64,9 +65,13 @@ export function drawHeroes(
     const definition = HERO_DEFINITIONS.find(
       ({ id }) => id === hero.heroId,
     );
-    const modifiers = modifiersByHouse.find(
-      ({ houseId }) => houseId === hero.houseId,
-    )?.modifiers;
+    const modifiers =
+      modifiersByHouse.find(({ agentId }) => agentId === hero.id)
+        ?.modifiers ??
+      modifiersByHouse.find(
+        ({ agentId, houseId }) =>
+          agentId === undefined && houseId === hero.houseId,
+      )?.modifiers;
     const color = colorsByHouse.get(hero.houseId);
     if (
       definition === undefined ||

@@ -43,5 +43,6 @@ export function createRunSummary(state: GameState): RunSummary {
     discoveredSynergyIds: state.activeSynergyIds.filter((id) =>
       hiddenSynergies.has(id),
     ),
+    populationHistory: state.populationHistory,
   };
 }

@@ -9,6 +9,7 @@
     "assets:check": "tsx scripts/checkAssets.ts",
     "balance": "tsx scripts/balanceHarness.ts",
     "check:determinism": "tsx scripts/checkDeterminism.ts",
+    "performance": "tsx scripts/performanceHarness.ts",
     "preview": "vite preview",
     "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit"

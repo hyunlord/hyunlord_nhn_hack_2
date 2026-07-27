@@ -18,6 +18,7 @@ function createAgent(overrides: Partial<Agent> = {}): Agent {
   return {
     id: "house_a_00",
     houseId: "house_a",
+    unitClass: "melee",
     disposition: { aggression: 80, loyalty: 40 },
     x: 100,
     y: 100,
@@ -113,6 +114,7 @@ test("Given a destroyed own hall, when another hall is threatened, then the agen
     towardX: nearbyRallyThreat.x,
     towardY: nearbyRallyThreat.y,
     targetId: nearbyRallyThreat.id,
+    preferredRange: 13,
     helping: true,
   });
 });
@@ -158,6 +160,7 @@ test("Given another hall under heavier pressure, when reinforcement is considere
     towardX: 710,
     towardY: 100,
     targetId: "creature_b_near",
+    preferredRange: 13,
     helping: true,
   });
   assert.deepEqual(holding, { kind: "idle" });
@@ -332,7 +335,13 @@ test("Given every intent variant, when mapped and moved, then directed paths con
   const intents: readonly AgentIntent[] = [
     { kind: "idle" },
     { kind: "flee", towardX: 0, towardY: 0 },
-    { kind: "engage", towardX: 200, towardY: 100, targetId: null },
+    {
+      kind: "engage",
+      towardX: 200,
+      towardY: 100,
+      targetId: null,
+      preferredRange: 13,
+    },
   ];
   const fleeRng = createCountingRng();
   const engageRng = createCountingRng();

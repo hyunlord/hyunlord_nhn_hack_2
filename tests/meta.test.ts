@@ -35,6 +35,7 @@ function summary(overrides: Partial<RunSummary> = {}): RunSummary {
     betrayal: null,
     discoveredSynergyIds: [],
     ...overrides,
+    populationHistory: overrides.populationHistory ?? [],
   };
 }
 

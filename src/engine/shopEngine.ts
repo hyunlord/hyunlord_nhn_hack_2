@@ -21,6 +21,8 @@ import {
   maxHpForAgent,
   respawnHeroNow,
 } from "./heroEngine";
+import { modifiersForAgent } from "./progressionEngine";
+import { populationCapForHouse } from "./population";
 
 const MEDICINE_HEAL = 45;
 const HALL_REPAIR = 300;
@@ -30,16 +32,6 @@ export function createShopPurchases(): ShopPurchases {
   return { ...EMPTY_PURCHASES };
 }
 
-function modifiersForAgent(state: GameState, agent: Agent) {
-  const modifiers = state.houseModifiers.find(
-    ({ houseId }) => houseId === agent.houseId,
-  )?.modifiers;
-  if (modifiers === undefined) {
-    throw new RangeError(`Missing modifiers for ${agent.houseId}.`);
-  }
-  return modifiers;
-}
-
 function eligibleDeadRegulars(state: GameState): Agent[] {
   const livingHallHouses = new Set(
     state.halls
@@ -47,10 +39,25 @@ function eligibleDeadRegulars(state: GameState): Agent[] {
       .map(({ houseId }) => houseId),
   );
   return state.agents.filter(
-    (agent) =>
-      !agent.isHero &&
-      agent.hp <= 0 &&
-      livingHallHouses.has(agent.houseId),
+    (agent) => {
+      if (
+        agent.isHero ||
+        agent.hp > 0 ||
+        !livingHallHouses.has(agent.houseId)
+      ) {
+        return false;
+      }
+      const level = state.houseProgress.find(
+        ({ houseId }) => houseId === agent.houseId,
+      )?.level ?? 1;
+      const living = state.agents.filter(
+        (candidate) =>
+          !candidate.isHero &&
+          candidate.houseId === agent.houseId &&
+          candidate.hp > 0,
+      ).length;
+      return living < populationCapForHouse(agent.houseId, level);
+    },
   );
 }
 
@@ -155,11 +162,24 @@ function recruitSquad(state: GameState): Agent[] {
   if (candidateHouse === undefined || hall === undefined) {
     return state.agents;
   }
+  const level = state.houseProgress.find(
+    ({ houseId }) => houseId === candidateHouse,
+  )?.level ?? 1;
+  const livingCount = state.agents.filter(
+    (agent) =>
+      !agent.isHero &&
+      agent.houseId === candidateHouse &&
+      agent.hp > 0,
+  ).length;
+  const availableCapacity = Math.max(
+    0,
+    populationCapForHouse(candidateHouse, level) - livingCount,
+  );
   const revivedIds = new Set(
     dead
       .filter(({ houseId }) => houseId === candidateHouse)
       .sort((first, second) => first.id.localeCompare(second.id))
-      .slice(0, 5)
+      .slice(0, Math.min(5, availableCapacity))
       .map(({ id }) => id),
   );
   return state.agents.map((agent) =>
@@ -223,7 +243,11 @@ function reviveHero(state: GameState): Agent[] {
       ? respawnHeroNow(
           agent,
           state.halls,
-          state.houseModifiers,
+          [{
+            agentId: agent.id,
+            houseId: agent.houseId,
+            modifiers: modifiersForAgent(state, agent),
+          }],
           state.tick,
         )
       : agent,

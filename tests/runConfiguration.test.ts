@@ -226,7 +226,7 @@ test("Given an ordered mixed trio, when a run is created, then only selected hou
     state.houses.map(({ id }) => id),
     ["house_f", "house_a", "house_d"],
   );
-  assert.equal(state.agents.filter(({ isHero }) => !isHero).length, 60);
+  assert.equal(state.agents.filter(({ isHero }) => !isHero).length, 84);
   assert.deepEqual(
     state.agents.filter(({ isHero }) => isHero).map(({ id }) => id),
     ["hero_ashvale"],

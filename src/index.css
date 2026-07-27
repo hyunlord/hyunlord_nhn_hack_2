@@ -126,6 +126,29 @@ button {
   min-width: 0;
 }
 
+.population-arc {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.population-arc li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: space-between;
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.population-arc span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .section-heading {
   margin-bottom: var(--space-4);
 }
@@ -337,18 +360,57 @@ button {
 
 .selection-roster {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
 }
 
 .selection-card {
-  min-height: 90px;
-  padding: 12px;
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 3 / 4;
+  min-height: 0;
+  padding: 0;
   border: 1px solid var(--border);
   color: var(--text);
   background: var(--panel);
   cursor: pointer;
   text-align: left;
+}
+
+.selection-card__content {
+  position: absolute;
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.selection-card__content > span:nth-child(2) {
+  min-width: 0;
+}
+
+.selection-card__content .trait-line {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.selection-card--locked::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 8px,
+    color-mix(in srgb, var(--border) 20%, transparent) 8px,
+    color-mix(in srgb, var(--border) 20%, transparent) 9px
+  );
+  content: "";
+  pointer-events: none;
 }
 
 .selection-card[aria-pressed="true"] {
@@ -549,7 +611,10 @@ button {
 .hud-panel {
   min-height: 112px;
   padding: var(--space-4);
-  border: 1px solid var(--border);
+  border: var(--space-4) solid transparent;
+  border-image-source: url("/assets/ui/panel_frame.png");
+  border-image-slice: 64 fill;
+  border-image-repeat: round;
   background: var(--panel);
 }
 
@@ -557,7 +622,10 @@ button {
   grid-column: span 2;
   min-height: 112px;
   padding: var(--space-4);
-  border: 1px solid var(--border);
+  border: var(--space-4) solid transparent;
+  border-image-source: url("/assets/ui/panel_frame.png");
+  border-image-slice: 64 fill;
+  border-image-repeat: round;
   background: var(--panel);
 }
 
@@ -761,11 +829,19 @@ button {
   font-size: 0.75rem;
 }
 
-.divine-power progress {
+.divine-power__gauge {
+  display: grid;
+  align-items: center;
+  min-height: 32px;
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-6);
+  background: url("/assets/ui/gauge_frame.png") center / 100% 100% no-repeat;
+}
+
+.divine-power__gauge progress {
   display: block;
   width: 100%;
   height: 8px;
-  margin-top: var(--space-2);
   accent-color: var(--accent);
 }
 
@@ -867,7 +943,9 @@ button {
   gap: var(--space-6);
   padding: var(--space-6);
   color: var(--draft-panel);
-  background: var(--draft-veil);
+  background:
+    linear-gradient(var(--draft-veil), var(--draft-veil)),
+    url("/assets/ui/draft_backdrop.png") center / cover no-repeat;
 }
 
 .draft-overlay__header {
@@ -897,16 +975,23 @@ button {
 }
 
 .draft-card {
-  display: grid;
-  align-content: start;
-  gap: var(--space-2);
-  min-height: 176px;
-  padding: var(--space-4);
+  position: relative;
+  min-height: 224px;
+  padding: 0;
   border: 3px solid var(--rarity-color);
   color: var(--draft-ink);
   background: var(--draft-panel);
   cursor: pointer;
   text-align: left;
+}
+
+.draft-card__content {
+  position: absolute;
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  overflow: hidden;
 }
 
 .draft-card:hover {
@@ -1368,7 +1453,8 @@ button {
   }
 
   .house-roster,
-  .house-investment-grid {
+  .house-investment-grid,
+  .selection-roster {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1477,7 +1563,7 @@ button {
   }
 
   .draft-card {
-    min-height: 0;
+    min-height: 208px;
   }
 
   .draft-card__description {

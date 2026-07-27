@@ -5,6 +5,10 @@ import { LEVEL_THRESHOLDS } from "../../progression/xp";
 import { HERO_LEVEL_THRESHOLDS } from "../../progression/xp";
 import { HERO_DEFINITIONS } from "../../content/heroConfig";
 import type { LegacyRiteGroup } from "../investmentSummary";
+import {
+  livingRegularCount,
+  populationCapForHouse,
+} from "../../engine/population";
 
 const EMPTY_LEGACY_RITES: readonly LegacyRiteGroup[] = [];
 
@@ -78,11 +82,16 @@ export function HUD({
             {state.divinePower.toFixed(1)}/{BALANCE_CONFIG.DIVINE_POWER_MAX}
           </strong>
         </div>
-        <progress
-          aria-label="Divine power"
-          max={BALANCE_CONFIG.DIVINE_POWER_MAX}
-          value={state.divinePower}
-        />
+        <div
+          className="divine-power__gauge"
+          data-frame-sprite="gauge_frame"
+        >
+          <progress
+            aria-label="Divine power"
+            max={BALANCE_CONFIG.DIVINE_POWER_MAX}
+            value={state.divinePower}
+          />
+        </div>
       </div>
       <ul className="house-status-list">
         {state.houses.map((house) => {
@@ -97,6 +106,16 @@ export function HUD({
             ({ houseId }) => houseId === house.id,
           );
           const level = progress?.level ?? 1;
+          const populationEntries = state.populationHistory.filter(
+            ({ houseId }) => houseId === house.id,
+          );
+          const currentPopulation = populationEntries.at(-1);
+          const previousPopulation = populationEntries.at(-2);
+          const populationDelta =
+            currentPopulation === undefined ||
+            previousPopulation === undefined
+              ? 0
+              : currentPopulation.count - previousPopulation.count;
           const levelStart = LEVEL_THRESHOLDS[level - 1] ?? 0;
           const nextThreshold = LEVEL_THRESHOLDS[level];
           const xpWithinLevel = Math.max(
@@ -123,6 +142,12 @@ export function HUD({
                 <span>
                   Hall {hall?.hp ?? 0}/
                   {hall?.maxHp ?? BALANCE_CONFIG.HALL_HP} · {livingCount} living
+                </span>
+                <span>
+                  Population {livingRegularCount(state, house.id)}/
+                  {populationCapForHouse(house.id, level)} · Δ{" "}
+                  {populationDelta >= 0 ? "+" : ""}
+                  {populationDelta}
                 </span>
                 <progress
                   aria-label={`${house.name} XP to next level`}

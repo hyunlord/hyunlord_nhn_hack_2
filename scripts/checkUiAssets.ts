@@ -4,6 +4,7 @@ import { inflateSync } from "node:zlib";
 
 type AssetSpec = {
   readonly file: string;
+  readonly directory?: "ui" | "world";
   readonly width: number;
   readonly height: number;
   readonly alphaMode: "hard" | "opaque" | "gradient";
@@ -23,14 +24,14 @@ type Png = {
 };
 
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-const ASSET_ROOT = resolve("public/assets/ui");
+const ASSET_ROOT = resolve("public/assets");
 const ASSETS: readonly AssetSpec[] = [
   { file: "card_frame_common.png", width: 512, height: 768, alphaMode: "hard", maxKiB: 256, interior: { x: 40, y: 56, width: 432, height: 656 } },
   { file: "card_frame_rare.png", width: 512, height: 768, alphaMode: "hard", maxKiB: 256, interior: { x: 40, y: 56, width: 432, height: 656 } },
   { file: "card_frame_legendary.png", width: 512, height: 768, alphaMode: "hard", maxKiB: 256, interior: { x: 40, y: 56, width: 432, height: 656 } },
   { file: "house_select_frame.png", width: 384, height: 512, alphaMode: "hard", maxKiB: 256 },
   { file: "panel_frame.png", width: 512, height: 512, alphaMode: "hard", maxKiB: 256 },
-  { file: "background_field.png", width: 1920, height: 1200, alphaMode: "opaque", maxKiB: 512 },
+  { file: "background_field.png", directory: "world", width: 1920, height: 1200, alphaMode: "opaque", maxKiB: 512 },
   { file: "draft_backdrop.png", width: 1920, height: 1080, alphaMode: "gradient", maxKiB: 512 },
   { file: "gauge_frame.png", width: 256, height: 64, alphaMode: "hard", maxKiB: 128 },
 ] as const;
@@ -130,7 +131,7 @@ function sameInterior(actual: AssetSpec["interior"], expected: NonNullable<Asset
 }
 
 for (const spec of ASSETS) {
-  const path = resolve(ASSET_ROOT, spec.file);
+  const path = resolve(ASSET_ROOT, spec.directory ?? "ui", spec.file);
   const png = readPng(path);
   if (png.width !== spec.width || png.height !== spec.height) {
     throw new Error(`${spec.file}: expected ${spec.width}x${spec.height}, got ${png.width}x${png.height}`);

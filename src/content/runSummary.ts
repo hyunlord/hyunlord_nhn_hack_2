@@ -21,4 +21,9 @@ export interface RunSummary {
   readonly heroLessWave2Clear: boolean;
   readonly betrayal: BetrayalSummary | null;
   readonly discoveredSynergyIds: readonly string[];
+  readonly populationHistory: readonly {
+    readonly wave: number;
+    readonly houseId: HouseId;
+    readonly count: number;
+  }[];
 }

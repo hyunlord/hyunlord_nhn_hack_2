@@ -1,6 +1,6 @@
 import type { Agent } from "../agents/agentTypes";
 import type { AgentIntent } from "../agents/dispositionEngine";
-import { BALANCE_CONFIG } from "../content/balanceConfig";
+import { UNIT_CLASSES } from "../content/unitClassConfig";
 import { applyDamageToThreat } from "../threat/waveDirector";
 import type { ThreatEvent } from "../threat/threatTypes";
 import type { ResolvedModifiers } from "../progression/modifiers";
@@ -11,6 +11,7 @@ import {
   maxHpForAgent,
   type AgentCombatBonus,
 } from "./heroEngine";
+import type { RangedAttackEffect } from "./engine.types";
 
 type Point = { readonly x: number; readonly y: number };
 type ThreatHit = {
@@ -53,18 +54,22 @@ export function applyAgentAttacks(
   readonly xpAwards: HouseAmount[];
   readonly heroXpAwards: HeroAmount[];
   readonly creatureKillsByHouse: HouseAmount[];
+  readonly rangedAttackEffects: RangedAttackEffect[];
 } {
   let currentThreat = threat;
   const xpByHouse = new Map<string, number>();
   const xpByHero = new Map<string, number>();
   const creatureKillsByHouse = new Map<string, number>();
   let nextAgents = decisions.map(({ agent }) => agent);
+  const rangedAttackEffects: RangedAttackEffect[] = [];
   decisions.forEach(({ intent }, agentIndex) => {
     const agent = nextAgents[agentIndex];
     if (agent === undefined) {
       return;
     }
-    const modifiers = modifiersByHouse.get(agent.houseId);
+    const modifiers =
+      modifiersByHouse.get(agent.id) ??
+      modifiersByHouse.get(agent.houseId);
     if (modifiers === undefined) {
       throw new RangeError(`Missing modifiers for ${agent.houseId}.`);
     }
@@ -75,7 +80,7 @@ export function applyAgentAttacks(
         Math.max(
           1,
           Math.round(
-            BALANCE_CONFIG.AGENT_ATTACK_INTERVAL_TICKS *
+            UNIT_CLASSES[agent.unitClass].attackIntervalTicks *
               modifiers.attackIntervalMultiplier *
               (bonusesByAgentId.get(agent.id)?.attackIntervalMultiplier ?? 1),
           ),
@@ -104,7 +109,7 @@ export function applyAgentAttacks(
     const inRangeTargets = targets.filter(
       (candidate) =>
         distanceSquared(agent, candidate) <=
-        BALANCE_CONFIG.AGENT_ATTACK_RANGE ** 2,
+        UNIT_CLASSES[agent.unitClass].attackRange ** 2,
     );
     const focusedTarget =
       intent.kind === "engage" && intent.targetId !== null
@@ -125,7 +130,7 @@ export function applyAgentAttacks(
       return;
     }
     const amount =
-      BALANCE_CONFIG.AGENT_ATTACK_DAMAGE *
+      UNIT_CLASSES[agent.unitClass].attackDamage *
       modifiers.attackDamageMultiplier *
       (bonusesByAgentId.get(agent.id)?.damageMultiplier ?? 1) *
       (
@@ -147,6 +152,18 @@ export function applyAgentAttacks(
     };
     const actualDamage = Math.min(target.hp, amount);
     currentThreat = applyDamageToThreat(currentThreat, [hit]);
+    if (Math.sqrt(distanceSquared(agent, target)) > 25) {
+      rangedAttackEffects.push({
+        attackerId: agent.id,
+        houseId: agent.houseId,
+        fromX: agent.x,
+        fromY: agent.y,
+        toX: target.x,
+        toY: target.y,
+        startTick: tick,
+        durationTicks: 4,
+      });
+    }
     const killed = actualDamage >= target.hp;
     const xp =
       xpForDamage(actualDamage) +
@@ -182,9 +199,9 @@ export function applyAgentAttacks(
         ) {
           return candidate;
         }
-        const candidateModifiers = modifiersByHouse.get(
-          candidate.houseId,
-        );
+        const candidateModifiers =
+          modifiersByHouse.get(candidate.id) ??
+          modifiersByHouse.get(candidate.houseId);
         if (candidateModifiers === undefined) {
           throw new RangeError(
             `Missing modifiers for ${candidate.houseId}.`,
@@ -222,5 +239,6 @@ export function applyAgentAttacks(
     creatureKillsByHouse: [...creatureKillsByHouse.entries()]
       .sort(([first], [second]) => first.localeCompare(second))
       .map(([houseId, amount]) => ({ houseId, amount })),
+    rangedAttackEffects,
   };
 }

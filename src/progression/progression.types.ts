@@ -1,9 +1,11 @@
 import type { DivineSkillId } from "../divine/skillTypes";
+import type { UnitClassId } from "../content/unitClassConfig";
 
 export type CardKind = "common" | "house" | "hero" | "divine";
 export type CardRarity = "common" | "rare" | "legendary";
 
 export interface CardEffect {
+  unitClass?: UnitClassId;
   attackDamageMultiplier?: number;
   attackIntervalMultiplier?: number;
   maxHpBonus?: number;

@@ -108,6 +108,67 @@ test("Given Phase 3F legendary bargains, when modifiers resolve, then upsides an
   assert.equal(result.disableHeroRespawn, true);
 });
 
+test("Given class-scoped cards, when modifiers resolve for an exact class, then only that class receives the effect", () => {
+  const owned = [
+    { cardId: "common_stout_sinew", stacks: 1 },
+    { cardId: "class_massed_volley", stacks: 1 },
+    { cardId: "class_braced_line", stacks: 1 },
+    { cardId: "class_running_blades", stacks: 1 },
+    { cardId: "class_shieldbreaker", stacks: 1 },
+  ];
+
+  const archer = resolveModifiers(
+    CARD_DEFINITIONS,
+    owned,
+    0,
+    [],
+    "archer",
+  );
+  const spearman = resolveModifiers(
+    CARD_DEFINITIONS,
+    owned,
+    0,
+    [],
+    "spear",
+  );
+  const skirmisher = resolveModifiers(
+    CARD_DEFINITIONS,
+    owned,
+    0,
+    [],
+    "skirmisher",
+  );
+  const warrior = resolveModifiers(
+    CARD_DEFINITIONS,
+    owned,
+    0,
+    [],
+    "melee",
+  );
+
+  assert.equal(archer.attackIntervalMultiplier, 0.85);
+  assert.equal(archer.maxHpBonus, 12);
+  assert.equal(spearman.maxHpBonus, 42);
+  assert.equal(spearman.moveSpeedMultiplier, 1);
+  assert.equal(skirmisher.moveSpeedMultiplier, 1.2);
+  assert.equal(skirmisher.attackDamageMultiplier, 1);
+  assert.equal(warrior.attackDamageMultiplier, 1.12);
+  assert.equal(warrior.attackIntervalMultiplier, 1);
+});
+
+test("Given scoped and unscoped cards, when modifiers resolve without a class context, then scoped effects are skipped and unscoped effects remain", () => {
+  const result = resolveModifiers(
+    CARD_DEFINITIONS,
+    [
+      { cardId: "common_stout_sinew", stacks: 2 },
+      { cardId: "class_braced_line", stacks: 2 },
+    ],
+    0,
+  );
+
+  assert.equal(result.maxHpBonus, 24);
+});
+
 test("Given combat contribution and cumulative XP, when progression is queried, then thresholds are exact", () => {
   assert.deepEqual(LEVEL_THRESHOLDS, [0, 500, 1200, 2200, 3500]);
   assert.equal(xpForDamage(19.5), 19.5);
@@ -223,19 +284,53 @@ test("Given an unlocked skill-grant card with remaining tier stacks, when eligib
   assert.ok(!eligible.some(({ id }) => id === "divine_grant_chains"));
 });
 
-test("Given the Phase 3F card pool, when its budget is inspected, then damage cards remain bounded by explicit tradeoffs", () => {
+test("Given the Phase 3I card pool, when its budget is inspected, then class cards have their exact rare effects", () => {
   const damageCards = CARD_DEFINITIONS.filter(
     ({ effect }) => effect.attackDamageMultiplier !== undefined,
   );
+  const classCards = CARD_DEFINITIONS.filter(({ id }) =>
+    id.startsWith("class_"),
+  );
 
-  assert.equal(CARD_DEFINITIONS.length, 38);
-  assert.equal(damageCards.length, 3);
+  assert.equal(CARD_DEFINITIONS.length, 42);
+  assert.equal(damageCards.length, 4);
   assert.deepEqual(
     damageCards.map(({ id }) => id).sort(),
     [
+      "class_shieldbreaker",
       "common_sharpened_edge",
       "house_a_emberguard",
       "legend_zealots_bargain",
+    ],
+  );
+  assert.deepEqual(
+    classCards.map(({ rarity, effect }) => ({ rarity, effect })),
+    [
+      {
+        rarity: "rare",
+        effect: {
+          unitClass: "archer",
+          attackIntervalMultiplier: 0.85,
+        },
+      },
+      {
+        rarity: "rare",
+        effect: { unitClass: "spear", maxHpBonus: 30 },
+      },
+      {
+        rarity: "rare",
+        effect: {
+          unitClass: "skirmisher",
+          moveSpeedMultiplier: 1.2,
+        },
+      },
+      {
+        rarity: "rare",
+        effect: {
+          unitClass: "melee",
+          attackDamageMultiplier: 1.12,
+        },
+      },
     ],
   );
 });

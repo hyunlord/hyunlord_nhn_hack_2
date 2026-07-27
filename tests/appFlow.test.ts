@@ -30,6 +30,7 @@ function summary(runId = "run-1"): RunSummary {
     heroLessWave2Clear: false,
     betrayal: null,
     discoveredSynergyIds: [],
+    populationHistory: [],
   };
 }
 

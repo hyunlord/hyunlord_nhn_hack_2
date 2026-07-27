@@ -14,7 +14,7 @@ export type PurchaseInvestmentResult =
   | { readonly kind: "unknown_track"; readonly state: MetaState };
 
 export type ResolvedInvestmentEffects = Required<
-  Omit<CardEffect, "grantsSkill">
+  Omit<CardEffect, "grantsSkill" | "unitClass">
 >;
 
 const MULTIPLIER_FIELDS = [

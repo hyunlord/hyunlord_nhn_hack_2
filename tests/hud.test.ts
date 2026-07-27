@@ -21,5 +21,7 @@ test("Given the HUD is rendered without Legacy rites, when React renders it, the
   );
 
   assert.match(html, /Run status/);
+  assert.match(html, /class="divine-power__gauge"/);
+  assert.match(html, /data-frame-sprite="gauge_frame"/);
   assert.doesNotMatch(html, /Legacy rites/);
 });

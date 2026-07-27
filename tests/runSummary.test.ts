@@ -47,6 +47,7 @@ test("Given a terminal configured run, when its summary is produced, then it con
     heroLessWave2Clear: true,
     betrayal: { traitorHouseId: "house_a" },
     discoveredSynergyIds: ["ash_and_iron"],
+    populationHistory: [],
   });
   assert.equal(
     Object.values(summary).some((value) => value === state),

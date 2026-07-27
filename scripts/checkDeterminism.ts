@@ -26,6 +26,14 @@ function chooseFirst(state: GameState): GameState {
   return chooseDraftCard(state, offer.id, cardId);
 }
 
+function settleDrafts(state: GameState): GameState {
+  let next = state;
+  while (next.phase === "draft") {
+    next = chooseFirst(next);
+  }
+  return next;
+}
+
 function autoShop(state: GameState): GameState {
   let next = purchaseShopItem(state, "recruit_squad");
   next = purchaseShopItem(next, "field_medicine");
@@ -95,6 +103,7 @@ function runFullStateMachine(seed: number): GameState {
       assert.notEqual(state.phase, "defeat");
     }
 
+    state = settleDrafts(state);
     if (state.phase === "wave") {
       if (state.activeThreat === null) {
         throw new RangeError("Expected an active threat during a wave.");
@@ -111,6 +120,7 @@ function runFullStateMachine(seed: number): GameState {
         world.rng,
       );
     }
+    state = settleDrafts(state);
     if (definition.index < WAVE_DEFINITIONS.length - 1) {
       assert.equal(state.phase, "intermission");
       state = beginNextWave(autoShop(state), world.rng);

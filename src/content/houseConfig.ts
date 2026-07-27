@@ -1,3 +1,5 @@
+import type { UnitRoster } from "./unitClassConfig";
+
 export type HouseId =
   | "house_a"
   | "house_b"
@@ -36,6 +38,12 @@ export interface HouseConfigEntry {
   readonly color: string;
   readonly initialPower: number;
   readonly unlockedByDefault: boolean;
+  readonly roster: UnitRoster;
+  readonly startingPopulation: number;
+  readonly populationGrowthBase: number;
+  readonly populationGrowthPerLevel: number;
+  readonly populationCapBase: number;
+  readonly populationCapPerLevel: number;
   readonly traits: {
     readonly maxHpMultiplier: number;
     readonly attackDamageMultiplier: number;
@@ -80,6 +88,12 @@ export const HOUSE_CONFIG = [
     color: "#d4693f",
     initialPower: 50,
     unlockedByDefault: true,
+    roster: { melee: 50, spear: 0, archer: 0, skirmisher: 50 },
+    startingPopulation: 26,
+    populationGrowthBase: 8,
+    populationGrowthPerLevel: 2,
+    populationCapBase: 52,
+    populationCapPerLevel: 6,
     traits: {
       maxHpMultiplier: 1,
       attackDamageMultiplier: 1.1,
@@ -97,6 +111,12 @@ export const HOUSE_CONFIG = [
     color: "#4f8fbf",
     initialPower: 50,
     unlockedByDefault: true,
+    roster: { melee: 30, spear: 70, archer: 0, skirmisher: 0 },
+    startingPopulation: 22,
+    populationGrowthBase: 6,
+    populationGrowthPerLevel: 2,
+    populationCapBase: 44,
+    populationCapPerLevel: 5,
     traits: {
       maxHpMultiplier: 1.2,
       attackDamageMultiplier: 1,
@@ -114,6 +134,12 @@ export const HOUSE_CONFIG = [
     color: "#7bb06a",
     initialPower: 50,
     unlockedByDefault: true,
+    roster: { melee: 40, spear: 20, archer: 40, skirmisher: 0 },
+    startingPopulation: 25,
+    populationGrowthBase: 7,
+    populationGrowthPerLevel: 2,
+    populationCapBase: 50,
+    populationCapPerLevel: 6,
     traits: {
       maxHpMultiplier: 1.05,
       attackDamageMultiplier: 1,
@@ -131,6 +157,12 @@ export const HOUSE_CONFIG = [
     color: "#8c68ba",
     initialPower: 50,
     unlockedByDefault: false,
+    roster: { melee: 0, spear: 0, archer: 30, skirmisher: 70 },
+    startingPopulation: 34,
+    populationGrowthBase: 10,
+    populationGrowthPerLevel: 3,
+    populationCapBase: 72,
+    populationCapPerLevel: 8,
     traits: {
       maxHpMultiplier: 0.82,
       attackDamageMultiplier: 1,
@@ -148,6 +180,12 @@ export const HOUSE_CONFIG = [
     color: "#77818d",
     initialPower: 50,
     unlockedByDefault: false,
+    roster: { melee: 15, spear: 85, archer: 0, skirmisher: 0 },
+    startingPopulation: 18,
+    populationGrowthBase: 5,
+    populationGrowthPerLevel: 1,
+    populationCapBase: 36,
+    populationCapPerLevel: 4,
     traits: {
       maxHpMultiplier: 1.45,
       attackDamageMultiplier: 0.9,
@@ -165,6 +203,12 @@ export const HOUSE_CONFIG = [
     color: "#d3a942",
     initialPower: 50,
     unlockedByDefault: false,
+    roster: { melee: 40, spear: 0, archer: 60, skirmisher: 0 },
+    startingPopulation: 24,
+    populationGrowthBase: 7,
+    populationGrowthPerLevel: 2,
+    populationCapBase: 48,
+    populationCapPerLevel: 5,
     traits: {
       maxHpMultiplier: 1,
       attackDamageMultiplier: 0.92,

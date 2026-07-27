@@ -8,7 +8,7 @@ import {
 } from "./heroEngine";
 import {
   divineModifiersForState,
-  modifiersForHouse,
+  modifiersForAgent,
 } from "./progressionEngine";
 
 export function castMiracle(
@@ -59,7 +59,7 @@ export function castMiracle(
         ? scheduleHeroDeath(
             damaged,
             state.tick,
-            modifiersForHouse(state, agent.houseId),
+            modifiersForAgent(state, agent),
           )
         : damaged;
     }
@@ -73,7 +73,7 @@ export function castMiracle(
           Math.min(
             maxHpForAgent(
               agent,
-              modifiersForHouse(state, agent.houseId),
+              modifiersForAgent(state, agent),
             ),
             agent.hp + heal,
           ),

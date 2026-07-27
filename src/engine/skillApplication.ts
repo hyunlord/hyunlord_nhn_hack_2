@@ -14,7 +14,7 @@ import {
 } from "./heroEngine";
 import {
   divineModifiersForState,
-  modifiersForHouse,
+  modifiersForAgent,
 } from "./progressionEngine";
 
 function targetSnapshot(state: GameState): SkillTargetSnapshot {
@@ -137,7 +137,7 @@ export function castSkill(
           y: hall.y,
           hp: maxHpForAgent(
             agent,
-            modifiersForHouse(state, agent.houseId),
+            modifiersForAgent(state, agent),
           ),
           state: "idle" as const,
           lastDamagedTick: -1,
@@ -160,7 +160,7 @@ export function castSkill(
               Math.min(
                 maxHpForAgent(
                   agent,
-                  modifiersForHouse(state, agent.houseId),
+                  modifiersForAgent(state, agent),
                 ),
                 agent.hp + heal,
               ),
@@ -177,7 +177,11 @@ export function castSkill(
         ? respawnHeroNow(
             agent,
             state.halls,
-            state.houseModifiers,
+            [{
+              agentId: agent.id,
+              houseId: agent.houseId,
+              modifiers: modifiersForAgent(state, agent),
+            }],
             state.tick,
           )
         : agent,

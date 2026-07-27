@@ -88,7 +88,7 @@ test("Given every sprite file is missing, when all sprites preload, then the pro
   assert.deepEqual(loader.loadedCount(), {
     ready: 0,
     missing: SPRITE_IDS.length,
-    total: 19,
+    total: SPRITE_IDS.length,
   });
   for (const spriteId of SPRITE_IDS) {
     assert.equal(loader.getStatus(spriteId), "missing");
@@ -150,7 +150,7 @@ test("Given a mixed preload, when some sprites load and some are missing, then c
   assert.deepEqual(loader.loadedCount(), {
     ready: 2,
     missing: SPRITE_IDS.length - 2,
-    total: 19,
+    total: SPRITE_IDS.length,
   });
 });
 

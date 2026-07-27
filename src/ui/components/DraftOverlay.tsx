@@ -7,6 +7,7 @@ import {
   CARD_DEFINITIONS,
 } from "../../content/cardConfig";
 import {
+  FRAME_CONTENT_PERCENT,
   frameBackgroundImage,
   RARITY_FRAME_PRESENTATION,
 } from "../../content/framePresentation";
@@ -17,6 +18,13 @@ type DraftCardStyle = CSSProperties & {
   readonly "--rarity-color": string;
   readonly "--rarity-text-color": string;
 };
+
+const FRAME_CONTENT_STYLE = {
+  height: `${FRAME_CONTENT_PERCENT.height}%`,
+  left: `${FRAME_CONTENT_PERCENT.left}%`,
+  top: `${FRAME_CONTENT_PERCENT.top}%`,
+  width: `${FRAME_CONTENT_PERCENT.width}%`,
+} as const satisfies CSSProperties;
 
 export function DraftOverlay() {
   const { dispatch, state } = useGameStore();
@@ -161,18 +169,23 @@ export function DraftOverlay() {
               style={style}
               type="button"
             >
-              <span className="draft-card__meta">
-                <span>
-                  <b>{card.rarity}</b> · {card.kind}
+              <span
+                className="draft-card__content"
+                style={FRAME_CONTENT_STYLE}
+              >
+                <span className="draft-card__meta">
+                  <span>
+                    <b>{card.rarity}</b> · {card.kind}
+                  </span>
+                  <kbd>{index + 1}</kbd>
                 </span>
-                <kbd>{index + 1}</kbd>
-              </span>
-              <strong>{card.name}</strong>
-              <span className="draft-card__description">
-                {card.description}
-              </span>
-              <span className="draft-card__stacks">
-                Current stacks {stacks}/{card.maxStacks}
+                <strong>{card.name}</strong>
+                <span className="draft-card__description">
+                  {card.description}
+                </span>
+                <span className="draft-card__stacks">
+                  Current stacks {stacks}/{card.maxStacks}
+                </span>
               </span>
             </button>
           );

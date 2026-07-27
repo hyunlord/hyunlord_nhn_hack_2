@@ -14,6 +14,8 @@ import type { Rng } from "./prng";
 import type { GameState } from "./engine.types";
 import type { DivineModifiers } from "../divine/divine.types";
 import { maxHpForAgent } from "./heroEngine";
+import type { Agent } from "../agents/agentTypes";
+import type { UnitClassId } from "../content/unitClassConfig";
 
 export interface ProgressionAward {
   readonly houseId: string;
@@ -76,7 +78,23 @@ export function applyHeroProgressAwards(
 export function modifiersForHouse(
   state: GameState,
   houseId: string,
+  unitClass?: UnitClassId,
 ): ResolvedModifiers {
+  if (unitClass !== undefined) {
+    const progress = state.houseProgress.find(
+      (entry) => entry.houseId === houseId,
+    );
+    if (progress === undefined) {
+      throw new RangeError(`Missing progress for ${houseId}.`);
+    }
+    return resolveModifiers(
+      CARD_DEFINITIONS,
+      progress.cards,
+      progress.level - 1,
+      baseEffectsForHouse(state, houseId),
+      unitClass,
+    );
+  }
   const result = state.houseModifiers.find(
     (entry) => entry.houseId === houseId,
   )?.modifiers;
@@ -84,6 +102,13 @@ export function modifiersForHouse(
     throw new RangeError(`Missing modifiers for ${houseId}.`);
   }
   return result;
+}
+
+export function modifiersForAgent(
+  state: GameState,
+  agent: Pick<Agent, "houseId" | "unitClass">,
+): ResolvedModifiers {
+  return modifiersForHouse(state, agent.houseId, agent.unitClass);
 }
 
 function baseEffectsForHouse(
@@ -133,13 +158,30 @@ export function divineModifiersForState(
 function healForEffectiveMaxHpIncrease(
   state: GameState,
   houseId: string,
-  previousModifiers: ResolvedModifiers,
-  nextModifiers: ResolvedModifiers,
+  previousCards: GameState["houseProgress"][number]["cards"],
+  previousLevel: number,
+  nextCards: GameState["houseProgress"][number]["cards"],
+  nextLevel: number,
 ): GameState["agents"] {
   return state.agents.map((agent) => {
     if (agent.houseId !== houseId || agent.hp <= 0) {
       return agent;
     }
+    const baseEffects = baseEffectsForHouse(state, houseId);
+    const previousModifiers = resolveModifiers(
+      CARD_DEFINITIONS,
+      previousCards,
+      previousLevel - 1,
+      baseEffects,
+      agent.unitClass,
+    );
+    const nextModifiers = resolveModifiers(
+      CARD_DEFINITIONS,
+      nextCards,
+      nextLevel - 1,
+      baseEffects,
+      agent.unitClass,
+    );
     const increase =
       maxHpForAgent(agent, nextModifiers) -
       maxHpForAgent(agent, previousModifiers);
@@ -201,10 +243,6 @@ export function applyProgressionAwards(
     if (level === progress.level) {
       return updated;
     }
-    const previousModifiers = modifiersForHouse(
-      { ...state, houseModifiers },
-      progress.houseId,
-    );
     const modifiers = resolveModifiers(
       CARD_DEFINITIONS,
       updated.cards,
@@ -214,8 +252,10 @@ export function applyProgressionAwards(
     agents = healForEffectiveMaxHpIncrease(
       { ...state, agents },
       progress.houseId,
-      previousModifiers,
-      modifiers,
+      progress.cards,
+      progress.level,
+      updated.cards,
+      level,
     );
     houseModifiers = replaceModifiers(
       { ...state, houseModifiers },
@@ -313,7 +353,6 @@ export function chooseDraftCard(
             : owned,
         );
   const updatedProgress = { ...progress, cards };
-  const previousModifiers = modifiersForHouse(state, offer.houseId);
   const modifiers = resolveModifiers(
     CARD_DEFINITIONS,
     cards,
@@ -334,8 +373,10 @@ export function chooseDraftCard(
     agents: healForEffectiveMaxHpIncrease(
       state,
       offer.houseId,
-      previousModifiers,
-      modifiers,
+      progress.cards,
+      progress.level,
+      cards,
+      progress.level,
     ),
     houseProgress,
     houseModifiers: replaceModifiers(state, offer.houseId, modifiers),

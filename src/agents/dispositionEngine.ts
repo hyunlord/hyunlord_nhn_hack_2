@@ -1,4 +1,5 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
+import { UNIT_CLASSES } from "../content/unitClassConfig";
 import type {
   Agent,
   AgentModifiers,
@@ -33,6 +34,7 @@ export type AgentIntent =
       readonly towardX: number;
       readonly towardY: number;
       readonly targetId: string | null;
+      readonly preferredRange: number;
       readonly helping?: boolean;
     };
 
@@ -60,6 +62,7 @@ function nearestThreat(
 }
 
 function engage(
+  agent: Agent,
   threat: ThreatPresence,
   helping = false,
 ): AgentIntent {
@@ -68,6 +71,7 @@ function engage(
     towardX: threat.x,
     towardY: threat.y,
     targetId: threat.id,
+    preferredRange: UNIT_CLASSES[agent.unitClass].preferredRange,
     ...(helping ? { helping: true } : {}),
   };
 }
@@ -110,7 +114,7 @@ export function decideIntent(
 
   const nearest = nearestThreat(context.threats, agent);
   const maxHp =
-    (BALANCE_CONFIG.INITIAL_HP + modifiers.maxHpBonus) *
+    (UNIT_CLASSES[agent.unitClass].maxHp + modifiers.maxHpBonus) *
     (modifiers.maxHpMultiplier ?? 1);
   const isBroken =
     !modifiers.ignoreBreak &&
@@ -153,7 +157,7 @@ export function decideIntent(
     return fleeAway(agent, nearby);
   }
   if (nearby !== null) {
-    return engage(nearby);
+    return engage(agent, nearby);
   }
 
   if (context.ownHall !== null) {
@@ -164,7 +168,7 @@ export function decideIntent(
         modifiers.hallDefenseRadiusBonus,
     );
     if (hallThreat !== null) {
-      return engage(hallThreat);
+      return engage(agent, hallThreat);
     }
   }
 
@@ -184,7 +188,7 @@ export function decideIntent(
       agent.disposition.aggression >=
         BALANCE_CONFIG.AGENT_REINFORCE_AGGRESSION_THRESHOLD
     ) {
-      return engage(rallyThreat, true);
+      return engage(agent, rallyThreat, true);
     }
   }
 
@@ -198,6 +202,7 @@ export function decideIntent(
       towardX: context.ownHall.x,
       towardY: context.ownHall.y,
       targetId: null,
+      preferredRange: 0,
     };
   }
   return { kind: "idle" };

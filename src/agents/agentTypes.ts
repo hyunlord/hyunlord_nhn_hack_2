@@ -1,4 +1,5 @@
 import type { HouseId } from "../content/houseConfig";
+import type { UnitClassId } from "../content/unitClassConfig";
 
 export type { HouseId } from "../content/houseConfig";
 
@@ -20,6 +21,7 @@ export interface Disposition {
 export interface Agent {
   id: string;
   houseId: HouseId;
+  unitClass: UnitClassId;
   disposition: Disposition;
   x: number;
   y: number;

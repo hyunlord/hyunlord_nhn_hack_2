@@ -38,6 +38,7 @@ export function applyThreatDamages(
   tick: number,
   modifiersByHouse: readonly {
     readonly houseId: string;
+    readonly agentId?: string;
     readonly modifiers: ResolvedModifiers;
   }[],
   houseProgress: readonly HouseProgress[] = [],
@@ -54,9 +55,13 @@ export function applyThreatDamages(
     if (damage === undefined) {
       return agent;
     }
-    const modifiers = modifiersByHouse.find(
-      ({ houseId }) => houseId === agent.houseId,
-    )?.modifiers;
+    const modifiers =
+      modifiersByHouse.find(({ agentId }) => agentId === agent.id)
+        ?.modifiers ??
+      modifiersByHouse.find(
+        ({ houseId, agentId }) =>
+          agentId === undefined && houseId === agent.houseId,
+      )?.modifiers;
     if (modifiers === undefined) {
       throw new RangeError(`Missing modifiers for ${agent.houseId}.`);
     }

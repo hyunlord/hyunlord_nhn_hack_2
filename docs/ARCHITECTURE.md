@@ -170,6 +170,25 @@ missing IDs. `npm run assets:check` reads the same manifest and prints the
 asset checklist without changing runtime state.
 
 `src/content/framePresentation.ts` is presentation-only. It maps rarity cards
-and the house-selection screen to their frame sprite IDs while keeping
-`frameSpriteEnabled` false, so today’s UI stays on the current border-and-label
-visuals until art ships.
+and the house-selection screen to their enabled frame sprite IDs. Card and
+house screens calculate their transparent content rectangles from normalized
+source insets, while panels use the shipped fixed-corner nine-slice. Missing
+frame assets still retain the border-and-label fallback.
+
+## Unit classes and population
+
+`src/content/unitClassConfig.ts` owns the four regular-unit stat lines and the
+stable largest-remainder allocator. Houses own only roster weights and
+population rules. Creation, wave recruitment, combat, movement, and rendering
+all read the same unit-class definition instead of copying combat constants.
+
+At each wave boundary, `src/engine/population.ts` recruits by current house
+level and living regular count. A destroyed hall produces nothing, caps are
+hard, and existing agents are never healed. The population history is stored
+in deterministic run state and copied into the terminal summary.
+
+Modifier resolution is normalized in this order: class base, house traits,
+global investment, house investment, drafted cards, then situation-specific
+combat conditions. Additive fields are summed and multiplier fields are
+multiplied within the relevant layer; consumers apply the resolved bundle to
+the class base exactly once.

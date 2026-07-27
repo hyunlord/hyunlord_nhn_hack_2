@@ -89,10 +89,10 @@ test("Given the Phase 3F card pool, when rarity composition is inspected, then f
     "divine_open_channel",
   ];
 
-  assert.equal(CARD_DEFINITIONS.length, 38);
+  assert.equal(CARD_DEFINITIONS.length, 42);
   assert.deepEqual(counts, {
     common: 14,
-    rare: 14,
+    rare: 18,
     legendary: 10,
   });
   assert.ok(counts.common > counts.legendary);

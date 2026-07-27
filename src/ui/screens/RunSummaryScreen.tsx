@@ -55,6 +55,28 @@ export function RunSummaryScreen() {
         </section>
       </div>
 
+      <section className="ledger-section" aria-labelledby="population-arc-heading">
+        <div className="section-heading">
+          <p className="eyebrow">Population record</p>
+          <h2 id="population-arc-heading">Army arc</h2>
+        </div>
+        <ul className="population-arc">
+          {summary.selectedHouseIds.map((houseId) => {
+            const house = HOUSE_CONFIG.find(({ id }) => id === houseId);
+            const arc = summary.populationHistory
+              .filter((entry) => entry.houseId === houseId)
+              .map(({ wave, count }) => `W${wave} ${count}`)
+              .join(" → ");
+            return (
+              <li key={houseId}>
+                <strong>{house?.name ?? houseId}</strong>
+                <span>{arc || "No wave reached"}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
       {completion.newAchievementIds.length > 0 ? (
         <section className="new-achievements" aria-live="polite">
           <p className="eyebrow">New achievements</p>

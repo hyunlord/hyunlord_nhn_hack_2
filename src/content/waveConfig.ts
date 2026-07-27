@@ -13,7 +13,7 @@ export const WAVE_DEFINITIONS: readonly WaveDefinition[] = [
   {
     index: 0,
     label: "First Howl",
-    creatureCount: 20,
+    creatureCount: 36,
     creatureHpMultiplier: 1.8,
     creatureDamageMultiplier: 1,
     spawnEdges: 1,
@@ -23,7 +23,7 @@ export const WAVE_DEFINITIONS: readonly WaveDefinition[] = [
   {
     index: 1,
     label: "Gathering Dark",
-    creatureCount: 34,
+    creatureCount: 60,
     creatureHpMultiplier: 2.5,
     creatureDamageMultiplier: 1.1,
     spawnEdges: 2,
@@ -33,7 +33,7 @@ export const WAVE_DEFINITIONS: readonly WaveDefinition[] = [
   {
     index: 2,
     label: "The Mage Comes",
-    creatureCount: 64,
+    creatureCount: 112,
     creatureHpMultiplier: 5,
     creatureDamageMultiplier: 1.2,
     spawnEdges: 3,

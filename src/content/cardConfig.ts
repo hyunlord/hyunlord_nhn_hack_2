@@ -1,5 +1,6 @@
 import type { CardDefinition } from "../progression/progression.types";
 
+// allow: SIZE_OK — canonical card definitions are one flat data table.
 export const RARITY_WEIGHTS = {
   common: 65,
   rare: 27,
@@ -114,6 +115,51 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
     description: "Banked fires restore a little health between waves.",
     maxStacks: 3,
     effect: { interWaveHealBonus: 10 },
+  },
+  {
+    id: "class_massed_volley",
+    kind: "common",
+    rarity: "rare",
+    name: "Massed Volley",
+    description: "Highreach archers loose in a single disciplined rhythm.",
+    maxStacks: 2,
+    effect: {
+      unitClass: "archer",
+      attackIntervalMultiplier: 0.85,
+    },
+  },
+  {
+    id: "class_braced_line",
+    kind: "common",
+    rarity: "rare",
+    name: "Braced Line",
+    description: "Spearmen lock their shields and refuse to yield.",
+    maxStacks: 2,
+    effect: { unitClass: "spear", maxHpBonus: 30 },
+  },
+  {
+    id: "class_running_blades",
+    kind: "common",
+    rarity: "rare",
+    name: "Running Blades",
+    description: "Skirmishers turn every opening into a swift advance.",
+    maxStacks: 2,
+    effect: {
+      unitClass: "skirmisher",
+      moveSpeedMultiplier: 1.2,
+    },
+  },
+  {
+    id: "class_shieldbreaker",
+    kind: "common",
+    rarity: "rare",
+    name: "Shieldbreaker",
+    description: "Warriors drive through armor with punishing strikes.",
+    maxStacks: 2,
+    effect: {
+      unitClass: "melee",
+      attackDamageMultiplier: 1.12,
+    },
   },
   {
     id: "house_a_emberguard",

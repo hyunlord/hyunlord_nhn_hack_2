@@ -44,6 +44,23 @@ export interface WaveSummary {
   hallDamage: number;
 }
 
+export interface PopulationHistoryEntry {
+  readonly wave: number;
+  readonly houseId: HouseId;
+  readonly count: number;
+}
+
+export interface RangedAttackEffect {
+  readonly attackerId: string;
+  readonly houseId: HouseId;
+  readonly fromX: number;
+  readonly fromY: number;
+  readonly toX: number;
+  readonly toY: number;
+  readonly startTick: number;
+  readonly durationTicks: 4;
+}
+
 export interface GameState {
   tick: number;
   runSeed: number;
@@ -93,4 +110,6 @@ export interface GameState {
     hallHp: number;
   } | null;
   heroDeaths: number;
+  populationHistory: PopulationHistoryEntry[];
+  rangedAttackEffects: RangedAttackEffect[];
 }

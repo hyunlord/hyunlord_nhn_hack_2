@@ -1,5 +1,6 @@
 import type { Agent } from "../agents/agentTypes";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
+import { UNIT_CLASSES } from "../content/unitClassConfig";
 import {
   HERO_DEFINITIONS,
   type HeroDefinition,
@@ -9,6 +10,7 @@ import type { Hall } from "./engine.types";
 
 type ModifierEntry = {
   readonly houseId: string;
+  readonly agentId?: string;
   readonly modifiers: ResolvedModifiers;
 };
 
@@ -31,7 +33,10 @@ function modifiersForAgent(
   entries: readonly ModifierEntry[],
 ): ResolvedModifiers {
   const modifiers = entries.find(
-    ({ houseId }) => houseId === agent.houseId,
+    ({ agentId }) => agentId === agent.id,
+  )?.modifiers ?? entries.find(
+    ({ houseId, agentId }) =>
+      agentId === undefined && houseId === agent.houseId,
   )?.modifiers;
   if (modifiers === undefined) {
     throw new RangeError(`Missing modifiers for ${agent.houseId}.`);
@@ -49,7 +54,7 @@ export function maxHpForAgent(
       ? 1
       : hero.hpMultiplier * modifiers.heroMaxHpMultiplier;
   const base = Math.round(
-    (BALANCE_CONFIG.INITIAL_HP + modifiers.maxHpBonus) *
+    (UNIT_CLASSES[agent.unitClass].maxHp + modifiers.maxHpBonus) *
       modifiers.maxHpMultiplier *
       heroMultiplier,
   );

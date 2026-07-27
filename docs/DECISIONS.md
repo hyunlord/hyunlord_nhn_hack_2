@@ -528,3 +528,49 @@ atlas plumbing before the asset set exists.
 
 Sprite infrastructure is presentation-only. No balance, simulation, or tuning
 values changed in this slice.
+
+## 2026-07-28 — Phase 3I unit classes and living armies
+
+### Class stats have one content owner
+
+The four regular classes live in `unitClassConfig.ts`. Combat, movement,
+factories, and fallback drawing all consume that table, which prevents a
+rendering radius or attack cadence from becoming an accidental second balance
+source. Heroes retain their existing identity and progression but use melee as
+their regular-unit baseline.
+
+### Roster allocation is deterministic integer apportionment
+
+House roster weights are converted to exact counts with largest remainder.
+Equal fractional remainders resolve in fixed order: melee, spear, archer,
+skirmisher. This same allocator creates starting armies and wave recruits, so
+the configured total is never lost to independent rounding.
+
+### Population is production, not healing
+
+Wave starts add fresh regulars at each living hall. Growth and cap scale from
+the house's current level, living regulars count against the cap, dead regulars
+do not, and destroyed halls add zero. Existing wounded agents keep their HP.
+Recruit Squad shares the cap boundary so the shop cannot bypass production
+limits.
+
+### Range control stays deterministic
+
+Preferred-range movement has three bands: advance beyond 110%, retreat at 90%
+speed inside 70%, and hold between them. Directed movement consumes no RNG.
+Attacks beyond 25 world units create a four-tick house-colored line effect;
+the effect is presentation state and cannot affect combat results.
+
+### Modifier order is explicit
+
+Class base stats are followed by house traits, global investment, house
+investment, drafted cards, and lastly conditional combat effects. Modifier
+bundles normalize additive bonuses by summation and multipliers by product,
+then each consumer applies the bundle to the class base once.
+
+### Phase 3G-2a art is now active
+
+The battlefield background moved into the world asset namespace. House and
+rarity frames are enabled using normalized transparent-content insets, panels
+use the 64-pixel nine-slice corners, and draft backdrop plus divine gauge are
+wired. Missing class sprites keep shape-specific primitive fallbacks.

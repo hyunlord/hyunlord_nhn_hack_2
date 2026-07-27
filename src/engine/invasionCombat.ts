@@ -30,12 +30,13 @@ import {
 import { applyTowerAttacks } from "./towerCombat";
 import { TOWER_RADIUS } from "../build/structures";
 import type { TowerDestroyed } from "../build/build.types";
+import { modifiersForAgent } from "./progressionEngine";
 
 type Point = { readonly x: number; readonly y: number };
 type WaveCombatStep = Pick<
   GameState,
   "agents" | "halls" | "activeThreat"
-  | "towers"
+  | "towers" | "rangedAttackEffects"
 > & {
   readonly creatureKills: number;
   readonly xpAwards: {
@@ -136,17 +137,12 @@ function moveAgents(
   halls: readonly Hall[],
   threat: ThreatEvent | null,
   rng: Rng,
-  modifiersByHouse: GameState["houseModifiers"],
+  state: GameState,
   tick: number,
 ): AgentDecision[] {
   const threats = toThreatPresences(threat);
   const decisions = agents.map((agent) => {
-    const modifiers = modifiersByHouse.find(
-      (entry) => entry.houseId === agent.houseId,
-    )?.modifiers;
-    if (modifiers === undefined) {
-      throw new RangeError(`Missing modifiers for ${agent.houseId}.`);
-    }
+    const modifiers = modifiersForAgent(state, agent);
     const context = createDefenseContext(
       agent,
       halls,
@@ -211,6 +207,7 @@ export function advanceWaveCombat(
       halls: state.halls,
       towers: state.towers,
       activeThreat: null,
+      rangedAttackEffects: state.rangedAttackEffects,
       creatureKills: 0,
       xpAwards: [],
       heroXpAwards: [],
@@ -225,23 +222,28 @@ export function advanceWaveCombat(
     state.halls,
     state.activeThreat,
     rng,
-    state.houseModifiers,
+    state,
     tick,
   );
-  const modifiersByHouse = new Map(
-    state.houseModifiers.map(({ houseId, modifiers }) => [
-      houseId,
-      modifiers,
+  const modifiersByAgent = new Map(
+    decisions.map(({ agent }) => [
+      agent.id,
+      modifiersForAgent(state, agent),
     ]),
   );
+  const modifierEntries = decisions.map(({ agent }) => ({
+    agentId: agent.id,
+    houseId: agent.houseId,
+    modifiers: modifiersForAgent(state, agent),
+  }));
   const attacks = applyAgentAttacks(
     decisions,
     state.activeThreat,
     tick,
-    modifiersByHouse,
+    modifiersByAgent,
     combatBonusesForAgents(
       decisions.map(({ agent }) => agent),
-      state.houseModifiers,
+      modifierEntries,
       state.runUpgrades.attackDamageMultiplier,
     ),
     {
@@ -288,7 +290,7 @@ export function advanceWaveCombat(
       attacks.agents,
       stepped.agentDamages,
       tick,
-      state.houseModifiers,
+      modifierEntries,
       state.houseProgress,
     ),
     halls: applyHallDamages(state.halls, stepped.hallDamages),
@@ -308,5 +310,11 @@ export function advanceWaveCombat(
       ({ houseId, amount }) => ({ houseId, kills: amount }),
     ),
     destroyedTowers: towerDamage.destroyed,
+    rangedAttackEffects: [
+      ...state.rangedAttackEffects.filter(
+        (effect) => tick < effect.startTick + effect.durationTicks,
+      ),
+      ...attacks.rangedAttackEffects,
+    ],
   };
 }

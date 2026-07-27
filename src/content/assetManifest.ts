@@ -1,5 +1,6 @@
 import { TOWER_RADIUS } from "../build/structures";
 import { BALANCE_CONFIG } from "./balanceConfig";
+import { UNIT_CLASSES } from "./unitClassConfig";
 
 export type SpriteSpec = {
   readonly id: SpriteId;
@@ -20,6 +21,10 @@ export const SPRITE_IDS = [
   "tower",
   "tower_rubble",
   "agent",
+  "agent_melee",
+  "agent_spear",
+  "agent_archer",
+  "agent_skirmisher",
   "creature",
   "dark_mage",
   "hero_ashvale",
@@ -38,6 +43,7 @@ export const SPRITE_IDS = [
 
 export type SpriteId = (typeof SPRITE_IDS)[number];
 
+// allow: SIZE_OK — canonical sprite metadata is one flat manifest contract.
 const FRAME = {
   frameWidth: 128,
   frameHeight: 128,
@@ -108,6 +114,42 @@ export const SPRITE_MANIFEST = {
     ...CENTER_PIVOT,
     renderWidth: BALANCE_CONFIG.AGENT_RADIUS * 2,
     renderHeight: BALANCE_CONFIG.AGENT_RADIUS * 2,
+    tintable: true,
+  },
+  agent_melee: {
+    id: "agent_melee",
+    src: "/assets/world/agent_melee.png",
+    ...FRAME,
+    ...CENTER_PIVOT,
+    renderWidth: UNIT_CLASSES.melee.drawRadius * 2,
+    renderHeight: UNIT_CLASSES.melee.drawRadius * 2,
+    tintable: true,
+  },
+  agent_spear: {
+    id: "agent_spear",
+    src: "/assets/world/agent_spear.png",
+    ...FRAME,
+    ...CENTER_PIVOT,
+    renderWidth: UNIT_CLASSES.spear.drawRadius * 2,
+    renderHeight: UNIT_CLASSES.spear.drawRadius * 2,
+    tintable: true,
+  },
+  agent_archer: {
+    id: "agent_archer",
+    src: "/assets/world/agent_archer.png",
+    ...FRAME,
+    ...CENTER_PIVOT,
+    renderWidth: UNIT_CLASSES.archer.drawRadius * 2,
+    renderHeight: UNIT_CLASSES.archer.drawRadius * 2,
+    tintable: true,
+  },
+  agent_skirmisher: {
+    id: "agent_skirmisher",
+    src: "/assets/world/agent_skirmisher.png",
+    ...FRAME,
+    ...CENTER_PIVOT,
+    renderWidth: UNIT_CLASSES.skirmisher.drawRadius * 2,
+    renderHeight: UNIT_CLASSES.skirmisher.drawRadius * 2,
     tintable: true,
   },
   creature: {

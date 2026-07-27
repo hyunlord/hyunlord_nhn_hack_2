@@ -86,7 +86,7 @@ test("Given every configured wave, when spawned, then scaling, mage presence, an
   assert.notEqual(threats[2]?.mage, null);
   assert.ok(threats.every(({ traitorHouseId }) => traitorHouseId === null));
   assert.equal(new Set(ids).size, ids.length);
-  assert.ok(ids.every((id) => /^w\d+_creature_\d{2}$/.test(id)));
+  assert.ok(ids.every((id) => /^w\d+_creature_\d{2,3}$/.test(id)));
   assert.equal(
     threats[1]?.creatures[0]?.hp,
     Math.round(
@@ -97,6 +97,54 @@ test("Given every configured wave, when spawned, then scaling, mage presence, an
   assert.ok(
     (threats[1]?.creatures[0]?.hp ?? 0) >
       (threats[0]?.creatures[0]?.hp ?? Number.POSITIVE_INFINITY),
+  );
+});
+
+test("Given the Phase 3I wave table, when creature counts are read, then only the structural counts increase", () => {
+  assert.deepEqual(
+    WAVE_DEFINITIONS.map(
+      ({
+        creatureCount,
+        creatureHpMultiplier,
+        creatureDamageMultiplier,
+        spawnEdges,
+        hasMage,
+        tributeReward,
+      }) => ({
+        creatureCount,
+        creatureHpMultiplier,
+        creatureDamageMultiplier,
+        spawnEdges,
+        hasMage,
+        tributeReward,
+      }),
+    ),
+    [
+      {
+        creatureCount: 36,
+        creatureHpMultiplier: 1.8,
+        creatureDamageMultiplier: 1,
+        spawnEdges: 1,
+        hasMage: false,
+        tributeReward: 60,
+      },
+      {
+        creatureCount: 60,
+        creatureHpMultiplier: 2.5,
+        creatureDamageMultiplier: 1.1,
+        spawnEdges: 2,
+        hasMage: false,
+        tributeReward: 90,
+      },
+      {
+        creatureCount: 112,
+        creatureHpMultiplier: 5,
+        creatureDamageMultiplier: 1.2,
+        spawnEdges: 3,
+        hasMage: true,
+        tributeReward: 140,
+      },
+    ],
   );
 });
 

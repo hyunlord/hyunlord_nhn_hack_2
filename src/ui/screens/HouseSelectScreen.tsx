@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import {
   HOUSE_CONFIG,
   HOUSE_SPAWN_SLOTS,
@@ -5,10 +6,18 @@ import {
 } from "../../content/houseConfig";
 import {
   frameBackgroundImage,
+  HOUSE_FRAME_CONTENT_PERCENT,
   HOUSE_SELECTION_FRAME,
 } from "../../content/framePresentation";
 import { previewHouseSynergies } from "../../content/houseSynergies";
 import { useAppFlow } from "../../state/appFlowContext";
+
+const FRAME_CONTENT_STYLE = {
+  height: `${HOUSE_FRAME_CONTENT_PERCENT.height}%`,
+  left: `${HOUSE_FRAME_CONTENT_PERCENT.left}%`,
+  top: `${HOUSE_FRAME_CONTENT_PERCENT.top}%`,
+  width: `${HOUSE_FRAME_CONTENT_PERCENT.width}%`,
+} as const satisfies CSSProperties;
 
 export function HouseSelectScreen() {
   const { dispatch, state } = useAppFlow();
@@ -89,19 +98,24 @@ export function HouseSelectScreen() {
                   type="button"
                 >
                   <span
-                    aria-hidden="true"
-                    className="house-mark"
-                    style={{ backgroundColor: house.color }}
-                  />
-                  <span>
-                    <strong>{house.name}</strong>
-                    <small>{house.identity}</small>
-                    <small className="trait-line">
-                      {houseTraitSummary(house.id)}
-                    </small>
-                  </span>
-                  <span className="status-label">
-                    {selected ? `Pick ${order + 1}` : unlocked ? "Choose" : "Locked"}
+                    className="selection-card__content"
+                    style={FRAME_CONTENT_STYLE}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="house-mark"
+                      style={{ backgroundColor: house.color }}
+                    />
+                    <span>
+                      <strong>{house.name}</strong>
+                      <small>{house.identity}</small>
+                      <small className="trait-line">
+                        {houseTraitSummary(house.id)}
+                      </small>
+                    </span>
+                    <span className="status-label">
+                      {selected ? `Pick ${order + 1}` : unlocked ? "Choose" : "Locked"}
+                    </span>
                   </span>
                 </button>
               );

@@ -391,8 +391,50 @@
   `draft_backdrop.png` is the intentional exception to hard alpha: its
   programmatic vignette ranges from alpha 128 at the centre to 191 at the
   corners.
+
+## 2026-07-28 — Phase 3I unit classes and dynamic population
+
+- Added Warrior, Spearman, Archer, and Skirmisher as data-owned regular-unit
+  classes. Starting armies and recruits use deterministic largest-remainder
+  roster allocation for all six houses.
+- Added per-wave hall production with level-scaled growth and caps. Destroyed
+  halls produce zero, recruitment never heals wounded agents, and both HUD and
+  terminal summary expose the recorded army arc.
+- Added deterministic preferred-range advance/retreat/hold behavior and
+  four-tick ranged attack traces. Rendering now uses class sprite IDs first and
+  distinct circle, diamond, triangle, and dot fallbacks.
+- Added four rare class-scoped cards and changed only structural wave counts to
+  36, 60, and 112. Existing prices, traits, rarity weights, and non-structural
+  balance multipliers were left unchanged.
+- Activated the Phase 3G-2a house/card frames, panel nine-slice, draft
+  backdrop, divine gauge, and world background. The manifest now covers 23
+  assets, including four optional class sprites.
+- Added focused tests for class stats, allocations, recruitment, caps,
+  destroyed halls, wounded-unit preservation, class cards, range bands,
+  zero-RNG movement, ranged traces, frame scaling, and population history.
+- DGX Spark was not used because this slice required no model generation or
+  heavy compute.
 - The contact-sheet review kept the cards as one escalating family: restrained
   brown wood, teal-gray tarnished metal, then gilding with explicit sun, eye,
   and moon glyphs. It also caused a second pass that removed white spill from
   the neutral house banner and raised the battlefield from nearly black to a
   still-flat, low-contrast ground texture.
+- The final 200-seed `abc` balance observation produced 189 victories and 11
+  wave-three defeats: a 94.5% victory rate, median terminal tick 2742, median
+  46 surviving agents, and median 1800 combined hall HP. This is explicitly
+  flagged `OVER 70%`; no additional tuning was made because this slice limits
+  structural balance changes to the requested 36/60/112 wave counts.
+- Isolated performance runs stayed below the 35 ms tick ceiling. Across the
+  `abc`, `bde`, and `adf` trios the overall average was 1.809 ms, worst tick
+  6.913 ms, and peak entity count 281. Their population arcs also remained
+  distinct: `abc` grew into a balanced 40/46/36 line, `bde` retained the
+  largest Stonewake-heavy wall at 50/55/29, and `adf` finished as a mobile
+  44/52/41 force.
+- Browser QA at 1280, 768, and 375 px confirmed the activated house/card
+  frames, panel nine-slice, gauge, backdrop, class silhouettes, and responsive
+  house grid without horizontal overflow. The final warning/error console was
+  empty. A visual review caught the tall house-frame source being stretched
+  horizontally; the corrected 3:4 card layout passed the follow-up review.
+- Final verification passed 252/252 tests, TypeScript, production build,
+  both determinism paths, the 23-entry manifest check, all eight PNG
+  dimension/alpha checks, diff hygiene, and the independent code re-review.

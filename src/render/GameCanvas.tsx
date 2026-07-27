@@ -3,7 +3,10 @@ import { BALANCE_CONFIG } from "../content/balanceConfig";
 import { useGameStore } from "../state/gameStore";
 import { drawAgents } from "./drawAgents";
 import { drawBackground } from "./drawBackground";
-import { drawEffects } from "./drawEffects";
+import {
+  drawEffects,
+  drawRangedAttackEffects,
+} from "./drawEffects";
 import { drawHalls } from "./drawHalls";
 import { drawHeroes } from "./drawHeroes";
 import { drawThreats } from "./drawThreats";
@@ -12,6 +15,7 @@ import {
   drawTowerRubble,
   drawTowers,
 } from "./drawTowers";
+import { modifiersForAgent } from "../engine/progressionEngine";
 
 export function GameCanvas() {
   const {
@@ -89,12 +93,24 @@ export function GameCanvas() {
         context,
         stateRef.current.agents,
         stateRef.current.houses,
-        stateRef.current.houseModifiers,
+        stateRef.current.agents.map((agent) => ({
+          agentId: agent.id,
+          houseId: agent.houseId,
+          modifiers: modifiersForAgent(stateRef.current, agent),
+        })),
         stateRef.current.tick,
       );
       drawThreats(
         context,
         stateRef.current.activeThreat,
+        stateRef.current.tick,
+      );
+      drawRangedAttackEffects(
+        context,
+        stateRef.current.rangedAttackEffects,
+        new Map(
+          stateRef.current.houses.map(({ id, color }) => [id, color]),
+        ),
         stateRef.current.tick,
       );
       drawEffects(
