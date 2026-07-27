@@ -131,3 +131,41 @@ test("Given a completed run, when retry is chosen, then the same trio runs with 
   assert.deepEqual(retried.selectedHouseIds, initial.selectedHouseIds);
   assert.equal(retried.summary, null);
 });
+
+test("Given a valid investment purchase action, when reduced, then meta points and ranks update", () => {
+  const state = createInitialAppState(
+    { ...createDefaultMetaState(), legacyPoints: 200 },
+    100,
+  );
+
+  const purchased = appReducer(state, {
+    type: "purchaseInvestment",
+    trackId: "global_vigor",
+  });
+
+  assert.notStrictEqual(purchased, state);
+  assert.equal(purchased.meta.legacyPoints, 80);
+  assert.deepEqual(purchased.meta.investmentRanks, { global_vigor: 1 });
+});
+
+test("Given rejected investment purchase actions, when reduced, then the exact app state reference is retained", () => {
+  const state = createInitialAppState(
+    { ...createDefaultMetaState(), legacyPoints: 119 },
+    100,
+  );
+
+  assert.strictEqual(
+    appReducer(state, {
+      type: "purchaseInvestment",
+      trackId: "missing_track",
+    }),
+    state,
+  );
+  assert.strictEqual(
+    appReducer(state, {
+      type: "purchaseInvestment",
+      trackId: "global_vigor",
+    }),
+    state,
+  );
+});

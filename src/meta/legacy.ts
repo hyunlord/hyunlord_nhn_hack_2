@@ -37,6 +37,7 @@ export function createDefaultMetaState(): MetaState {
     bestWaveReached: 0,
     victories: 0,
     processedRunIds: [],
+    investmentRanks: {},
   };
 }
 

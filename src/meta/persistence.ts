@@ -6,6 +6,7 @@ import {
   HOUSE_IDS,
   type HouseId,
 } from "../content/houseConfig";
+import { INVESTMENT_TRACKS } from "../content/investmentConfig";
 import { createDefaultMetaState } from "./legacy";
 import {
   META_STATE_VERSION,
@@ -42,10 +43,10 @@ function isStringArray(value: unknown): value is readonly string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
-function parseMetaState(value: unknown): MetaState | null {
-  if (!isRecord(value) || value["version"] !== META_STATE_VERSION) {
-    return null;
-  }
+function parseBaseMetaFields(value: Record<string, unknown>): Omit<
+  MetaState,
+  "version" | "investmentRanks"
+> | null {
   const legacyPoints = value["legacyPoints"];
   const unlockedHouses = value["unlockedHouses"];
   const unlockedAchievements = value["unlockedAchievements"];
@@ -71,7 +72,6 @@ function parseMetaState(value: unknown): MetaState | null {
   }
 
   return {
-    version: META_STATE_VERSION,
     legacyPoints,
     unlockedHouses,
     unlockedAchievements,
@@ -80,6 +80,62 @@ function parseMetaState(value: unknown): MetaState | null {
     bestWaveReached,
     victories,
     processedRunIds,
+  };
+}
+
+function parseInvestmentRanks(
+  value: unknown,
+): Readonly<Record<string, number>> | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const ranks: Record<string, number> = {};
+  for (const [trackId, rank] of Object.entries(value)) {
+    const track = INVESTMENT_TRACKS.find(({ id }) => id === trackId);
+    if (
+      track === undefined ||
+      !isNonNegativeInteger(rank) ||
+      rank > track.maxRank
+    ) {
+      return null;
+    }
+    ranks[trackId] = rank;
+  }
+  return ranks;
+}
+
+function parseMetaState(value: unknown): MetaState | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const base = parseBaseMetaFields(value);
+  if (base === null) {
+    return null;
+  }
+
+  if (value["version"] === 1) {
+    return {
+      version: META_STATE_VERSION,
+      ...base,
+      investmentRanks: {},
+    };
+  }
+
+  if (value["version"] !== META_STATE_VERSION) {
+    return null;
+  }
+
+  const investmentRanks = parseInvestmentRanks(value["investmentRanks"]);
+  if (investmentRanks === null) {
+    return null;
+  }
+
+  return {
+    version: META_STATE_VERSION,
+    ...base,
+    investmentRanks,
   };
 }
 

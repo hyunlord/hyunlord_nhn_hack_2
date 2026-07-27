@@ -54,7 +54,7 @@ test("Given no prior save, when meta state is created, then only the original tr
   const state = createDefaultMetaState();
 
   assert.deepEqual(state, {
-    version: 1,
+    version: 2,
     legacyPoints: 0,
     unlockedHouses: ["house_a", "house_b", "house_c"],
     unlockedAchievements: [],
@@ -63,6 +63,7 @@ test("Given no prior save, when meta state is created, then only the original tr
     bestWaveReached: 0,
     victories: 0,
     processedRunIds: [],
+    investmentRanks: {},
   });
 });
 
@@ -93,22 +94,77 @@ test("Given missing, corrupt, or mismatched persisted data, when loading, then s
   assert.deepEqual(loadMetaState(storage), defaults);
   storage.values.set(META_STORAGE_KEY, "{not-json");
   assert.deepEqual(loadMetaState(storage), defaults);
-  storage.values.set(META_STORAGE_KEY, JSON.stringify({ ...defaults, version: 2 }));
+  storage.values.set(META_STORAGE_KEY, JSON.stringify({ ...defaults, version: 99 }));
   assert.deepEqual(loadMetaState(storage), defaults);
 });
 
-test("Given valid persisted meta, when saved and loaded, then its versioned state round-trips", () => {
+test("Given valid version two persisted meta, when saved and loaded, then investment ranks round-trip", () => {
   const storage = new MemoryStorage();
   const state = {
     ...createDefaultMetaState(),
     legacyPoints: 420,
     runsPlayed: 3,
     bestWaveReached: 4,
+    investmentRanks: {
+      global_vigor: 2,
+      house_a_ashvale_fury: 1,
+    },
   };
 
   saveMetaState(storage, state);
 
   assert.deepEqual(loadMetaState(storage), state);
+});
+
+test("Given valid version one persisted meta, when loaded, then it migrates with empty investment ranks", () => {
+  const storage = new MemoryStorage();
+  const versionOneState = {
+    version: 1,
+    legacyPoints: 420,
+    unlockedHouses: ["house_a", "house_b", "house_c", "house_d"],
+    unlockedAchievements: ["first_stand"],
+    discoveredSynergies: ["swift_fury"],
+    runsPlayed: 3,
+    bestWaveReached: 4,
+    victories: 1,
+    processedRunIds: ["run-1"],
+  };
+
+  storage.values.set(META_STORAGE_KEY, JSON.stringify(versionOneState));
+
+  assert.deepEqual(loadMetaState(storage), {
+    ...versionOneState,
+    version: 2,
+    investmentRanks: {},
+  });
+});
+
+test("Given malformed version two investment ranks, when loaded, then defaults are returned", () => {
+  const storage = new MemoryStorage();
+  const defaults = createDefaultMetaState();
+
+  storage.values.set(
+    META_STORAGE_KEY,
+    JSON.stringify({
+      ...defaults,
+      investmentRanks: {
+        global_vigor: 1,
+        unknown_track: 1,
+      },
+    }),
+  );
+  assert.deepEqual(loadMetaState(storage), defaults);
+
+  storage.values.set(
+    META_STORAGE_KEY,
+    JSON.stringify({
+      ...defaults,
+      investmentRanks: {
+        global_vigor: 6,
+      },
+    }),
+  );
+  assert.deepEqual(loadMetaState(storage), defaults);
 });
 
 test("Given enough legacy, when Duskmere is purchased twice, then only the first purchase spends points", () => {

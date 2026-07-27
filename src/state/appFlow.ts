@@ -9,6 +9,7 @@ import {
   purchaseHouseUnlock,
   type ApplyRunSummaryResult,
 } from "../meta/legacy";
+import { purchaseInvestment } from "../meta/investments";
 import type { MetaState } from "../meta/meta.types";
 
 export type AppPhase = "meta" | "select" | "run" | "summary";
@@ -30,7 +31,8 @@ export type AppAction =
   | { readonly type: "completeRun"; readonly summary: RunSummary }
   | { readonly type: "retryRun" }
   | { readonly type: "returnToMeta" }
-  | { readonly type: "purchaseUnlock"; readonly houseId: HouseId };
+  | { readonly type: "purchaseUnlock"; readonly houseId: HouseId }
+  | { readonly type: "purchaseInvestment"; readonly trackId: string };
 
 export function createInitialAppState(
   meta: MetaState,
@@ -141,6 +143,12 @@ export function appReducer(
       };
     case "purchaseUnlock": {
       const purchase = purchaseHouseUnlock(state.meta, action.houseId);
+      return purchase.state === state.meta
+        ? state
+        : { ...state, meta: purchase.state };
+    }
+    case "purchaseInvestment": {
+      const purchase = purchaseInvestment(state.meta, action.trackId);
       return purchase.state === state.meta
         ? state
         : { ...state, meta: purchase.state };
