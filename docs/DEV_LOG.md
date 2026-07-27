@@ -332,3 +332,24 @@
   surface was fixed at 1280px; 375px and 768px rules were reviewed but could
   not be freshly captured because alternate viewport emulation was blocked by
   browser security policy.
+
+## 2026-07-27 — Phase 3G-1 sprite infrastructure
+
+- Added the sprite-backed living-world pipeline across the manifest, loader,
+  tint cache, single `drawSprite` entry point, dev overlay, and frame
+  presentation module. The loader now tracks `idle`, `loading`, `ready`, and
+  `missing` states; the draw path stays boolean-first and falls back to the
+  existing primitive renderers when art is absent or sprites are disabled.
+- Kept the current UI frame visuals intact by leaving the frame sprite flags
+  disabled. House selection and rarity cards still present the existing
+  border-and-label treatment, and the borders-only rule remains unchanged.
+- The asset checklist is still intentionally incomplete: `npm run assets:check`
+  reports `0 ready, 19 missing, 19 total` for the 19 manifest entries. The
+  current test suite reports `231` passing tests.
+- Determinism stayed exact before and after the sprite slice: organic defeat at
+  tick 2344 with tribute `85` and halls `0/0/0`; full victory at tick 1718
+  with tribute `178` and halls `0/234/900`.
+- The boundary check stayed clean, no DGX offload was needed because this slice
+  had no generation or heavy compute, and asset generation is next.
+- Automated gates passed during the implementation slices, but final browser QA
+  and push have not been run yet.

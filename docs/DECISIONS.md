@@ -488,3 +488,43 @@ The available in-app browser surface was fixed at 1280px and its security
 policy rejected alternate viewport emulation, so 375px and 768px were verified
 through the shipped responsive rules and focused review rather than fresh
 browser captures.
+
+## 2026-07-27 — Phase 3G-1 sprite infrastructure
+
+### Fractional pivots keep source and world geometry separate
+
+The sprite manifest stores source-frame geometry and world render size as
+distinct fields. That lets the art stay sheet-sized while world placement stays
+measured in gameplay units. Center pivots remain the default for halls,
+towers, agents, creatures, and the dark mage; hero sprites use a centered x
+pivot with a 0.75 y pivot so the feet sit on the ground line.
+
+### Tinting keeps shading through source-in plus multiply
+
+Tinting first applies `source-in` to colorize the sprite mask, then multiplies
+the original sheet back over the tint. That choice preserves transparent edges
+and flat pixel-art shading better than a single flat fill.
+
+### The tint cache is capped at 64 entries
+
+Tint surfaces are cached by sprite ID and normalized color. The cache evicts
+the oldest insertion when the next variant would exceed 64 entries.
+
+### Primitives stay as the fallback until art proves itself
+
+`drawSprite` returns `false` on missing assets, disabled sprites, bad geometry,
+or any render failure. Every world drawable keeps its existing primitive draw
+path behind that boolean, and those primitives remain the permanent fallback
+for now because the asset folder is still empty and tiny agent/creature
+legibility is not yet proven by art.
+
+### First art slice uses separate files, not an atlas
+
+The first sprite slice uses individual PNG files for each drawable rather than
+a packed atlas. That keeps the initial art work independent and avoids adding
+atlas plumbing before the asset set exists.
+
+### This slice does not change balance
+
+Sprite infrastructure is presentation-only. No balance, simulation, or tuning
+values changed in this slice.

@@ -122,11 +122,54 @@ agents outside the home leash return before resuming idle wandering.
 
 ## Rendering
 
-Canvas draw order is background → halls → tower rubble → living towers → agents
-→ heroes → threats → effects, followed by the transient tower preview. Halls
+Canvas draw order is background → halls → towers → tower rubble → agents →
+heroes → threats → effects, followed by the transient tower preview. Halls
 remain visible as rubble at zero HP; destroyed towers leave a timed visual
 record but no longer occupy a placement slot. Rendering reads immutable
 snapshots and never consumes RNG or advances the simulation. React owns only
 presentation and user actions: house selection, miracle selection/casting,
 draft selection, intermission purchases and tower placement, continuation,
 summary processing, and retry with a fresh deterministic seed.
+
+## Sprite pipeline
+
+`src/content/assetManifest.ts` is the content-owned manifest for the nineteen
+sprite IDs. Each spec keeps source-frame geometry, fractional pivots, world
+render size, and tintability as separate fields, so source sheet size and world
+geometry stay independent.
+
+`src/render/assets/spriteLoader.ts` owns a process-lifetime
+`idle`/`loading`/`ready`/`missing` cache. `preloadAll()` is called once during
+startup from `src/main.tsx` before React mounts, and preload failures resolve
+to `missing` instead of rejecting. `getImage()` returns `null` for loading or
+missing entries, so absent assets never throw during draw time.
+
+`src/render/assets/drawSprite.ts` is the only world/entity render-loop
+`drawImage` path. It resolves a manifest spec, optional tinted surface, frame
+rectangle, DPR-snapped destination, and sprite draw state, then returns `true`
+only after the canvas draw succeeds. Every caller keeps its existing primitive
+renderer on the `false` path, so sprite absence does not mutate simulation
+behavior. `spriteCache.ts` also uses `drawImage`, but only offscreen while
+generating tinted variants.
+
+`src/render/assets/spriteCache.ts` lazily builds tinted full sheets. It
+composites the source with `source-in`, multiplies the original sheet back over
+the tint so shading survives, and evicts the oldest insertion once the
+64-entry cap would be exceeded.
+
+The runtime chain is `manifest -> one startup preload -> ready/missing cache ->
+drawSprite -> optional tint cache -> boolean primitive fallback`. That chain is
+presentation-only. Render code never imports from simulation domains, and
+simulation code never mutates render state.
+
+`?sprites=off` is parsed once in `spriteSettings.ts` and makes `drawSprite`
+return `false` for the whole app. The dev-only
+`src/ui/components/SpriteDebugOverlay.tsx` is mounted behind `import.meta.env.DEV`,
+toggles with `Shift+D`, and reports ready, missing, and total counts plus the
+missing IDs. `npm run assets:check` reads the same manifest and prints the
+asset checklist without changing runtime state.
+
+`src/content/framePresentation.ts` is presentation-only. It maps rarity cards
+and the house-selection screen to their frame sprite IDs while keeping
+`frameSpriteEnabled` false, so today’s UI stays on the current border-and-label
+visuals until art ships.

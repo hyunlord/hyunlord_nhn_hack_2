@@ -82,8 +82,27 @@ The content width is capped at 1200px and arranged with CSS Grid.
 
 - Logical size: 960 by 600, scaled for device pixel ratio
 - Surface: dark ground, 40px grid, and inexpensive radial vignette
-- Agents: 4px house-colored circles with a dark one-pixel outline
+- World bodies: sprite-backed first, with the existing primitive silhouettes as
+  the exact fallback while assets are absent or disabled
 - Accessibility: descriptive canvas label; live counts remain readable in HUD
+
+### Sprite-backed world contract
+
+- The living-world contract is one canvas surface, one attempted sprite draw
+  per drawable, and the exact primitive fallback whenever `drawSprite` returns
+  `false`
+- Pixel-art draws disable image smoothing only around the draw call and snap
+  destination coordinates to the current device pixel ratio so sprites stay
+  crisp on HiDPI screens
+- The dev-only sprite overlay uses the dedicated `sprite-debug-overlay`,
+  `sprite-debug-overlay__header`, `sprite-debug-overlay__status`, and
+  `sprite-debug-overlay__missing` classes; `Shift+D` toggles it and shows
+  ready, missing, and total counts plus the missing IDs
+- `framePresentation.ts` keeps `frameSpriteEnabled: false` for the rarity and
+  house-selection frames, so the current border-and-label UI remains the
+  visual default until art exists
+- The borders-only treatment stays in force: this slice adds no shadows,
+  glows, or new surface tokens
 
 ### World HUD
 
