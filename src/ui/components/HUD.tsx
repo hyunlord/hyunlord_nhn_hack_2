@@ -6,10 +6,12 @@ import { HERO_LEVEL_THRESHOLDS } from "../../progression/xp";
 import { HERO_DEFINITIONS } from "../../content/heroConfig";
 import type { LegacyRiteGroup } from "../investmentSummary";
 
+const EMPTY_LEGACY_RITES: readonly LegacyRiteGroup[] = [];
+
 export function HUD({
-  legacyRites,
+  legacyRites = EMPTY_LEGACY_RITES,
 }: {
-  readonly legacyRites: readonly LegacyRiteGroup[];
+  readonly legacyRites?: readonly LegacyRiteGroup[];
 }) {
   const { state } = useGameStore();
 
