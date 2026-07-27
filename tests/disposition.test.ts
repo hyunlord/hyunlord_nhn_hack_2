@@ -26,6 +26,10 @@ function createAgent(overrides: Partial<Agent> = {}): Agent {
     hp: BALANCE_CONFIG.INITIAL_HP,
     lastDamagedTick: -1,
     lastAttackTick: -1,
+    isHero: false,
+    heroId: null,
+    heroLevel: 1,
+    respawnAtTick: null,
     ...overrides,
   };
 }
@@ -45,6 +49,7 @@ function context(
   return {
     ownHall: { x: 100, y: 100, hp: BALANCE_CONFIG.HALL_HP },
     rallyHall: { x: 100, y: 100 },
+    threatenedHalls: [],
     threats: [],
     ...overrides,
   };
@@ -90,6 +95,12 @@ test("Given a destroyed own hall, when another hall is threatened, then the agen
     context({
       ownHall: null,
       rallyHall: { x: 700, y: 100 },
+      threatenedHalls: [{
+        houseId: "house_b",
+        x: 700,
+        y: 100,
+        hostileCount: 1,
+      }],
       threats: [nearbyRallyThreat],
     }),
     false,
@@ -100,7 +111,74 @@ test("Given a destroyed own hall, when another hall is threatened, then the agen
     towardX: nearbyRallyThreat.x,
     towardY: nearbyRallyThreat.y,
     targetId: nearbyRallyThreat.id,
+    helping: true,
   });
+});
+
+test("Given another hall under heavier pressure, when reinforcement is considered, then only aggressive agents help it", () => {
+  const threats = [
+    threat("creature_b_far", 760, 100),
+    threat("creature_b_near", 710, 100),
+    threat("creature_c", 500, 500),
+  ];
+  const defense = context({
+    threatenedHalls: [
+      { houseId: "house_c", x: 500, y: 500, hostileCount: 1 },
+      { houseId: "house_b", x: 700, y: 100, hostileCount: 2 },
+    ],
+    threats,
+  });
+
+  const reinforcing = decideIntent(
+    createAgent({
+      disposition: {
+        aggression: BALANCE_CONFIG.AGENT_REINFORCE_AGGRESSION_THRESHOLD,
+        loyalty: 40,
+      },
+    }),
+    defense,
+    false,
+  );
+  const holding = decideIntent(
+    createAgent({
+      disposition: {
+        aggression:
+          BALANCE_CONFIG.AGENT_REINFORCE_AGGRESSION_THRESHOLD - 1,
+        loyalty: 40,
+      },
+    }),
+    defense,
+    false,
+  );
+
+  assert.deepEqual(reinforcing, {
+    kind: "engage",
+    towardX: 710,
+    towardY: 100,
+    targetId: "creature_b_near",
+    helping: true,
+  });
+  assert.deepEqual(holding, { kind: "idle" });
+  assert.equal(intentToState(reinforcing), "helping");
+});
+
+test("Given equally threatened foreign halls, when reinforcement is chosen, then the lower house id wins", () => {
+  const intent = decideIntent(
+    createAgent(),
+    context({
+      threatenedHalls: [
+        { houseId: "house_c", x: 500, y: 500, hostileCount: 2 },
+        { houseId: "house_b", x: 700, y: 100, hostileCount: 2 },
+      ],
+      threats: [
+        threat("creature_b", 710, 100),
+        threat("creature_c", 510, 500),
+      ],
+    }),
+    false,
+  );
+
+  assert.equal(intent.kind === "engage" ? intent.targetId : null, "creature_b");
 });
 
 test("Given a distant defender, when a threat nears its hall, then hall defense overrides personal distance", () => {
@@ -213,6 +291,21 @@ test("Given a disloyal traitor-house agent, when danger is sensed, then betrayal
     towardX: 90,
     towardY: 100,
   });
+});
+
+test("Given a broken disloyal hero, when danger is sensed, then it never flees", () => {
+  const intent = decideIntent(
+    createAgent({
+      isHero: true,
+      heroId: "hero_ashvale",
+      hp: 1,
+      disposition: { aggression: 0, loyalty: 0 },
+    }),
+    context({ threats: [threat("creature_a", 110, 100)] }),
+    true,
+  );
+
+  assert.notEqual(intent.kind, "flee");
 });
 
 test("Given an agent beyond its home leash, when it moves for 50 ticks, then it gets closer to its hall", () => {

@@ -11,6 +11,10 @@ import type {
   HouseProgress,
 } from "../progression/progression.types";
 import type { ResolvedModifiers } from "../progression/modifiers";
+import type {
+  ShopPurchases,
+  Tower,
+} from "../build/build.types";
 
 export type RunPhase =
   | "preparation"
@@ -26,6 +30,11 @@ export interface Hall {
   y: number;
   hp: number;
   maxHp: number;
+}
+
+export interface WaveSummary {
+  agentsLost: number;
+  hallDamage: number;
 }
 
 export interface GameState {
@@ -48,4 +57,15 @@ export interface GameState {
     modifiers: ResolvedModifiers;
   }[];
   pendingDrafts: DraftOffer[];
+  towers: Tower[];
+  shopPurchases: ShopPurchases;
+  runUpgrades: {
+    attackDamageMultiplier: number;
+  };
+  lastWaveSummary: WaveSummary | null;
+  waveStartSnapshot: {
+    livingAgents: number;
+    hallHp: number;
+  } | null;
+  heroDeaths: number;
 }

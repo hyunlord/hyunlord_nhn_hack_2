@@ -4,6 +4,7 @@ import {
   type DefenseContext,
 } from "../agents/dispositionEngine";
 import { stepAgent } from "../agents/movement";
+import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type {
   Agent,
   ThreatPresence,
@@ -14,17 +15,26 @@ import type { GameState, Hall } from "./engine.types";
 import type { Rng } from "./prng";
 import {
   applyHallDamages,
+  applyTowerDamages,
   applyThreatDamages,
 } from "./combatDamage";
 import {
   applyAgentAttacks,
   type AgentDecision,
 } from "./agentCombat";
+import {
+  combatBonusesForAgents,
+  heroMaxHpMultiplierForAgent,
+  movementMultiplierForAgent,
+} from "./heroEngine";
+import { applyTowerAttacks } from "./towerCombat";
+import { TOWER_RADIUS } from "../build/structures";
 
 type Point = { readonly x: number; readonly y: number };
 type WaveCombatStep = Pick<
   GameState,
   "agents" | "halls" | "activeThreat"
+  | "towers"
 > & {
   readonly creatureKills: number;
   readonly xpAwards: {
@@ -85,6 +95,20 @@ function createDefenseContext(
           : delta;
       })[0] ??
     null;
+  const threatenedHalls = halls
+    .filter((hall) => hall.hp > 0)
+    .map((hall) => ({
+      houseId: hall.houseId,
+      x: hall.x,
+      y: hall.y,
+      hostileCount: threats.filter(
+        (threat) =>
+          threat.hostile &&
+          distanceSquared(threat, hall) <=
+            BALANCE_CONFIG.HALL_DEFENSE_RADIUS ** 2,
+      ).length,
+    }))
+    .filter(({ hostileCount }) => hostileCount > 0);
   return {
     ownHall:
       ownHall === null
@@ -92,6 +116,7 @@ function createDefenseContext(
         : { x: ownHall.x, y: ownHall.y, hp: ownHall.hp },
     rallyHall:
       rallyHall === null ? null : { x: rallyHall.x, y: rallyHall.y },
+    threatenedHalls,
     threats,
   };
 }
@@ -116,16 +141,23 @@ function moveAgents(
       agent,
       context,
       threat?.traitorHouseId === agent.houseId,
-      modifiers,
+      {
+        ...modifiers,
+        maxHpMultiplier: heroMaxHpMultiplierForAgent(agent),
+      },
     );
     return {
-      agent: stepAgent(agent, rng, intent, modifiers),
+      agent: stepAgent(agent, rng, intent, {
+        moveSpeedMultiplier:
+          modifiers.moveSpeedMultiplier *
+          movementMultiplierForAgent(agent),
+      }),
       intent,
       context,
     };
   });
 
-  return decisions.map(({ agent, intent, context }) => {
+  return decisions.map(({ agent, intent }) => {
     if (agent.state === "dead") {
       return { agent, intent };
     }
@@ -142,7 +174,7 @@ function moveAgents(
     return {
       agent: {
         ...agent,
-        state: context.ownHall === null ? "helping" : state,
+        state,
       },
       intent,
     };
@@ -158,6 +190,7 @@ export function advanceWaveCombat(
     return {
       agents: state.agents,
       halls: state.halls,
+      towers: state.towers,
       activeThreat: null,
       creatureKills: 0,
       xpAwards: [],
@@ -184,9 +217,19 @@ export function advanceWaveCombat(
     state.activeThreat,
     tick,
     modifiersByHouse,
+    combatBonusesForAgents(
+      decisions.map(({ agent }) => agent),
+      state.houseModifiers,
+      state.runUpgrades.attackDamageMultiplier,
+    ),
+  );
+  const towerAttacks = applyTowerAttacks(
+    state.towers,
+    attacks.threat,
+    tick,
   );
   const stepped = stepThreat(
-    attacks.threat,
+    towerAttacks.threat,
     attacks.agents,
     state.halls.map(({ houseId, x, y, hp }) => ({
       id: houseId,
@@ -195,6 +238,13 @@ export function advanceWaveCombat(
       hp,
     })),
     tick,
+    towerAttacks.towers.map(({ id, x, y, hp }) => ({
+      id,
+      x,
+      y,
+      hp,
+      radius: TOWER_RADIUS,
+    })),
   );
 
   return {
@@ -202,8 +252,13 @@ export function advanceWaveCombat(
       attacks.agents,
       stepped.agentDamages,
       tick,
+      state.houseModifiers,
     ),
     halls: applyHallDamages(state.halls, stepped.hallDamages),
+    towers: applyTowerDamages(
+      towerAttacks.towers,
+      stepped.structureDamages,
+    ),
     activeThreat: stepped.threat,
     creatureKills:
       initialCreatureCount - stepped.threat.creatures.length,

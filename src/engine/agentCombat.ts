@@ -5,6 +5,10 @@ import { applyDamageToThreat } from "../threat/waveDirector";
 import type { ThreatEvent } from "../threat/threatTypes";
 import type { ResolvedModifiers } from "../progression/modifiers";
 import { xpForDamage, xpForKill } from "../progression/xp";
+import {
+  maxHpForAgent,
+  type AgentCombatBonus,
+} from "./heroEngine";
 
 type Point = { readonly x: number; readonly y: number };
 type ThreatHit = {
@@ -30,6 +34,7 @@ export function applyAgentAttacks(
   threat: ThreatEvent,
   tick: number,
   modifiersByHouse: ReadonlyMap<string, ResolvedModifiers>,
+  bonusesByAgentId: ReadonlyMap<string, AgentCombatBonus> = new Map(),
 ): {
   readonly agents: Agent[];
   readonly threat: ThreatEvent;
@@ -39,7 +44,12 @@ export function applyAgentAttacks(
   let currentThreat = threat;
   const xpByHouse = new Map<string, number>();
   const creatureKillsByHouse = new Map<string, number>();
-  const nextAgents = decisions.map(({ agent, intent }) => {
+  let nextAgents = decisions.map(({ agent }) => agent);
+  decisions.forEach(({ intent }, agentIndex) => {
+    const agent = nextAgents[agentIndex];
+    if (agent === undefined) {
+      return;
+    }
     const modifiers = modifiersByHouse.get(agent.houseId);
     if (modifiers === undefined) {
       throw new RangeError(`Missing modifiers for ${agent.houseId}.`);
@@ -52,11 +62,12 @@ export function applyAgentAttacks(
           1,
           Math.round(
             BALANCE_CONFIG.AGENT_ATTACK_INTERVAL_TICKS *
-              modifiers.attackIntervalMultiplier,
+              modifiers.attackIntervalMultiplier *
+              (bonusesByAgentId.get(agent.id)?.attackIntervalMultiplier ?? 1),
           ),
         );
     if (!canAttack) {
-      return agent;
+      return;
     }
     const targets = [
       ...currentThreat.creatures.map((creature) => ({
@@ -97,11 +108,12 @@ export function applyAgentAttacks(
           : delta;
       })[0];
     if (target === undefined) {
-      return agent;
+      return;
     }
     const amount =
       BALANCE_CONFIG.AGENT_ATTACK_DAMAGE *
-      modifiers.attackDamageMultiplier;
+      modifiers.attackDamageMultiplier *
+      (bonusesByAgentId.get(agent.id)?.damageMultiplier ?? 1);
     const hit: ThreatHit = {
       creatureId: target.creatureId,
       amount,
@@ -121,7 +133,45 @@ export function applyAgentAttacks(
         (creatureKillsByHouse.get(agent.houseId) ?? 0) + 1,
       );
     }
-    return { ...agent, lastAttackTick: tick };
+    const bonus = bonusesByAgentId.get(agent.id);
+    if (
+      killed &&
+      bonus !== undefined &&
+      bonus.onKillHeal > 0 &&
+      bonus.onKillHealRadius > 0
+    ) {
+      nextAgents = nextAgents.map((candidate) => {
+        if (
+          candidate.hp <= 0 ||
+          distanceSquared(agent, candidate) >
+            bonus.onKillHealRadius ** 2
+        ) {
+          return candidate;
+        }
+        const candidateModifiers = modifiersByHouse.get(
+          candidate.houseId,
+        );
+        if (candidateModifiers === undefined) {
+          throw new RangeError(
+            `Missing modifiers for ${candidate.houseId}.`,
+          );
+        }
+        return {
+          ...candidate,
+          hp: Math.min(
+            maxHpForAgent(candidate, candidateModifiers),
+            candidate.hp + bonus.onKillHeal,
+          ),
+        };
+      });
+    }
+    const updatedAttacker = nextAgents[agentIndex];
+    if (updatedAttacker !== undefined) {
+      nextAgents[agentIndex] = {
+        ...updatedAttacker,
+        lastAttackTick: tick,
+      };
+    }
   });
   return {
     agents: nextAgents,

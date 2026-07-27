@@ -82,7 +82,7 @@ test("Given the last preparation tick, when time advances, then wave zero spawns
   assert.equal(result.activeThreat?.traitorHouseId, null);
 });
 
-test("Given a cleared non-final wave, when the tick resolves, then reward, heal, and intermission apply once", () => {
+test("Given a cleared non-final wave without a healing card, when the tick resolves, then reward and intermission apply without free healing", () => {
   const wave = enterFirstWave();
   const wounded = wave.state.agents.map((agent, index) => ({
     ...agent,
@@ -99,7 +99,7 @@ test("Given a cleared non-final wave, when the tick resolves, then reward, heal,
     result.tribute,
     7 + (WAVE_DEFINITIONS[0]?.tributeReward ?? 0),
   );
-  assert.equal(result.agents[0]?.hp, 70);
+  assert.equal(result.agents[0]?.hp, 40);
   assert.equal(result.activeThreat, null);
   assert.equal(repeated.tribute, result.tribute);
   assert.deepEqual(repeated.agents, result.agents);

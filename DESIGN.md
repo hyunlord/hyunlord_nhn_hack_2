@@ -32,10 +32,17 @@ restrained blueprint-like interface surrounding a dark, vignetted world map.
 | Mage pulse | threat token | `rgba(226, 165, 239, 0.65)` | Tick-driven mage locator ring |
 | Mage HP track | threat token | `rgba(26, 22, 19, 0.85)` | Mage health background |
 | Helping rim | canvas token | `rgba(255, 250, 230, 0.90)` | Cross-house aid |
+| Hero rim | canvas token | `rgba(255, 248, 214, 0.96)` | Hero locator outline |
+| Hero aura | canvas token | `rgba(123, 176, 106, 0.15)` | Greymoor aura fill |
+| Hero aura rim | canvas token | `rgba(160, 214, 139, 0.40)` | Greymoor aura outline |
 | Draft veil | `--draft-veil` | `rgba(26, 22, 19, 0.86)` | Paused-world overlay |
 | Draft panel | `--draft-panel` | `#fff8df` | Draft card surface |
 | Draft ink | `--draft-ink` | `#252016` | Draft card text |
 | Draft accent | `--draft-accent` | `#d8c879` | Draft borders and labels |
+| Shop veil | `--shop-veil` | `rgba(26, 22, 19, 0.96)` | Intermission shop surface |
+| Valid placement | canvas token | `rgba(108, 190, 132, 0.22)` | Valid tower preview |
+| Invalid placement | canvas token | `rgba(214, 91, 76, 0.22)` | Invalid tower preview |
+| Tower stone | canvas token | `#8f8a7d` | Tower body |
 
 The simulation colors are owned by content configuration so canvas and HUD use
 the same house identity.
@@ -97,6 +104,22 @@ The content width is capped at 1200px and arranged with CSS Grid.
   houses display a full bar
 - House color remains the identity cue while all progression text keeps the
   existing compact monospace hierarchy
+
+### Heroes
+
+- Heroes use an 8px body, a three-pixel pale outline, name label, and
+  always-visible HP bar
+- Greymoor's support radius is shown with a restrained green fill and outline
+- Heroes render after regular agents so their silhouette remains readable
+
+### Intermission shop
+
+- A six-card grid keeps cost, purchase count, and disabled reason visible
+- Tribute is the dominant number; the previous-wave loss summary supplies
+  purchase context
+- Tower selection enters a map placement mode and defers payment until a valid
+  canvas click
+- The next-wave action is isolated in a footer to prevent accidental starts
 
 ### Level-up draft
 

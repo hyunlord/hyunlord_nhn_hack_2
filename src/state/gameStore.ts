@@ -20,6 +20,10 @@ import {
   createInitialState,
 } from "../engine/tick";
 import { chooseDraftCard } from "../engine/progressionEngine";
+import {
+  purchaseShopItem,
+  purchaseTowerAt,
+} from "../engine/shopEngine";
 import type {
   CommitStateAction,
   GameAction,
@@ -67,6 +71,10 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
   const stateReference = useRef(initialWorldReference.current.state);
   const [selectedMiracle, setSelectedMiracle] =
     useState<MiracleType | null>(null);
+  const [towerPlacementActive, setTowerPlacementActive] =
+    useState(false);
+  const [towerPreview, setTowerPreview] =
+    useState<{ x: number; y: number } | null>(null);
   const [state, commitDispatch] = useReducer(
     gameReducer,
     initialWorldReference.current.state,
@@ -77,11 +85,19 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
   }, []);
   const selectMiracle = useCallback((miracle: MiracleType | null) => {
     setSelectedMiracle(miracle);
+    if (miracle !== null) {
+      setTowerPlacementActive(false);
+      setTowerPreview(null);
+    }
   }, []);
   const dispatch = useCallback((action: GameAction) => {
     switch (action.type) {
       case "selectMiracle":
         setSelectedMiracle(action.miracle);
+        if (action.miracle !== null) {
+          setTowerPlacementActive(false);
+          setTowerPreview(null);
+        }
         return;
       case "castMiracle": {
         const current = stateReference.current;
@@ -103,6 +119,8 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
             rngReference.current,
           ),
         );
+        setTowerPlacementActive(false);
+        setTowerPreview(null);
         return;
       case "chooseDraftCard":
         commitState(
@@ -113,12 +131,41 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
           ),
         );
         return;
+      case "purchaseShopItem":
+        commitState(
+          purchaseShopItem(stateReference.current, action.itemId),
+        );
+        return;
+      case "selectTowerPlacement":
+        setSelectedMiracle(null);
+        setTowerPlacementActive(true);
+        setTowerPreview(null);
+        return;
+      case "cancelTowerPlacement":
+        setTowerPlacementActive(false);
+        setTowerPreview(null);
+        return;
+      case "updateTowerPreview":
+        setTowerPreview({ x: action.x, y: action.y });
+        return;
+      case "placeTower": {
+        const current = stateReference.current;
+        const next = purchaseTowerAt(current, action.x, action.y);
+        commitState(next);
+        if (next !== current) {
+          setTowerPlacementActive(false);
+          setTowerPreview(null);
+        }
+        return;
+      }
       case "restart": {
         seedReference.current += 1;
         const initialWorld = createInitialState(seedReference.current);
         rngReference.current = initialWorld.rng;
         commitState(initialWorld.state);
         setSelectedMiracle(null);
+        setTowerPlacementActive(false);
+        setTowerPreview(null);
         return;
       }
       default:
@@ -165,8 +212,17 @@ export function GameStoreProvider({ children }: PropsWithChildren) {
       dispatch,
       selectedMiracle,
       selectMiracle,
+      towerPlacementActive,
+      towerPreview,
     }),
-    [dispatch, selectMiracle, selectedMiracle, state],
+    [
+      dispatch,
+      selectMiracle,
+      selectedMiracle,
+      state,
+      towerPlacementActive,
+      towerPreview,
+    ],
   );
 
   return createElement(

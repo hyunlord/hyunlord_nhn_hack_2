@@ -1,6 +1,10 @@
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import { WAVE_DEFINITIONS } from "../src/content/waveConfig";
-import type { PickMode, RunSample } from "./balanceHarness";
+import type {
+  PickMode,
+  RunSample,
+  ShopMode,
+} from "./balanceHarness";
 
 function median(values: readonly number[]): number | null {
   if (values.length === 0) {
@@ -166,6 +170,24 @@ function progressionTable(samples: readonly RunSample[]): string {
       ),
     ],
     [
+      "Houses ending at level 1",
+      `${samples.flatMap(({ finalLevels }) => finalLevels).filter((level) => level === 1).length}/${samples.length * 3} (${rate(
+        samples
+          .flatMap(({ finalLevels }) => finalLevels)
+          .filter((level) => level === 1).length,
+        samples.length * 3,
+      )})`,
+    ],
+    [
+      "Runs with a level-1 house",
+      `${samples.filter(({ finalLevels }) => finalLevels.some((level) => level === 1)).length}/${samples.length} (${rate(
+        samples.filter(({ finalLevels }) =>
+          finalLevels.some((level) => level === 1),
+        ).length,
+        samples.length,
+      )})`,
+    ],
+    [
       "Most-picked card",
       mostPicked === undefined
         ? "—"
@@ -175,17 +197,41 @@ function progressionTable(samples: readonly RunSample[]): string {
   return table(["Progression metric", "Value"], rows);
 }
 
+function shopTable(samples: readonly RunSample[]): string {
+  return table(
+    ["Shop metric", "Average"],
+    [
+      [
+        "Towers built per run",
+        displayAverage(average(samples.map(({ towersBuilt }) => towersBuilt))),
+      ],
+      [
+        "Tribute unspent at run end",
+        displayAverage(
+          average(samples.map(({ tributeUnspent }) => tributeUnspent)),
+        ),
+      ],
+      [
+        "Hero deaths per run",
+        displayAverage(average(samples.map(({ heroDeaths }) => heroDeaths))),
+      ],
+    ],
+  );
+}
+
 export function printBalanceReport(
   samples: readonly RunSample[],
   maxTicks: number,
   pickMode: PickMode,
+  shopMode: ShopMode,
 ): void {
   console.log(
     `Balance harness: seeds=${samples.length}, start=${BALANCE_CONFIG.DEFAULT_SEED}, ` +
-      `miracles=none, picks=${pickMode}, maxTicks=${maxTicks}`,
+      `miracles=none, picks=${pickMode}, shop=${shopMode}, maxTicks=${maxTicks}`,
   );
   console.log(outcomeTable(samples));
   console.log(endStateTable(samples));
   console.log(waveTable(samples));
   console.log(progressionTable(samples));
+  console.log(shopTable(samples));
 }

@@ -36,6 +36,11 @@ const NEUTRAL_MODIFIERS: ResolvedModifiers = {
   miracleHealMultiplier: 1,
   tributePerKillBonus: 0,
   interWaveHealBonus: 0,
+  heroDamageMultiplier: 1,
+  heroMaxHpMultiplier: 1,
+  heroRespawnTicksMultiplier: 1,
+  heroAuraRadiusBonus: 0,
+  heroOnKillHeal: 0,
 };
 
 function progress(
@@ -93,41 +98,72 @@ test("Given reordered definitions and equal seeds, when offers generate, then ca
   );
 });
 
-test("Given maxed, hero, and foreign-house cards, when eligibility is filtered, then none can appear", () => {
+test("Given owned and foreign heroes, when eligibility is filtered, then only the matching defined hero can appear", () => {
   const fixtures: readonly CardDefinition[] = [
     ...CARD_DEFINITIONS,
     {
-      id: "hero_future",
+      id: "hero_matching",
       kind: "hero",
-      name: "Future Hero",
-      description: "Not available in this slice.",
+      heroId: "hero_ashvale",
+      houseId: "house_a",
+      name: "Matching Hero",
+      description: "Available to its owning house.",
+      maxStacks: 1,
+      effect: { heroDamageMultiplier: 1.2 },
+    },
+    {
+      id: "hero_foreign",
+      kind: "hero",
+      heroId: "hero_thornhold",
+      houseId: "house_b",
+      name: "Foreign Hero",
+      description: "Unavailable to another house.",
+      maxStacks: 1,
+      effect: { heroDamageMultiplier: 1.2 },
+    },
+    {
+      id: "hero_undefined",
+      kind: "hero",
+      heroId: "hero_missing",
+      houseId: "house_a",
+      name: "Undefined Hero",
+      description: "Unavailable without a defined owned hero.",
       maxStacks: 1,
       effect: {},
     },
   ];
   const owned = [{ cardId: "common_sharpened_edge", stacks: 2 }];
-  const eligible = eligibleCards(fixtures, "house_a", owned);
+  const ownedHeroIds = ["hero_ashvale"];
+  const eligible = eligibleCards(
+    fixtures,
+    "house_a",
+    owned,
+    ownedHeroIds,
+  );
   const ids = eligible.map(({ id }) => id);
   const offer = generateOffer(
     fixtures,
     progress(owned),
     createRng(7),
+    ownedHeroIds,
   );
 
   assert.ok(!ids.includes("common_sharpened_edge"));
-  assert.ok(!ids.includes("hero_future"));
+  assert.ok(ids.includes("hero_matching"));
+  assert.ok(!ids.includes("hero_foreign"));
+  assert.ok(!ids.includes("hero_undefined"));
   assert.ok(!ids.some((id) => id.startsWith("house_b_")));
   assert.ok(!ids.some((id) => id.startsWith("house_c_")));
   assert.equal(new Set(offer.cardIds).size, offer.cardIds.length);
   assert.ok(!offer.cardIds.includes("common_sharpened_edge"));
 });
 
-test("Given the shipped card pool, when its budget is inspected, then it has fourteen cards and only two bounded damage cards", () => {
+test("Given the shipped card pool, when its budget is inspected, then it has twenty cards and only two bounded house-wide damage cards", () => {
   const damageCards = CARD_DEFINITIONS.filter(
     ({ effect }) => effect.attackDamageMultiplier !== undefined,
   );
 
-  assert.equal(CARD_DEFINITIONS.length, 14);
+  assert.equal(CARD_DEFINITIONS.length, 20);
   assert.equal(damageCards.length, 2);
   assert.ok(
     damageCards.every(

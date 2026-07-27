@@ -11,6 +11,12 @@ type Point = { readonly x: number; readonly y: number };
 export interface DefenseContext {
   readonly ownHall: { readonly x: number; readonly y: number; readonly hp: number } | null;
   readonly rallyHall: Point | null;
+  readonly threatenedHalls: readonly {
+    readonly houseId: string;
+    readonly x: number;
+    readonly y: number;
+    readonly hostileCount: number;
+  }[];
   readonly threats: readonly ThreatPresence[];
 }
 
@@ -26,6 +32,7 @@ export type AgentIntent =
       readonly towardX: number;
       readonly towardY: number;
       readonly targetId: string | null;
+      readonly helping?: boolean;
     };
 
 function distanceSquared(first: Point, second: Point): number {
@@ -51,13 +58,27 @@ function nearestThreat(
     })[0] ?? null;
 }
 
-function engage(threat: ThreatPresence): AgentIntent {
+function engage(
+  threat: ThreatPresence,
+  helping = false,
+): AgentIntent {
   return {
     kind: "engage",
     towardX: threat.x,
     towardY: threat.y,
     targetId: threat.id,
+    ...(helping ? { helping: true } : {}),
   };
+}
+
+function mostThreatenedHall(
+  halls: DefenseContext["threatenedHalls"],
+): DefenseContext["threatenedHalls"][number] | null {
+  return [...halls].sort(
+    (first, second) =>
+      second.hostileCount - first.hostileCount ||
+      first.houseId.localeCompare(second.houseId),
+  )[0] ?? null;
 }
 
 function fleeAway(agent: Agent, threat: ThreatPresence): AgentIntent {
@@ -87,7 +108,9 @@ export function decideIntent(
   }
 
   const nearest = nearestThreat(context.threats, agent);
-  const maxHp = BALANCE_CONFIG.INITIAL_HP + modifiers.maxHpBonus;
+  const maxHp =
+    (BALANCE_CONFIG.INITIAL_HP + modifiers.maxHpBonus) *
+    (modifiers.maxHpMultiplier ?? 1);
   const isBroken =
     agent.hp <
       maxHp *
@@ -98,7 +121,7 @@ export function decideIntent(
         ) &&
     agent.disposition.aggression <
       BALANCE_CONFIG.AGENT_HOLD_AGGRESSION_THRESHOLD;
-  if (isBroken) {
+  if (isBroken && !agent.isHero) {
     if (context.rallyHall !== null) {
       return {
         kind: "flee",
@@ -118,6 +141,7 @@ export function decideIntent(
       modifiers.threatSenseRadiusBonus,
   );
   if (
+    !agent.isHero &&
     isTraitorHouse &&
     agent.disposition.loyalty <
       BALANCE_CONFIG.TRAITOR_SABOTAGE_LOYALTY_CEILING &&
@@ -142,16 +166,22 @@ export function decideIntent(
   }
 
   if (context.rallyHall !== null) {
-    const rallyThreat = nearestThreat(
-      context.threats,
-      context.rallyHall,
-      context.ownHall === null
-        ? Number.POSITIVE_INFINITY
-        : BALANCE_CONFIG.HALL_DEFENSE_RADIUS +
-          modifiers.hallDefenseRadiusBonus,
+    const reinforcementHall = mostThreatenedHall(
+      context.threatenedHalls,
     );
-    if (rallyThreat !== null) {
-      return engage(rallyThreat);
+    const rallyThreat = reinforcementHall === null
+      ? null
+      : nearestThreat(
+      context.threats,
+      reinforcementHall,
+      BALANCE_CONFIG.HALL_DEFENSE_RADIUS,
+    );
+    if (
+      rallyThreat !== null &&
+      agent.disposition.aggression >=
+        BALANCE_CONFIG.AGENT_REINFORCE_AGGRESSION_THRESHOLD
+    ) {
+      return engage(rallyThreat, true);
     }
   }
 
@@ -177,6 +207,6 @@ export function intentToState(intent: AgentIntent): AgentState {
     case "flee":
       return "fleeing";
     case "engage":
-      return "fighting";
+      return intent.helping === true ? "helping" : "fighting";
   }
 }

@@ -20,6 +20,14 @@ export interface HallSnapshot {
   hp: number;
 }
 
+export interface StructureSnapshot {
+  id: string;
+  x: number;
+  y: number;
+  hp: number;
+  radius: number;
+}
+
 export interface Creature {
   id: string;
   x: number;

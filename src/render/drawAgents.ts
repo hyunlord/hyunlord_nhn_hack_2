@@ -15,6 +15,9 @@ export function drawAgents(
   context.strokeStyle = "rgba(0, 0, 0, 0.72)";
 
   for (const agent of agents) {
+    if (agent.isHero) {
+      continue;
+    }
     context.globalAlpha = 1;
     if (agent.state === "dead") {
       context.beginPath();

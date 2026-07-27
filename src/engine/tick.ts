@@ -17,6 +17,8 @@ import {
   divineModifiersForState,
   modifiersForHouse,
 } from "./progressionEngine";
+import { maxHpForAgent, respawnHeroes } from "./heroEngine";
+import { EMPTY_PURCHASES } from "../build/shop";
 
 export { castMiracle } from "./miracleApplication";
 
@@ -44,6 +46,10 @@ function spawnConfiguredWave(
     ...state,
     phase: "wave",
     waveIndex,
+    waveStartSnapshot: {
+      livingAgents: state.agents.filter(({ hp }) => hp > 0).length,
+      hallHp: state.halls.reduce((sum, { hp }) => sum + hp, 0),
+    },
     activeThreat: spawnWave(
       getWaveDefinition(waveIndex),
       BALANCE_CONFIG.WORLD_WIDTH,
@@ -88,6 +94,15 @@ function applyTickMaintenance(state: GameState, tick: number): GameState {
 
 export function advanceTick(state: GameState, rng: Rng): GameState {
   const tick = state.tick + 1;
+  const respawnedAgents = respawnHeroes(
+    state.agents,
+    state.halls,
+    state.houseModifiers,
+    tick,
+  );
+  if (respawnedAgents !== state.agents) {
+    state = { ...state, agents: respawnedAgents };
+  }
   if (
     state.phase === "draft" ||
     state.phase === "intermission" ||
@@ -111,6 +126,12 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
   }
 
   const combat = advanceWaveCombat(state, tick, rng);
+  const heroDeaths = state.heroDeaths + combat.agents.filter(
+    (agent) =>
+      agent.isHero &&
+      agent.hp <= 0 &&
+      (state.agents.find(({ id }) => id === agent.id)?.hp ?? 0) > 0,
+  ).length;
   const cardTribute = combat.creatureKillsByHouse.reduce(
     (sum, { houseId, kills }) =>
       sum +
@@ -126,38 +147,59 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
       ...state,
       agents: combat.agents,
       halls: combat.halls,
+      towers: combat.towers,
       activeThreat: combat.activeThreat,
       tribute,
+      heroDeaths,
     },
     tick,
   );
   let resolved: GameState;
   if (combat.halls.every(({ hp }) => hp <= 0)) {
     resolved = { ...maintained, phase: "defeat" };
-  } else {
-    const threatCleared =
+    } else {
+      const threatCleared =
       combat.activeThreat !== null &&
       combat.activeThreat.creatures.length === 0 &&
       (combat.activeThreat.mage === null ||
         combat.activeThreat.mage.hp <= 0);
-    if (!threatCleared) {
-      resolved = maintained;
-    } else {
-      const reward = getWaveDefinition(state.waveIndex).tributeReward;
-      if (isFinalWave(state.waveIndex)) {
-        resolved = {
-          ...maintained,
-          phase: "victory",
-          tribute: tribute + reward,
-          activeThreat: null,
-        };
+      if (!threatCleared) {
+        resolved = maintained;
       } else {
+        const lastWaveSummary =
+          state.waveStartSnapshot === null
+            ? null
+            : {
+                agentsLost: Math.max(
+                  0,
+                  state.waveStartSnapshot.livingAgents -
+                    maintained.agents.filter(({ hp }) => hp > 0).length,
+                ),
+                hallDamage: Math.max(
+                  0,
+                  state.waveStartSnapshot.hallHp -
+                    maintained.halls.reduce((sum, { hp }) => sum + hp, 0),
+                ),
+              };
+        const reward = getWaveDefinition(state.waveIndex).tributeReward;
+        if (isFinalWave(state.waveIndex)) {
+          resolved = {
+            ...maintained,
+            phase: "victory",
+            tribute: tribute + reward,
+            activeThreat: null,
+            lastWaveSummary,
+            waveStartSnapshot: null,
+          };
+        } else {
         resolved = {
           ...maintained,
           phase: "intermission",
-          tribute: tribute + reward,
-          activeThreat: null,
-          agents: maintained.agents.map((agent) => {
+            tribute: tribute + reward,
+            activeThreat: null,
+            lastWaveSummary,
+            waveStartSnapshot: null,
+            agents: maintained.agents.map((agent) => {
             if (agent.hp <= 0) {
               return agent;
             }
@@ -168,9 +210,8 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
             return {
               ...agent,
               hp: Math.min(
-                BALANCE_CONFIG.INITIAL_HP + modifiers.maxHpBonus,
+                maxHpForAgent(agent, modifiers),
                 agent.hp +
-                  BALANCE_CONFIG.INTERMISSION_AUTO_HEAL +
                   modifiers.interWaveHealBonus,
               ),
             };
@@ -226,6 +267,12 @@ export function createInitialState(seed: number): {
         modifiers: resolveModifiers(CARD_DEFINITIONS, [], 0),
       })),
       pendingDrafts: [],
+      towers: [],
+      shopPurchases: { ...EMPTY_PURCHASES },
+      runUpgrades: { attackDamageMultiplier: 1 },
+      lastWaveSummary: null,
+      waveStartSnapshot: null,
+      heroDeaths: 0,
     },
     rng,
   };

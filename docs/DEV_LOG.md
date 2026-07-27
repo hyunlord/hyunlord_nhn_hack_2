@@ -172,3 +172,44 @@
 - No work was offloaded to DGX Spark because implementation, 400 complete
   simulations, tests, build, and responsive browser QA remained lightweight
   locally.
+
+## 2026-07-27 — Phase 3C heroes, tribute shop, and towers
+
+- Added Sera of Greymoor, Bren of Thornhold, and Ivy of Ashvale as deterministic
+  named agents with exact hero stats, six hero-specific draft cards, 600-tick
+  respawns, Ivy's aura, and Green Mercy killing-blow healing.
+- Added the independent `build/` leaf with six shop entries, pure tower
+  placement validation, exact tower range/cadence/damage/durability, and no
+  imports from the agent, divine, threat, or progression axes.
+- Added immutable intermission purchasing for recruitment, medicine, tower
+  placement, sharpening, hall repair, and immediate hero return. Invalid,
+  unavailable, out-of-phase, or unaffordable requests preserve the exact state
+  reference and never deduct tribute.
+- Integrated tower targeting after agent attacks, creature attacks against
+  towers, hero/tower rendering, wave summaries, purchase counts, and a
+  responsive six-card shop. Tower placement is transient, uses a visible
+  valid/invalid preview, and cancels with Escape or right-click.
+- Removed automatic intermission healing. The Part 0 reinforcement/edge pass
+  reduced level-1 hall loss from 25/180 houses (13.9%) and 19/60 affected runs
+  (31.7%) to 6/180 houses (3.3%) and 6/60 affected runs (10.0%). The house-level
+  target passed; the affected-run checkpoint missed its strict threshold and
+  was carried honestly into the full-system tune.
+- Final wave pressure uses counts `20/34/64` and HP multipliers `1.8/2.5/4.0`.
+  The final 200-seed auto-shop run produced 81 victories (40.5%), 1 wave-2
+  defeat, and 118 wave-3 defeats. No house ended at level 1. Runs averaged
+  1.05 towers, 234.12 unspent tribute, and 4.95 hero deaths. Wave clear rates
+  were 100.0%, 99.5%, and 40.7%.
+- The matching `--shop=none` counterfactual produced 26 victories (13.0%), 9
+  wave-2 defeats, and 165 wave-3 defeats. No house ended at level 1. Runs
+  averaged 0 towers, 384.36 unspent tribute, and 5.23 hero deaths. Wave clear
+  rates were 100.0%, 95.5%, and 13.6%. The identical seed range and pick policy
+  isolate the material benefit of intermission spending.
+- StrictMode browser QA reached the first organic intermission with 100
+  tribute, verified six item cards and disabled reasons, cancelled placement,
+  then committed a valid tower. Tribute changed to 30 and the tower purchase
+  count to one before wave 2 began. Desktop, tablet, and full-flow mobile
+  layouts were captured; the mobile Begin Wave action remained reachable.
+  The placed tower, heroes, HP bars, and Ivy aura were visible in wave 2.
+  Browser warnings/errors remained empty.
+- No work was offloaded to DGX Spark because the deterministic simulation,
+  tests, build, and responsive browser QA remained lightweight locally.

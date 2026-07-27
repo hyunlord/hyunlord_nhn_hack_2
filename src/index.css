@@ -12,6 +12,7 @@
   --draft-panel: #fff8df;
   --draft-ink: #252016;
   --draft-accent: #d8c879;
+  --shop-veil: rgba(26, 22, 19, 0.96);
   --space-2: 8px;
   --space-4: 16px;
   --space-6: 24px;
@@ -437,6 +438,179 @@ canvas {
   text-align: center;
 }
 
+.shop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  padding: var(--space-4);
+  overflow-y: auto;
+  color: #fff8df;
+  background: var(--shop-veil);
+}
+
+.shop-overlay__header,
+.shop-overlay__footer,
+.shop-card__heading,
+.placement-instruction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.shop-overlay__header h2,
+.shop-card h3,
+.shop-overlay__header p,
+.shop-card p,
+.shop-overlay__footer {
+  margin: 0;
+}
+
+.shop-overlay__eyebrow,
+.shop-card__count,
+.shop-overlay__footer,
+.shop-card__reason {
+  color: #aaa28f;
+  font-size: 0.7rem;
+}
+
+.shop-overlay__eyebrow {
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.shop-overlay__header h2 {
+  margin-top: 4px;
+  font-size: 1.25rem;
+}
+
+.shop-overlay__summary {
+  margin-top: 4px !important;
+  color: #d8d0bd;
+  font-size: 0.75rem;
+}
+
+.shop-overlay__tribute {
+  display: grid;
+  min-width: 92px;
+  padding: var(--space-2);
+  border: 1px solid var(--draft-accent);
+  text-align: right;
+}
+
+.shop-overlay__tribute span {
+  color: #aaa28f;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.shop-overlay__tribute strong {
+  color: var(--draft-accent);
+  font-size: 1.5rem;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.shop-card {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto auto;
+  gap: 6px;
+  min-height: 142px;
+  padding: 10px;
+  border: 1px solid #726b5e;
+  background: rgba(255, 248, 223, 0.06);
+}
+
+.shop-card h3 {
+  color: #fff8df;
+  font-size: 0.85rem;
+}
+
+.shop-card__heading strong {
+  color: var(--draft-accent);
+}
+
+.shop-card > p:not(.shop-card__count) {
+  color: #d8d0bd;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.shop-card button,
+.placement-instruction button,
+.shop-overlay__footer button {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--draft-accent);
+  color: #1a1613;
+  background: var(--draft-accent);
+  cursor: pointer;
+}
+
+.shop-card button:disabled,
+.shop-overlay__footer button:disabled {
+  border-color: #726b5e;
+  color: #aaa28f;
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.shop-card__reason {
+  min-height: 1em;
+  color: #e59d8f;
+}
+
+.placement-instruction {
+  padding: var(--space-2);
+  border: 1px solid #8fe3b0;
+  color: #d8d0bd;
+  font-size: 0.72rem;
+}
+
+.placement-instruction strong {
+  color: #8fe3b0;
+}
+
+.shop-overlay__footer {
+  padding-top: 10px;
+  border-top: 1px solid #726b5e;
+}
+
+.shop-overlay__footer button {
+  min-height: 44px;
+  padding-inline: var(--space-4);
+}
+
+.shop-overlay--placing {
+  align-content: end;
+  background: transparent;
+  pointer-events: none;
+}
+
+.shop-overlay--placing > .shop-overlay__header,
+.shop-overlay--placing > .shop-grid,
+.shop-overlay--placing > .shop-overlay__footer {
+  display: none;
+}
+
+.shop-overlay--placing .placement-instruction {
+  background: var(--shop-veil);
+  pointer-events: auto;
+}
+
+@media (max-width: 900px) {
+  .shop-overlay {
+    align-content: start;
+  }
+}
+
 @media (max-width: 520px) {
   .app-shell {
     width: min(100% - var(--space-4), 1200px);
@@ -481,6 +655,41 @@ canvas {
   }
 
   .draft-card__description {
+    min-height: 0;
+  }
+
+  .shop-overlay {
+    align-content: start;
+    padding: var(--space-2);
+  }
+
+  .canvas-panel:has(.shop-overlay:not(.shop-overlay--placing)) .game-canvas {
+    display: none;
+  }
+
+  .shop-overlay:not(.shop-overlay--placing) {
+    position: relative;
+    overflow: visible;
+  }
+
+  .shop-overlay__header,
+  .shop-overlay__footer,
+  .placement-instruction {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .shop-overlay__tribute {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .shop-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .shop-card {
     min-height: 0;
   }
 }

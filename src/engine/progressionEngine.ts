@@ -9,6 +9,7 @@ import type { DraftOffer } from "../progression/progression.types";
 import type { Rng } from "./prng";
 import type { GameState } from "./engine.types";
 import type { DivineModifiers } from "../divine/divine.types";
+import { maxHpForAgent } from "./heroEngine";
 
 export interface ProgressionAward {
   readonly houseId: string;
@@ -55,19 +56,21 @@ export function divineModifiersForState(
   );
 }
 
-function healForMaxHpIncrease(
+function healForEffectiveMaxHpIncrease(
   state: GameState,
   houseId: string,
-  increase: number,
+  previousModifiers: ResolvedModifiers,
+  nextModifiers: ResolvedModifiers,
 ): GameState["agents"] {
-  if (increase <= 0) {
-    return state.agents;
-  }
-  return state.agents.map((agent) =>
-    agent.houseId === houseId && agent.hp > 0
-      ? { ...agent, hp: agent.hp + increase }
-      : agent,
-  );
+  return state.agents.map((agent) => {
+    if (agent.houseId !== houseId || agent.hp <= 0) {
+      return agent;
+    }
+    const increase =
+      maxHpForAgent(agent, nextModifiers) -
+      maxHpForAgent(agent, previousModifiers);
+    return increase > 0 ? { ...agent, hp: agent.hp + increase } : agent;
+  });
 }
 
 function replaceModifiers(
@@ -79,6 +82,19 @@ function replaceModifiers(
     entry.houseId === houseId
       ? { houseId, modifiers }
       : entry,
+  );
+}
+
+function ownedHeroIdsForHouse(
+  state: GameState,
+  houseId: string,
+): string[] {
+  return state.agents.flatMap((agent) =>
+    agent.houseId === houseId &&
+    agent.isHero &&
+    agent.heroId !== null
+      ? [agent.heroId]
+      : [],
   );
 }
 
@@ -120,10 +136,11 @@ export function applyProgressionAwards(
       updated.cards,
       level - 1,
     );
-    agents = healForMaxHpIncrease(
+    agents = healForEffectiveMaxHpIncrease(
       { ...state, agents },
       progress.houseId,
-      modifiers.maxHpBonus - previousModifiers.maxHpBonus,
+      previousModifiers,
+      modifiers,
     );
     houseModifiers = replaceModifiers(
       { ...state, houseModifiers },
@@ -144,6 +161,7 @@ export function applyProgressionAwards(
           cards: reservedCards,
         },
         rng,
+        ownedHeroIdsForHouse(state, progress.houseId),
       );
       offers.push(offer);
       reservedCards = [
@@ -231,10 +249,11 @@ export function chooseDraftCard(
   const pendingDrafts = state.pendingDrafts.slice(1);
   return {
     ...state,
-    agents: healForMaxHpIncrease(
+    agents: healForEffectiveMaxHpIncrease(
       state,
       offer.houseId,
-      modifiers.maxHpBonus - previousModifiers.maxHpBonus,
+      previousModifiers,
+      modifiers,
     ),
     houseProgress,
     houseModifiers: replaceModifiers(state, offer.houseId, modifiers),

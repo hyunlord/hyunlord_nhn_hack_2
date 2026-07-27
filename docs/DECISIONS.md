@@ -271,3 +271,47 @@ Rather than weakening the 14-card pool, wave 2 creature HP scaling increased
 from 1.15 to 1.30 and wave 3 from 1.30 to 1.60. The final 200-seed first-pick
 run measured 52.0% victories and 6.33 drafts per run; random picks also measured
 52.0%, with 6.24 drafts per run.
+
+## 2026-07-27 — Phase 3C heroes and tribute construction
+
+### Walls remain out of scope
+
+The existing threat model moves directly toward point targets and has no
+pathfinding or collision graph. Adding walls would therefore create decoration
+or require a second movement system. Phase 3C spends that complexity budget on
+placeable towers with explicit range, cadence, durability, and targeting.
+
+### Heroes are regular deterministic agents with explicit exceptions
+
+Sera, Bren, and Ivy share the normal movement/combat pipeline and stable agent
+ordering. Their configured HP, damage, speed, and cadence are folded through
+the same progression modifiers. They never flee, revive exactly 600 global
+ticks after death at their own living hall or the nearest surviving hall, and
+remain dead when no hall survives. Global ticks include frozen intermissions;
+this keeps replay timing independent of how long the player studies the shop.
+
+### The build axis stays pure; the engine commits purchases
+
+`build/` owns catalogue data and pure placement checks only. The engine checks
+phase, availability, affordability, and placement before deducting tribute.
+Rejected purchases return the exact same state reference. Recruit applies only
+to houses with a living hall and revives at most five dead regular agents from
+the house with the fewest living eligible agents. Tower capacity counts every
+committed tower record, including destroyed structures, making the advertised
+run-wide limit deterministic.
+
+### Auto-shop has one deterministic priority pass
+
+The balance harness performs at most one purchase for each priority
+(`recruit → medicine → tower → hall`) per intermission. Tower positions scan a
+40-pixel grid and never consume RNG. `--shop=none` provides the explicit
+counterfactual lane. This measures the shipped shop without silently turning
+the harness into an optimizer.
+
+### Phase 3C balance moves pressure into later waves
+
+The final wave definitions use creature count/HP multipliers of
+`20 × 1.8`, `34 × 2.5`, and `64 × 4.0`; damage multipliers remain
+`1.0`, `1.1`, and `1.2`. The foreign-hall reinforcement threshold is 45
+pixels and waves enter from one, two, then three edges. Shop prices and hero
+stats were not tuned away from their specification.

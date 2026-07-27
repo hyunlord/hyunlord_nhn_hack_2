@@ -10,6 +10,7 @@ export function eligibleCards(
   allCards: readonly CardDefinition[],
   houseId: string,
   owned: readonly OwnedCard[],
+  ownedHeroIds: readonly string[] = [],
 ): CardDefinition[] {
   const stacksById = new Map(
     owned.map(({ cardId, stacks }) => [cardId, stacks]),
@@ -18,7 +19,13 @@ export function eligibleCards(
     const availableKind =
       card.kind === "common" ||
       card.kind === "divine" ||
-      (card.kind === "house" && card.houseId === houseId);
+      (card.kind === "house" && card.houseId === houseId) ||
+      (
+        card.kind === "hero" &&
+        card.houseId === houseId &&
+        card.heroId !== undefined &&
+        ownedHeroIds.includes(card.heroId)
+      );
     return (
       availableKind &&
       (stacksById.get(card.id) ?? 0) < card.maxStacks
@@ -39,11 +46,13 @@ export function generateOffer(
   allCards: readonly CardDefinition[],
   progress: HouseProgress,
   rng: Rng,
+  ownedHeroIds: readonly string[] = [],
 ): DraftOffer {
   const remaining = eligibleCards(
     allCards,
     progress.houseId,
     progress.cards,
+    ownedHeroIds,
   ).sort((first, second) => first.id.localeCompare(second.id));
   const cardIds: string[] = [];
   const houseCards = remaining.filter(({ kind }) => kind === "house");

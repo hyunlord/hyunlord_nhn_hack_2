@@ -19,6 +19,11 @@ export interface ResolvedModifiers {
   miracleHealMultiplier: number;
   tributePerKillBonus: number;
   interWaveHealBonus: number;
+  heroDamageMultiplier: number;
+  heroMaxHpMultiplier: number;
+  heroRespawnTicksMultiplier: number;
+  heroAuraRadiusBonus: number;
+  heroOnKillHeal: number;
 }
 
 const MULTIPLIER_FIELDS = [
@@ -29,6 +34,9 @@ const MULTIPLIER_FIELDS = [
   "divineCostMultiplier",
   "miracleRadiusMultiplier",
   "miracleHealMultiplier",
+  "heroDamageMultiplier",
+  "heroMaxHpMultiplier",
+  "heroRespawnTicksMultiplier",
 ] as const satisfies readonly (keyof CardEffect)[];
 
 const BONUS_FIELDS = [
@@ -38,6 +46,8 @@ const BONUS_FIELDS = [
   "hallDefenseRadiusBonus",
   "tributePerKillBonus",
   "interWaveHealBonus",
+  "heroAuraRadiusBonus",
+  "heroOnKillHeal",
 ] as const satisfies readonly (keyof CardEffect)[];
 
 function neutralModifiers(): ResolvedModifiers {
@@ -55,6 +65,11 @@ function neutralModifiers(): ResolvedModifiers {
     miracleHealMultiplier: 1,
     tributePerKillBonus: 0,
     interWaveHealBonus: 0,
+    heroDamageMultiplier: 1,
+    heroMaxHpMultiplier: 1,
+    heroRespawnTicksMultiplier: 1,
+    heroAuraRadiusBonus: 0,
+    heroOnKillHeal: 0,
   };
 }
 

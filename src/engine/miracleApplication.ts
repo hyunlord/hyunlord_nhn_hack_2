@@ -1,8 +1,11 @@
-import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { MiracleEvent } from "../divine/divine.types";
 import { canCast, resolveMiracle } from "../divine/miracleResolver";
 import { MIRACLE_DEFINITIONS } from "../divine/miracleTypes";
 import type { GameState } from "./engine.types";
+import {
+  maxHpForAgent,
+  scheduleHeroDeath,
+} from "./heroEngine";
 import {
   divineModifiersForState,
   modifiersForHouse,
@@ -46,12 +49,19 @@ export function castMiracle(
     const damage = damagesByAgent.get(agent.id);
     if (damage !== undefined) {
       const hp = Math.max(0, agent.hp - damage);
-      return {
+      const damaged = {
         ...agent,
         hp,
         state: hp === 0 ? ("dead" as const) : agent.state,
         lastDamagedTick: state.tick,
       };
+      return hp === 0
+        ? scheduleHeroDeath(
+            damaged,
+            state.tick,
+            modifiersForHouse(state, agent.houseId),
+          )
+        : damaged;
     }
 
     const heal = healsByAgent.get(agent.id);
@@ -59,8 +69,10 @@ export function castMiracle(
       return {
         ...agent,
         hp: Math.min(
-          BALANCE_CONFIG.INITIAL_HP +
-            modifiersForHouse(state, agent.houseId).maxHpBonus,
+          maxHpForAgent(
+            agent,
+            modifiersForHouse(state, agent.houseId),
+          ),
           agent.hp + heal,
         ),
       };

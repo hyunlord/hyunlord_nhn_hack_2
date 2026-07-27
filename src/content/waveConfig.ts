@@ -4,6 +4,7 @@ export interface WaveDefinition {
   readonly creatureCount: number;
   readonly creatureHpMultiplier: number;
   readonly creatureDamageMultiplier: number;
+  readonly spawnEdges: number;
   readonly hasMage: boolean;
   readonly tributeReward: number;
 }
@@ -12,27 +13,30 @@ export const WAVE_DEFINITIONS: readonly WaveDefinition[] = [
   {
     index: 0,
     label: "First Howl",
-    creatureCount: 14,
-    creatureHpMultiplier: 1,
+    creatureCount: 20,
+    creatureHpMultiplier: 1.8,
     creatureDamageMultiplier: 1,
+    spawnEdges: 1,
     hasMage: false,
     tributeReward: 60,
   },
   {
     index: 1,
     label: "Gathering Dark",
-    creatureCount: 22,
-    creatureHpMultiplier: 1.3,
+    creatureCount: 34,
+    creatureHpMultiplier: 2.5,
     creatureDamageMultiplier: 1.1,
+    spawnEdges: 2,
     hasMage: false,
     tributeReward: 90,
   },
   {
     index: 2,
     label: "The Mage Comes",
-    creatureCount: 30,
-    creatureHpMultiplier: 1.6,
+    creatureCount: 64,
+    creatureHpMultiplier: 4,
     creatureDamageMultiplier: 1.2,
+    spawnEdges: 3,
     hasMage: true,
     tributeReward: 140,
   },

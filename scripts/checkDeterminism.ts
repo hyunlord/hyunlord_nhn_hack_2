@@ -8,6 +8,10 @@ import {
   createInitialState,
 } from "../src/engine/tick";
 import { chooseDraftCard } from "../src/engine/progressionEngine";
+import {
+  purchaseShopItem,
+  purchaseTowerAt,
+} from "../src/engine/shopEngine";
 
 const WAVE_EXERCISE_TICKS = 500;
 const MAX_ORGANIC_TICKS = 20_000;
@@ -19,6 +23,26 @@ function chooseFirst(state: GameState): GameState {
     throw new RangeError("Expected a populated draft offer.");
   }
   return chooseDraftCard(state, offer.id, cardId);
+}
+
+function autoShop(state: GameState): GameState {
+  let next = purchaseShopItem(state, "recruit_squad");
+  next = purchaseShopItem(next, "field_medicine");
+  let towerPlaced = next;
+  for (
+    let y = 40;
+    y < BALANCE_CONFIG.WORLD_HEIGHT && towerPlaced === next;
+    y += 40
+  ) {
+    for (let x = 40; x < BALANCE_CONFIG.WORLD_WIDTH; x += 40) {
+      const candidate = purchaseTowerAt(next, x, y);
+      if (candidate !== next) {
+        towerPlaced = candidate;
+        break;
+      }
+    }
+  }
+  return purchaseShopItem(towerPlaced, "reinforce_hall");
 }
 
 function runOrganicRun(seed: number): GameState {
@@ -34,7 +58,7 @@ function runOrganicRun(seed: number): GameState {
     } else {
       state =
         state.phase === "intermission"
-          ? beginNextWave(state, world.rng)
+          ? beginNextWave(autoShop(state), world.rng)
           : advanceTick(state, world.rng);
     }
   }
@@ -82,7 +106,7 @@ function runFullStateMachine(seed: number): GameState {
     }
     if (definition.index < WAVE_DEFINITIONS.length - 1) {
       assert.equal(state.phase, "intermission");
-      state = beginNextWave(state, world.rng);
+      state = beginNextWave(autoShop(state), world.rng);
     }
   }
   return state;

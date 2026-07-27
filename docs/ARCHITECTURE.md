@@ -37,22 +37,25 @@ src/
 └── content/             # houses, balance, waves, and shared RNG contract
 ```
 
-`agents`, `divine`, `threat`, and `progression` are independent pure-TypeScript
-leaves. They do not import one another or import `engine`. Alongside `content`
-and the integrating `engine`, progression is the sixth simulation axis.
+`agents`, `divine`, `threat`, `progression`, and `build` are independent
+pure-TypeScript leaves. They do not import one another or import `engine`.
+Alongside `content` and the integrating `engine`, build is the seventh
+simulation axis.
 `engine` may combine structural snapshots and outcomes. React, DOM, and Canvas
 APIs remain outside all simulation directories.
 
-Halls live in `engine.types.ts` for Phase 3A because they are run objectives
-coordinated by the engine. When walls and towers arrive in Phase 3C, halls are
-expected to migrate with them into a dedicated `build/` domain rather than
-turning the engine type module into a construction-system owner.
+`build/` owns the tribute-shop catalogue, tower definitions, and pure placement
+validation. The integrating engine owns live hall/tower snapshots and composes
+their combat effects. Tower-placement mode and its hover point are transient
+React store state, so cancelling or moving a preview cannot alter the
+replayable simulation snapshot.
 
 ## State and randomness
 
 `GameState` contains the complete replayable world snapshot: phase, wave
-index, tribute, houses, halls, agents, active threats, miracle resources,
-effects, house progression, cached modifiers, and queued drafts. The provider
+index, tribute, houses, halls, towers, agents, heroes, active threats, miracle
+resources, effects, house progression, cached modifiers, shop history, wave
+summaries, and queued drafts. The provider
 owns the stateful seeded RNG. Event handlers and the
 animation-frame loop compute a complete next snapshot before dispatching
 `{ type: "commitState", next }`; the reducer only returns that snapshot and
@@ -91,14 +94,16 @@ On each wave tick the engine:
    applies directed movement;
 3. resolves defender attacks in stable agent-array order, preserving exact
    damage and killing-blow attribution;
-4. advances creatures and the optional mage;
-5. aggregates agent and hall damage;
-6. awards per-creature tribute and house XP;
-7. checks defeat before wave clear, then awards the clear reward;
-8. applies threshold growth, generates sorted house drafts, and pauses.
+4. resolves tower fire in stable tower order;
+5. advances creatures and the optional mage;
+6. aggregates agent, tower, and hall damage;
+7. awards per-creature tribute and house XP;
+8. checks defeat before wave clear, then awards the clear reward;
+9. applies threshold growth, generates sorted house drafts, and pauses.
 
 Creatures prioritize a living agent within aggro range, then the nearest
-surviving hall. The mage ignores agents and moves directly toward a hall.
+surviving tower or hall. The mage ignores agents and towers and moves directly
+toward a hall.
 Distance ties and returned damage arrays are ordered by stable IDs.
 
 Agents whose hall survives defend threats near that objective even when the
@@ -109,8 +114,9 @@ agents outside the home leash return before resuming idle wandering.
 
 ## Rendering
 
-Canvas draw order is background → halls → agents → threats → effects. Halls
-remain visible as rubble at zero HP. Rendering reads immutable snapshots and
-never consumes RNG or advances the simulation. React owns only presentation
-and user actions: miracle selection/casting, draft selection, intermission
-continuation, and deterministically seeded restart.
+Canvas draw order is background → halls → towers → agents → heroes → threats →
+effects, followed by the transient tower preview. Halls remain visible as
+rubble at zero HP. Rendering reads immutable snapshots and never consumes RNG
+or advances the simulation. React owns only presentation and user actions:
+miracle selection/casting, draft selection, intermission purchases and tower
+placement, continuation, and deterministically seeded restart.

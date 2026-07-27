@@ -5,16 +5,34 @@ import { drawAgents } from "./drawAgents";
 import { drawBackground } from "./drawBackground";
 import { drawEffects } from "./drawEffects";
 import { drawHalls } from "./drawHalls";
+import { drawHeroes } from "./drawHeroes";
 import { drawThreats } from "./drawThreats";
+import { drawTowerPreview, drawTowers } from "./drawTowers";
 
 export function GameCanvas() {
-  const { dispatch, selectedMiracle, state } = useGameStore();
+  const {
+    dispatch,
+    selectedMiracle,
+    state,
+    towerPlacementActive,
+    towerPreview,
+  } = useGameStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef(state);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+  const placementRef = useRef({
+    active: towerPlacementActive,
+    preview: towerPreview,
+  });
+  useEffect(() => {
+    placementRef.current = {
+      active: towerPlacementActive,
+      preview: towerPreview,
+    };
+  }, [towerPlacementActive, towerPreview]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -50,11 +68,18 @@ export function GameCanvas() {
         stateRef.current.halls,
         stateRef.current.houses,
       );
+      drawTowers(context, stateRef.current.towers);
       drawAgents(
         context,
         stateRef.current.agents,
         stateRef.current.houses,
         stateRef.current.tick,
+      );
+      drawHeroes(
+        context,
+        stateRef.current.agents,
+        stateRef.current.houses,
+        stateRef.current.houseModifiers,
       );
       drawThreats(
         context,
@@ -66,40 +91,82 @@ export function GameCanvas() {
         stateRef.current.activeEffects,
         stateRef.current.tick,
       );
+      if (placementRef.current.active) {
+        drawTowerPreview(
+          context,
+          placementRef.current.preview,
+          stateRef.current.towers,
+          stateRef.current.halls,
+        );
+      }
       frameId = requestAnimationFrame(drawFrame);
     };
     frameId = requestAnimationFrame(drawFrame);
     return () => cancelAnimationFrame(frameId);
   }, []);
 
-  function handleClick(event: React.MouseEvent<HTMLCanvasElement>) {
-    if (selectedMiracle === null) {
-      return;
-    }
-
+  function worldPoint(event: React.MouseEvent<HTMLCanvasElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
-    dispatch({
-      type: "castMiracle",
-      miracle: selectedMiracle,
+    return {
       x:
         (event.clientX - bounds.left) *
         (BALANCE_CONFIG.WORLD_WIDTH / bounds.width),
       y:
         (event.clientY - bounds.top) *
         (BALANCE_CONFIG.WORLD_HEIGHT / bounds.height),
+    };
+  }
+
+  function handleClick(event: React.MouseEvent<HTMLCanvasElement>) {
+    const point = worldPoint(event);
+    if (towerPlacementActive) {
+      dispatch({ type: "placeTower", ...point });
+      return;
+    }
+    if (selectedMiracle === null) {
+      return;
+    }
+    dispatch({
+      type: "castMiracle",
+      miracle: selectedMiracle,
+      ...point,
     });
   }
 
+  useEffect(() => {
+    if (!towerPlacementActive) {
+      return;
+    }
+    const cancelOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        dispatch({ type: "cancelTowerPlacement" });
+      }
+    };
+    window.addEventListener("keydown", cancelOnEscape);
+    return () => window.removeEventListener("keydown", cancelOnEscape);
+  }, [dispatch, towerPlacementActive]);
+
   return (
     <canvas
-      aria-label="Living world with sixty wandering house agents"
+      aria-label="Living world with house agents and named heroes"
       className={
-        selectedMiracle === null
+        selectedMiracle === null && !towerPlacementActive
           ? "game-canvas"
           : "game-canvas game-canvas--targeting"
       }
       height={BALANCE_CONFIG.WORLD_HEIGHT}
       onClick={handleClick}
+      onContextMenu={(event) => {
+        if (towerPlacementActive) {
+          event.preventDefault();
+          dispatch({ type: "cancelTowerPlacement" });
+        }
+      }}
+      onMouseMove={(event) => {
+        if (towerPlacementActive) {
+          dispatch({ type: "updateTowerPreview", ...worldPoint(event) });
+        }
+      }}
       ref={canvasRef}
       role="img"
       width={BALANCE_CONFIG.WORLD_WIDTH}

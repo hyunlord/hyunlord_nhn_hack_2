@@ -28,6 +28,10 @@ export interface Agent {
   hp: number;
   lastDamagedTick: number;
   lastAttackTick: number;
+  isHero: boolean;
+  heroId: string | null;
+  heroLevel: number;
+  respawnAtTick: number | null;
 }
 
 export interface ThreatPresence {
@@ -41,6 +45,7 @@ export interface AgentModifiers {
   readonly attackDamageMultiplier: number;
   readonly attackIntervalMultiplier: number;
   readonly maxHpBonus: number;
+  readonly maxHpMultiplier?: number;
   readonly moveSpeedMultiplier: number;
   readonly threatSenseRadiusBonus: number;
   readonly breakHpRatioDelta: number;

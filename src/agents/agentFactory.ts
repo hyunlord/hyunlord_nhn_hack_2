@@ -1,5 +1,6 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import { HOUSE_CONFIG } from "../content/houseConfig";
+import { HERO_DEFINITIONS } from "../content/heroConfig";
 import type { Rng } from "../content/random";
 import type { Agent, House } from "./agentTypes";
 
@@ -22,7 +23,7 @@ export function createHouses(_rng: Rng): House[] {
 }
 
 export function createAgents(houses: readonly House[], rng: Rng): Agent[] {
-  return houses.flatMap((house) => {
+  const regularAgents = houses.flatMap((house) => {
     const config = HOUSE_CONFIG.find((entry) => entry.id === house.id);
     if (config === undefined) {
       throw new RangeError(`Missing spawn configuration for ${house.id}.`);
@@ -59,8 +60,35 @@ export function createAgents(houses: readonly House[], rng: Rng): Agent[] {
           hp: BALANCE_CONFIG.INITIAL_HP,
           lastDamagedTick: -1,
           lastAttackTick: -1,
+          isHero: false,
+          heroId: null,
+          heroLevel: 1,
+          respawnAtTick: null,
         };
       },
     );
   });
+  const heroes = HERO_DEFINITIONS.map((definition): Agent => {
+    const house = HOUSE_CONFIG.find(({ id }) => id === definition.houseId);
+    if (house === undefined) {
+      throw new RangeError(`Missing hero house ${definition.houseId}.`);
+    }
+    return {
+      id: definition.id,
+      houseId: definition.houseId,
+      disposition: { aggression: 80, loyalty: 100 },
+      x: house.spawnX,
+      y: house.spawnY,
+      heading: 0,
+      state: "idle",
+      hp: Math.round(BALANCE_CONFIG.INITIAL_HP * definition.hpMultiplier),
+      lastDamagedTick: -1,
+      lastAttackTick: -1,
+      isHero: true,
+      heroId: definition.id,
+      heroLevel: 1,
+      respawnAtTick: null,
+    };
+  });
+  return [...regularAgents, ...heroes];
 }

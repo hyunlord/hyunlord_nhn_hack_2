@@ -213,3 +213,38 @@ test("Given a max-HP card offer, when selected, then its house gains the modifie
     75,
   );
 });
+
+test("Given Bren selects Iron Body, when effective max HP rises, then only his hero-scaled cap delta is restored", () => {
+  const initial = createInitialState(8).state;
+  const bren = initial.agents.find(
+    ({ heroId }) => heroId === "hero_thornhold",
+  );
+  if (bren === undefined) {
+    throw new RangeError("Expected Bren.");
+  }
+  const state = {
+    ...initial,
+    phase: "draft" as const,
+    phaseBeforeDraft: "wave" as const,
+    agents: initial.agents.map((agent) =>
+      agent.id === bren.id ? { ...agent, hp: 100 } : agent,
+    ),
+    pendingDrafts: [{
+      id: "hero_offer",
+      houseId: "house_b",
+      level: 2,
+      cardIds: ["hero_thornhold_iron_body"],
+    }],
+  };
+
+  const result = chooseDraftCard(
+    state,
+    "hero_offer",
+    "hero_thornhold_iron_body",
+  );
+
+  assert.equal(
+    result.agents.find(({ id }) => id === bren.id)?.hp,
+    213,
+  );
+});

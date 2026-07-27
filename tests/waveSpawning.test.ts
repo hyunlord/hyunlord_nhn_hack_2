@@ -30,6 +30,26 @@ function getDefinition(index: number): WaveDefinition {
   return definition;
 }
 
+function spawnEdgeOf(
+  x: number,
+  y: number,
+): "top" | "right" | "bottom" | "left" {
+  const radius = BALANCE_CONFIG.CREATURE_RADIUS;
+  if (y === radius) {
+    return "top";
+  }
+  if (x === BALANCE_CONFIG.WORLD_WIDTH - radius) {
+    return "right";
+  }
+  if (y === BALANCE_CONFIG.WORLD_HEIGHT - radius) {
+    return "bottom";
+  }
+  if (x === radius) {
+    return "left";
+  }
+  throw new RangeError(`Creature ${x},${y} is not on a spawn edge.`);
+}
+
 test("Given reordered house ids and equal seeds, when a dormant traitor is assigned directly, then the result is order-independent", () => {
   const first = assignTraitor(
     ["house_c", "house_a", "house_b"],
@@ -77,5 +97,43 @@ test("Given every configured wave, when spawned, then scaling, mage presence, an
   assert.ok(
     (threats[1]?.creatures[0]?.hp ?? 0) >
       (threats[0]?.creatures[0]?.hp ?? Number.POSITIVE_INFINITY),
+  );
+});
+
+test("Given wave three, when spawned with an equal seed, then every creature is distributed evenly across three distinct deterministic edges", () => {
+  const definition = getDefinition(2);
+  const first = spawnWave(
+    definition,
+    BALANCE_CONFIG.WORLD_WIDTH,
+    BALANCE_CONFIG.WORLD_HEIGHT,
+    300,
+    createRng(20260810),
+  );
+  const second = spawnWave(
+    definition,
+    BALANCE_CONFIG.WORLD_WIDTH,
+    BALANCE_CONFIG.WORLD_HEIGHT,
+    300,
+    createRng(20260810),
+  );
+  const counts = new Map<string, number>();
+
+  for (const creature of first.creatures) {
+    const edge = spawnEdgeOf(creature.x, creature.y);
+    counts.set(edge, (counts.get(edge) ?? 0) + 1);
+  }
+
+  assert.equal(definition.spawnEdges, 3);
+  assert.equal(counts.size, 3);
+  const edgeCounts = [...counts.values()];
+  assert.equal(
+    edgeCounts.reduce((sum, count) => sum + count, 0),
+    definition.creatureCount,
+  );
+  assert.ok(Math.max(...edgeCounts) - Math.min(...edgeCounts) <= 1);
+  assert.deepEqual(first, second);
+  assert.deepEqual(
+    WAVE_DEFINITIONS.map(({ spawnEdges }) => spawnEdges),
+    [1, 2, 3],
   );
 });

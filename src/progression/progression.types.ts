@@ -14,6 +14,11 @@ export interface CardEffect {
   miracleHealMultiplier?: number;
   tributePerKillBonus?: number;
   interWaveHealBonus?: number;
+  heroDamageMultiplier?: number;
+  heroMaxHpMultiplier?: number;
+  heroRespawnTicksMultiplier?: number;
+  heroAuraRadiusBonus?: number;
+  heroOnKillHeal?: number;
 }
 
 export interface CardDefinition {
@@ -22,6 +27,7 @@ export interface CardDefinition {
   name: string;
   description: string;
   houseId?: string;
+  heroId?: string;
   maxStacks: number;
   effect: CardEffect;
 }

@@ -9,6 +9,10 @@ import {
 import { chooseDraftCard } from "../src/engine/progressionEngine";
 import { createRng } from "../src/engine/prng";
 import { printBalanceReport } from "./balanceReport";
+import {
+  purchaseShopItem,
+  purchaseTowerAt,
+} from "../src/engine/shopEngine";
 
 const DEFAULT_RUN_COUNT = 200;
 const MAX_RUN_TICKS = 50_000;
@@ -31,11 +35,16 @@ export type RunSample = {
   readonly draftCount: number;
   readonly finalLevels: readonly number[];
   readonly pickedCardIds: readonly string[];
+  readonly towersBuilt: number;
+  readonly tributeUnspent: number;
+  readonly heroDeaths: number;
 };
 export type PickMode = "first" | "random";
+export type ShopMode = "auto" | "none";
 export type HarnessOptions = {
   readonly runCount: number;
   readonly pickMode: PickMode;
+  readonly shopMode: ShopMode;
 };
 
 class HarnessUsageError extends Error {
@@ -82,17 +91,25 @@ export function parseHarnessOptions(
   );
   const unknownFlags = args.filter(
     (argument) =>
-      argument.startsWith("--") && !argument.startsWith("--pick="),
+      argument.startsWith("--") &&
+      !argument.startsWith("--pick=") &&
+      !argument.startsWith("--shop="),
   );
   const pickMode = pickArgument?.slice("--pick=".length) ?? "first";
+  const shopArguments = args.filter((argument) =>
+    argument.startsWith("--shop="),
+  );
+  const shopMode = shopArguments[0]?.slice("--shop=".length) ?? "auto";
   if (
     unknownFlags.length > 0 ||
     (pickMode !== "first" && pickMode !== "random") ||
-    args.filter((argument) => argument.startsWith("--pick=")).length > 1
+    args.filter((argument) => argument.startsWith("--pick=")).length > 1 ||
+    shopArguments.length > 1 ||
+    (shopMode !== "auto" && shopMode !== "none")
   ) {
     throw new HarnessUsageError(args.join(" "));
   }
-  return { runCount: parseRunCount(args), pickMode };
+  return { runCount: parseRunCount(args), pickMode, shopMode };
 }
 
 function terminal(phase: GameState["phase"]): boolean {
@@ -113,7 +130,40 @@ function markReached(
   reached[state.waveIndex] = true;
 }
 
-function runSimulation(seed: number, pickMode: PickMode): RunSample {
+function placeNextTower(state: GameState): GameState {
+  for (let y = 40; y < BALANCE_CONFIG.WORLD_HEIGHT; y += 40) {
+    for (let x = 40; x < BALANCE_CONFIG.WORLD_WIDTH; x += 40) {
+      const placed = purchaseTowerAt(state, x, y);
+      if (placed !== state) {
+        return placed;
+      }
+    }
+  }
+  return state;
+}
+
+function runAutoShop(state: GameState): GameState {
+  const buyers = [
+    (current: GameState) =>
+      purchaseShopItem(current, "recruit_squad"),
+    (current: GameState) =>
+      purchaseShopItem(current, "field_medicine"),
+    placeNextTower,
+    (current: GameState) =>
+      purchaseShopItem(current, "reinforce_hall"),
+  ];
+  let next = state;
+  for (const buy of buyers) {
+    next = buy(next);
+  }
+  return next;
+}
+
+function runSimulation(
+  seed: number,
+  pickMode: PickMode,
+  shopMode: ShopMode,
+): RunSample {
   const world = createInitialState(seed);
   const pickRng = createRng((seed ^ 0x9e3779b9) >>> 0);
   let state = world.state;
@@ -140,6 +190,9 @@ function runSimulation(seed: number, pickMode: PickMode): RunSample {
       continue;
     }
     if (state.phase === "intermission") {
+      if (shopMode === "auto") {
+        state = runAutoShop(state);
+      }
       state = beginNextWave(state, world.rng);
       markReached(reached, state, seed);
       continue;
@@ -173,7 +226,13 @@ function runSimulation(seed: number, pickMode: PickMode): RunSample {
       }
       kills[before.waveIndex] =
         (kills[before.waveIndex] ?? 0) + killed;
-      if (next.phase === "intermission" || next.phase === "victory") {
+      if (
+        next.phase === "intermission" ||
+        next.phase === "victory" ||
+        (next.phase === "draft" &&
+          (next.phaseBeforeDraft === "intermission" ||
+            next.phaseBeforeDraft === "victory"))
+      ) {
         clearTicks[before.waveIndex] = next.tick - active.startTick;
       }
     }
@@ -204,6 +263,9 @@ function runSimulation(seed: number, pickMode: PickMode): RunSample {
     draftCount: pickedCardIds.length,
     finalLevels: state.houseProgress.map(({ level }) => level),
     pickedCardIds,
+    towersBuilt: state.shopPurchases.raise_tower,
+    tributeUnspent: state.tribute,
+    heroDeaths: state.heroDeaths,
   };
 }
 
@@ -213,9 +275,15 @@ function main(): void {
     runSimulation(
       (BALANCE_CONFIG.DEFAULT_SEED + index) >>> 0,
       options.pickMode,
+      options.shopMode,
     ),
   );
-  printBalanceReport(samples, MAX_RUN_TICKS, options.pickMode);
+  printBalanceReport(
+    samples,
+    MAX_RUN_TICKS,
+    options.pickMode,
+    options.shopMode,
+  );
 }
 
 try {

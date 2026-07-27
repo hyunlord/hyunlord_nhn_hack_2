@@ -117,6 +117,24 @@ test("Given a nearby agent and a hall, when a creature chooses a target, then ag
   assert.deepEqual(result.hallDamages, []);
 });
 
+test("Given a tower is the nearest structural objective, when a creature attacks, then tower damage is emitted instead of hall damage", () => {
+  const result = stepThreat(
+    createThreat(),
+    [],
+    [{ ...HALL, x: 300 }],
+    BALANCE_CONFIG.CREATURE_ATTACK_INTERVAL_TICKS,
+    [{ id: "tower_01", x: 105, y: 100, hp: 300, radius: 10 }],
+  );
+
+  assert.deepEqual(result.structureDamages, [
+    {
+      structureId: "tower_01",
+      amount: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+    },
+  ]);
+  assert.deepEqual(result.hallDamages, []);
+});
+
 test("Given no surviving halls, when threats step, then creatures and mage hold position", () => {
   const threat = createThreat({
     mage: {
