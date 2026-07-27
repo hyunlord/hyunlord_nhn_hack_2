@@ -212,6 +212,7 @@ test("Given Ivy has Green Mercy, when she kills inside her aura, then nearby liv
         agentDamage: 1,
         hallDamage: 1,
         lastAttackTick: 0,
+        haltedUntilTick: -1,
       },
     ],
     mage: null,

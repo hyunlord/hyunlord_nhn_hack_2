@@ -68,12 +68,15 @@ export function castMiracle(
     if (heal !== undefined) {
       return {
         ...agent,
-        hp: Math.min(
-          maxHpForAgent(
-            agent,
-            modifiersForHouse(state, agent.houseId),
+        hp: Math.max(
+          agent.hp,
+          Math.min(
+            maxHpForAgent(
+              agent,
+              modifiersForHouse(state, agent.houseId),
+            ),
+            agent.hp + heal,
           ),
-          agent.hp + heal,
         ),
       };
     }

@@ -1,10 +1,14 @@
 import { CARD_DEFINITIONS } from "../content/cardConfig";
+import { BALANCE_CONFIG } from "../content/balanceConfig";
 import { generateOffer } from "../progression/cardPool";
 import {
   resolveModifiers,
   type ResolvedModifiers,
 } from "../progression/modifiers";
-import { levelForXp } from "../progression/xp";
+import {
+  heroLevelForXp,
+  levelForXp,
+} from "../progression/xp";
 import type { DraftOffer } from "../progression/progression.types";
 import type { Rng } from "./prng";
 import type { GameState } from "./engine.types";
@@ -14,6 +18,59 @@ import { maxHpForAgent } from "./heroEngine";
 export interface ProgressionAward {
   readonly houseId: string;
   readonly xp: number;
+}
+
+export interface HeroProgressionAward {
+  readonly heroId: string;
+  readonly xp: number;
+}
+
+export function applyHeroProgressAwards(
+  state: GameState,
+  awards: readonly HeroProgressionAward[],
+  tick: number,
+): GameState {
+  const xpByHero = new Map<string, number>();
+  for (const { heroId, xp } of awards) {
+    if (xp > 0) {
+      xpByHero.set(heroId, (xpByHero.get(heroId) ?? 0) + xp);
+    }
+  }
+  if (xpByHero.size === 0) {
+    return state;
+  }
+  const levelsByHero = new Map<string, number>();
+  const heroProgress = state.heroProgress.map((progress) => {
+    const award = xpByHero.get(progress.heroId) ?? 0;
+    if (award === 0) {
+      return progress;
+    }
+    const xp = progress.xp + award;
+    const level = heroLevelForXp(xp);
+    levelsByHero.set(progress.heroId, level);
+    return { ...progress, xp, level };
+  });
+  const agents = state.agents.map((agent) => {
+    if (agent.heroId === null) {
+      return agent;
+    }
+    const level = levelsByHero.get(agent.heroId);
+    if (level === undefined || level === agent.heroLevel) {
+      return agent;
+    }
+    const gainedLevels = level - agent.heroLevel;
+    return {
+      ...agent,
+      heroLevel: level,
+      heroLevelUpTick: tick,
+      hp:
+        agent.hp > 0
+          ? agent.hp +
+            BALANCE_CONFIG.HERO_LEVEL_HP_BONUS * gainedLevels
+          : agent.hp,
+    };
+  });
+  return { ...state, agents, heroProgress };
 }
 
 export function modifiersForHouse(
@@ -262,6 +319,12 @@ export function chooseDraftCard(
   const houseProgress = [...state.houseProgress];
   houseProgress[progressIndex] = updatedProgress;
   const pendingDrafts = state.pendingDrafts.slice(1);
+  const grantedSkill = card.effect.grantsSkill;
+  const unlockedSkills =
+    grantedSkill === undefined ||
+    state.unlockedSkills.includes(grantedSkill)
+      ? state.unlockedSkills
+      : [...state.unlockedSkills, grantedSkill];
   return {
     ...state,
     agents: healForEffectiveMaxHpIncrease(
@@ -272,6 +335,7 @@ export function chooseDraftCard(
     ),
     houseProgress,
     houseModifiers: replaceModifiers(state, offer.houseId, modifiers),
+    unlockedSkills,
     pendingDrafts,
     phase:
       pendingDrafts.length > 0

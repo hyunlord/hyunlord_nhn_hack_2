@@ -93,7 +93,9 @@ export function createAgents(houses: readonly House[], rng: Rng): Agent[] {
           isHero: false,
           heroId: null,
           heroLevel: 1,
+          heroLevelUpTick: -1,
           respawnAtTick: null,
+          breakImmuneUntilTick: -1,
         };
       },
     );
@@ -126,7 +128,9 @@ export function createAgents(houses: readonly House[], rng: Rng): Agent[] {
       isHero: true,
       heroId: definition.id,
       heroLevel: 1,
+      heroLevelUpTick: -1,
       respawnAtTick: null,
+      breakImmuneUntilTick: -1,
     };
   });
   return [...regularAgents, ...heroes];

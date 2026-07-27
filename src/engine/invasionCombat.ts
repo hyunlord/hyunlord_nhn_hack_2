@@ -42,6 +42,10 @@ type WaveCombatStep = Pick<
     readonly houseId: string;
     readonly xp: number;
   }[];
+  readonly heroXpAwards: {
+    readonly heroId: string;
+    readonly xp: number;
+  }[];
   readonly creatureKillsByHouse: {
     readonly houseId: string;
     readonly kills: number;
@@ -81,6 +85,7 @@ function createDefenseContext(
   halls: readonly Hall[],
   threats: readonly ThreatPresence[],
   hallDefenseRadiusBonus: number,
+  tick: number,
 ): DefenseContext {
   const ownHall =
     halls.find(
@@ -114,6 +119,7 @@ function createDefenseContext(
     }))
     .filter(({ hostileCount }) => hostileCount > 0);
   return {
+    tick,
     ownHall:
       ownHall === null
         ? null
@@ -131,6 +137,7 @@ function moveAgents(
   threat: ThreatEvent | null,
   rng: Rng,
   modifiersByHouse: GameState["houseModifiers"],
+  tick: number,
 ): AgentDecision[] {
   const threats = toThreatPresences(threat);
   const decisions = agents.map((agent) => {
@@ -145,6 +152,7 @@ function moveAgents(
       halls,
       threats,
       modifiers.hallDefenseRadiusBonus,
+      tick,
     );
     const intent = decideIntent(
       agent,
@@ -205,6 +213,7 @@ export function advanceWaveCombat(
       activeThreat: null,
       creatureKills: 0,
       xpAwards: [],
+      heroXpAwards: [],
       creatureKillsByHouse: [],
       destroyedTowers: [],
     };
@@ -217,6 +226,7 @@ export function advanceWaveCombat(
     state.activeThreat,
     rng,
     state.houseModifiers,
+    tick,
   );
   const modifiersByHouse = new Map(
     state.houseModifiers.map(({ houseId, modifiers }) => [
@@ -234,6 +244,14 @@ export function advanceWaveCombat(
       state.houseModifiers,
       state.runUpgrades.attackDamageMultiplier,
     ),
+    {
+      houseProgress: state.houseProgress,
+      hallLowestHpRatio: Math.min(
+        ...state.halls
+          .filter(({ maxHp }) => maxHp > 0)
+          .map(({ hp, maxHp }) => hp / maxHp),
+      ),
+    },
   );
   const towerAttacks = applyTowerAttacks(
     state.towers,
@@ -271,6 +289,7 @@ export function advanceWaveCombat(
       stepped.agentDamages,
       tick,
       state.houseModifiers,
+      state.houseProgress,
     ),
     halls: applyHallDamages(state.halls, stepped.hallDamages),
     towers: towerDamage.towers,
@@ -279,6 +298,10 @@ export function advanceWaveCombat(
       initialCreatureCount - stepped.threat.creatures.length,
     xpAwards: attacks.xpAwards.map(({ houseId, amount }) => ({
       houseId,
+      xp: amount,
+    })),
+    heroXpAwards: attacks.heroXpAwards.map(({ heroId, amount }) => ({
+      heroId,
       xp: amount,
     })),
     creatureKillsByHouse: attacks.creatureKillsByHouse.map(

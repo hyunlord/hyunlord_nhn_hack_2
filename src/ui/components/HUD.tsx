@@ -2,6 +2,8 @@ import { useGameStore } from "../../state/gameStore";
 import { BALANCE_CONFIG } from "../../content/balanceConfig";
 import { WAVE_DEFINITIONS } from "../../content/waveConfig";
 import { LEVEL_THRESHOLDS } from "../../progression/xp";
+import { HERO_LEVEL_THRESHOLDS } from "../../progression/xp";
+import { HERO_DEFINITIONS } from "../../content/heroConfig";
 
 export function HUD() {
   const { state } = useGameStore();
@@ -83,7 +85,7 @@ export function HUD() {
               <span className="house-status__name">{house.name}</span>
               <span className="house-status__details">
                 <strong>
-                  Level {level} · {progress?.xp ?? 0} XP
+                  Level {level} · {Math.round(progress?.xp ?? 0)} XP
                 </strong>
                 <span>
                   Hall {hall?.hp ?? 0}/
@@ -101,6 +103,41 @@ export function HUD() {
           );
         })}
       </ul>
+      <div className="hero-progress-list" aria-label="Hero progression">
+        <h3>Heroes</h3>
+        {state.heroProgress.map((progress) => {
+          const definition = HERO_DEFINITIONS.find(
+            ({ id }) => id === progress.heroId,
+          );
+          const currentThreshold =
+            HERO_LEVEL_THRESHOLDS[progress.level - 1] ?? 0;
+          const nextThreshold =
+            HERO_LEVEL_THRESHOLDS[progress.level];
+          const span =
+            nextThreshold === undefined
+              ? 1
+              : nextThreshold - currentThreshold;
+          return (
+            <div className="hero-progress-row" key={progress.heroId}>
+              <span>
+                <strong>{definition?.name ?? progress.heroId}</strong>
+                <small>
+                  Level {progress.level} · {Math.round(progress.xp)} XP
+                </small>
+              </span>
+              <progress
+                aria-label={`${definition?.name ?? progress.heroId} XP`}
+                max={span}
+                value={
+                  nextThreshold === undefined
+                    ? span
+                    : progress.xp - currentThreshold
+                }
+              />
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }

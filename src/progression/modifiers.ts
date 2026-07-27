@@ -25,6 +25,11 @@ export interface ResolvedModifiers {
   heroRespawnTicksMultiplier: number;
   heroAuraRadiusBonus: number;
   heroOnKillHeal: number;
+  damageTakenMultiplier: number;
+  divinePowerPerAgentDeath: number;
+  ignoreBreak: boolean;
+  towerCostMultiplier: number;
+  heroRespawnHpMultiplier: number;
 }
 
 const MULTIPLIER_FIELDS = [
@@ -39,6 +44,8 @@ const MULTIPLIER_FIELDS = [
   "heroDamageMultiplier",
   "heroMaxHpMultiplier",
   "heroRespawnTicksMultiplier",
+  "towerCostMultiplier",
+  "heroRespawnHpMultiplier",
 ] as const satisfies readonly (keyof CardEffect)[];
 
 const BONUS_FIELDS = [
@@ -50,6 +57,7 @@ const BONUS_FIELDS = [
   "interWaveHealBonus",
   "heroAuraRadiusBonus",
   "heroOnKillHeal",
+  "divinePowerPerAgentDeath",
 ] as const satisfies readonly (keyof CardEffect)[];
 
 function neutralModifiers(): ResolvedModifiers {
@@ -73,6 +81,11 @@ function neutralModifiers(): ResolvedModifiers {
     heroRespawnTicksMultiplier: 1,
     heroAuraRadiusBonus: 0,
     heroOnKillHeal: 0,
+    damageTakenMultiplier: 1,
+    divinePowerPerAgentDeath: 0,
+    ignoreBreak: false,
+    towerCostMultiplier: 1,
+    heroRespawnHpMultiplier: 1,
   };
 }
 
@@ -95,6 +108,7 @@ export function resolveModifiers(
     for (const field of BONUS_FIELDS) {
       result[field] += effect[field] ?? 0;
     }
+    result.ignoreBreak ||= effect.ignoreBreak ?? false;
   }
 
   for (const { cardId, stacks } of owned) {
@@ -108,6 +122,29 @@ export function resolveModifiers(
     for (const field of BONUS_FIELDS) {
       result[field] += (effect[field] ?? 0) * stacks;
     }
+    result.ignoreBreak ||= effect.ignoreBreak ?? false;
   }
   return result;
+}
+
+export function conditionalModifiers(
+  owned: readonly OwnedCard[],
+  situation: {
+    readonly hallLowestHpRatio: number;
+    readonly agentHpRatio: number;
+  },
+): Partial<ResolvedModifiers> {
+  const ownedIds = new Set(
+    owned.filter(({ stacks }) => stacks > 0).map(({ cardId }) => cardId),
+  );
+  return {
+    ...(ownedIds.has("legend_last_bastion") &&
+    situation.hallLowestHpRatio < 0.25
+      ? { attackDamageMultiplier: 1.3 }
+      : {}),
+    ...(ownedIds.has("legend_ironblood") &&
+    situation.agentHpRatio < 0.4
+      ? { damageTakenMultiplier: 0.65 }
+      : {}),
+  };
 }

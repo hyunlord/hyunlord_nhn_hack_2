@@ -12,6 +12,7 @@ import {
   purchaseShopItem,
   purchaseTowerAt,
 } from "../src/engine/shopEngine";
+import { castFirstAvailableSkill } from "./autoSkillStrategy";
 
 const WAVE_EXERCISE_TICKS = 500;
 const MAX_ORGANIC_TICKS = 20_000;
@@ -59,7 +60,10 @@ function runOrganicRun(seed: number): GameState {
       state =
         state.phase === "intermission"
           ? beginNextWave(autoShop(state), world.rng)
-          : advanceTick(state, world.rng);
+          : advanceTick(
+              castFirstAvailableSkill(state).state,
+              world.rng,
+            );
     }
   }
   return state;
@@ -84,7 +88,10 @@ function runFullStateMachine(seed: number): GameState {
       state =
         state.phase === "draft"
           ? chooseFirst(state)
-          : advanceTick(state, world.rng);
+          : advanceTick(
+              castFirstAvailableSkill(state).state,
+              world.rng,
+            );
       assert.notEqual(state.phase, "defeat");
     }
 

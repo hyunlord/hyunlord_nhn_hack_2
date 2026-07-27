@@ -106,6 +106,34 @@ test("Given valid and invalid tower positions, when placement commits, then only
   assert.equal(valid.tribute, state.tribute - 70);
 });
 
+test("Given Deeproot Dominion, when a tower is priced and purchased, then its tribute cost is reduced by exactly 40%", () => {
+  const initial = intermissionState(42);
+  const state = {
+    ...initial,
+    houseModifiers: initial.houseModifiers.map((entry) =>
+      entry.houseId === "house_c"
+        ? {
+            ...entry,
+            modifiers: {
+              ...entry.modifiers,
+              towerCostMultiplier: 0.6,
+            },
+          }
+        : entry,
+    ),
+  };
+
+  const tower = shopAvailabilityForState(state).find(
+    ({ item }) => item.id === "raise_tower",
+  );
+  const result = purchaseTowerAt(state, 480, 300);
+
+  assert.equal(tower?.cost, 42);
+  assert.equal(tower?.available, true);
+  assert.equal(result.tribute, 0);
+  assert.equal(result.towers.length, 1);
+});
+
 test("Given a max-count tower field loses one tower, when a replacement is purchased, then only living towers constrain count and spacing", () => {
   const initial = intermissionState();
   const towers = Array.from(

@@ -1,4 +1,10 @@
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
+import {
+  CARD_DEFINITIONS,
+  RARITY_WEIGHTS,
+} from "../src/content/cardConfig";
+import { DIVINE_SKILL_DEFINITIONS } from "../src/content/skillConfig";
+import type { CardRarity } from "../src/progression/progression.types";
 import { WAVE_DEFINITIONS } from "../src/content/waveConfig";
 import type {
   HouseOption,
@@ -171,6 +177,16 @@ function progressionTable(samples: readonly RunSample[]): string {
       ),
     ],
     [
+      "Final hero level",
+      displayAverage(
+        average(samples.flatMap(({ finalHeroLevels }) => finalHeroLevels)),
+      ),
+    ],
+    [
+      "Skill casts per run",
+      displayAverage(average(samples.map(({ skillCasts }) => skillCasts))),
+    ],
+    [
       "Houses ending at level 1",
       `${samples.flatMap(({ finalLevels }) => finalLevels).filter((level) => level === 1).length}/${samples.length * 3} (${rate(
         samples
@@ -196,6 +212,45 @@ function progressionTable(samples: readonly RunSample[]): string {
     ],
   ];
   return table(["Progression metric", "Value"], rows);
+}
+
+function rarityTable(samples: readonly RunSample[]): string {
+  const rarityById = new Map(
+    CARD_DEFINITIONS.map(({ id, rarity }) => [id, rarity]),
+  );
+  const rarities = Object.keys(RARITY_WEIGHTS) as CardRarity[];
+  const offered = samples.flatMap(({ offeredCardIds }) => offeredCardIds);
+  const picked = samples.flatMap(({ pickedCardIds }) => pickedCardIds);
+  return table(
+    ["Rarity", "Offered", "Offered rate", "Picked", "Picked rate"],
+    rarities.map((rarity) => {
+      const offeredCount = offered.filter(
+        (id) => rarityById.get(id) === rarity,
+      ).length;
+      const pickedCount = picked.filter(
+        (id) => rarityById.get(id) === rarity,
+      ).length;
+      return [
+        rarity,
+        `${offeredCount}`,
+        rate(offeredCount, offered.length),
+        `${pickedCount}`,
+        rate(pickedCount, picked.length),
+      ];
+    }),
+  );
+}
+
+function skillTable(samples: readonly RunSample[]): string {
+  return table(
+    ["Divine skill", "Runs acquired", "Acquisition rate"],
+    Object.values(DIVINE_SKILL_DEFINITIONS).map(({ id, name }) => {
+      const acquired = samples.filter(({ acquiredSkillIds }) =>
+        acquiredSkillIds.includes(id),
+      ).length;
+      return [name, `${acquired}`, rate(acquired, samples.length)];
+    }),
+  );
 }
 
 function shopTable(samples: readonly RunSample[]): string {
@@ -314,12 +369,14 @@ export function printBalanceReport(
     houseOption.kind === "random" ? "random-all-20" : houseOption.label;
   console.log(
     `Balance harness: seeds=${samples.length}, start=${BALANCE_CONFIG.DEFAULT_SEED}, ` +
-      `miracles=none, picks=${pickMode}, shop=${shopMode}, houses=${houseMode}, maxTicks=${maxTicks}`,
+      `miracles=none, skills=auto, picks=${pickMode}, shop=${shopMode}, houses=${houseMode}, maxTicks=${maxTicks}`,
   );
   console.log(outcomeTable(samples));
   console.log(endStateTable(samples));
   console.log(waveTable(samples));
   console.log(progressionTable(samples));
+  console.log(rarityTable(samples));
+  console.log(skillTable(samples));
   console.log(shopTable(samples));
   console.log(shopDiagnosticTable(samples));
   console.log(houseTable(samples));

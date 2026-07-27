@@ -7,8 +7,8 @@ import type {
 } from "../build/build.types";
 import {
   EMPTY_PURCHASES,
+  SHOP_CATALOG,
   availabilityForItem,
-  shopAvailability,
 } from "../build/shop";
 import {
   TOWER_RADIUS,
@@ -80,7 +80,37 @@ export function shopSnapshotForState(state: GameState): ShopSnapshot {
 export function shopAvailabilityForState(
   state: GameState,
 ): ShopAvailability[] {
-  return shopAvailability(shopSnapshotForState(state));
+  return SHOP_CATALOG.map(({ id }) => availabilityForState(state, id));
+}
+
+function availabilityForState(
+  state: GameState,
+  itemId: ShopItemId,
+): ShopAvailability {
+  const snapshot = shopSnapshotForState(state);
+  const base = availabilityForItem(itemId, snapshot);
+  if (itemId !== "raise_tower") {
+    return base;
+  }
+  const towerCostMultiplier = Math.min(
+    1,
+    ...state.houseModifiers.map(
+      ({ modifiers }) => modifiers.towerCostMultiplier,
+    ),
+  );
+  const cost = Math.round(base.cost * towerCostMultiplier);
+  const affordable = state.tribute >= cost;
+  const domainAvailability = availabilityForItem(itemId, {
+    ...snapshot,
+    tribute: Number.MAX_SAFE_INTEGER,
+  });
+  return {
+    ...base,
+    cost,
+    affordable,
+    available: affordable && domainAvailability.reason === null,
+    reason: !affordable ? "not enough tribute" : domainAvailability.reason,
+  };
 }
 
 function incrementPurchase(
@@ -97,10 +127,7 @@ function purchaseBase(
   if (state.phase !== "intermission") {
     return null;
   }
-  const availability = availabilityForItem(
-    itemId,
-    shopSnapshotForState(state),
-  );
+  const availability = availabilityForState(state, itemId);
   if (!availability.available) {
     return null;
   }
@@ -156,9 +183,12 @@ function healLivingAgents(state: GameState): Agent[] {
       ? agent
       : {
           ...agent,
-          hp: Math.min(
-            maxHpForAgent(agent, modifiersForAgent(state, agent)),
-            agent.hp + MEDICINE_HEAL,
+          hp: Math.max(
+            agent.hp,
+            Math.min(
+              maxHpForAgent(agent, modifiersForAgent(state, agent)),
+              agent.hp + MEDICINE_HEAL,
+            ),
           ),
         },
   );

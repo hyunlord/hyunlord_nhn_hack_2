@@ -48,11 +48,16 @@ export function maxHpForAgent(
     hero === null
       ? 1
       : hero.hpMultiplier * modifiers.heroMaxHpMultiplier;
-  return Math.round(
+  const base = Math.round(
     (BALANCE_CONFIG.INITIAL_HP + modifiers.maxHpBonus) *
       modifiers.maxHpMultiplier *
       heroMultiplier,
   );
+  return base +
+    (hero === null
+      ? 0
+      : BALANCE_CONFIG.HERO_LEVEL_HP_BONUS *
+        Math.max(0, agent.heroLevel - 1));
 }
 
 export function heroMaxHpMultiplierForAgent(agent: Agent): number {
@@ -119,7 +124,9 @@ export function combatBonusesForAgents(
             (hero === null
               ? 1
               : hero.damageMultiplier *
-                modifiers.heroDamageMultiplier),
+                modifiers.heroDamageMultiplier *
+                BALANCE_CONFIG.HERO_LEVEL_DAMAGE_MULTIPLIER **
+                  Math.max(0, agent.heroLevel - 1)),
           attackIntervalMultiplier:
             hero?.attackIntervalMultiplier ?? 1,
           onKillHeal:
@@ -142,7 +149,9 @@ export function heroRespawnTicksForAgent(
       BALANCE_CONFIG.HERO_RESPAWN_TICKS *
         (definitionForAgent(agent) === null
           ? 1
-          : modifiers.heroRespawnTicksMultiplier),
+          : modifiers.heroRespawnTicksMultiplier *
+            BALANCE_CONFIG.HERO_LEVEL_RESPAWN_MULTIPLIER **
+              Math.max(0, agent.heroLevel - 1)),
     ),
   );
 }
@@ -210,9 +219,15 @@ export function respawnHeroes(
       ...agent,
       x: hall.x,
       y: hall.y,
-      hp: maxHpForAgent(
-        agent,
-        modifiersForAgent(agent, modifiersByHouse),
+      hp: Math.round(
+        maxHpForAgent(
+          agent,
+          modifiersForAgent(agent, modifiersByHouse),
+        ) *
+          modifiersForAgent(
+            agent,
+            modifiersByHouse,
+          ).heroRespawnHpMultiplier,
       ),
       state: "idle" as const,
       respawnAtTick: null,

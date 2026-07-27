@@ -1,7 +1,12 @@
 import type { Agent } from "../agents/agentTypes";
 import type { ResolvedModifiers } from "../progression/modifiers";
+import { conditionalModifiers } from "../progression/modifiers";
+import type { HouseProgress } from "../progression/progression.types";
 import type { Hall } from "./engine.types";
-import { scheduleHeroDeath } from "./heroEngine";
+import {
+  maxHpForAgent,
+  scheduleHeroDeath,
+} from "./heroEngine";
 import type {
   Tower,
   TowerDestroyed,
@@ -35,6 +40,7 @@ export function applyThreatDamages(
     readonly houseId: string;
     readonly modifiers: ResolvedModifiers;
   }[],
+  houseProgress: readonly HouseProgress[] = [],
 ): Agent[] {
   const totals = new Map<string, number>();
   for (const damage of damages) {
@@ -48,7 +54,27 @@ export function applyThreatDamages(
     if (damage === undefined) {
       return agent;
     }
-    const hp = Math.max(0, agent.hp - damage);
+    const modifiers = modifiersByHouse.find(
+      ({ houseId }) => houseId === agent.houseId,
+    )?.modifiers;
+    if (modifiers === undefined) {
+      throw new RangeError(`Missing modifiers for ${agent.houseId}.`);
+    }
+    const conditional = conditionalModifiers(
+      houseProgress.find(
+        ({ houseId }) => houseId === agent.houseId,
+      )?.cards ?? [],
+      {
+        hallLowestHpRatio: 1,
+        agentHpRatio:
+          agent.hp / maxHpForAgent(agent, modifiers),
+      },
+    );
+    const hp = Math.max(
+      0,
+      agent.hp -
+        damage * (conditional.damageTakenMultiplier ?? 1),
+    );
     const damaged = {
       ...agent,
       hp,
@@ -57,12 +83,6 @@ export function applyThreatDamages(
     };
     if (hp > 0) {
       return damaged;
-    }
-    const modifiers = modifiersByHouse.find(
-      ({ houseId }) => houseId === agent.houseId,
-    )?.modifiers;
-    if (modifiers === undefined) {
-      throw new RangeError(`Missing modifiers for ${agent.houseId}.`);
     }
     return scheduleHeroDeath(damaged, tick, modifiers);
   });

@@ -12,12 +12,14 @@ import {
 } from "react";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { MiracleType } from "../divine/divine.types";
+import type { DivineSkillId } from "../divine/skillTypes";
 import type { GameState } from "../engine/engine.types";
 import { createRunSummary } from "../engine/runSummary";
 import {
   advanceTick,
   beginNextWave,
   castMiracle,
+  castSkill,
   createInitialState,
 } from "../engine/tick";
 import { chooseDraftCard } from "../engine/progressionEngine";
@@ -83,6 +85,8 @@ export function GameStoreProvider({
   const notifiedRunIdReference = useRef<string | null>(null);
   const [selectedMiracle, setSelectedMiracle] =
     useState<MiracleType | null>(null);
+  const [selectedSkill, setSelectedSkill] =
+    useState<DivineSkillId | null>(null);
   const [towerPlacementActive, setTowerPlacementActive] =
     useState(false);
   const [towerPreview, setTowerPreview] =
@@ -98,6 +102,15 @@ export function GameStoreProvider({
   const selectMiracle = useCallback((miracle: MiracleType | null) => {
     setSelectedMiracle(miracle);
     if (miracle !== null) {
+      setSelectedSkill(null);
+      setTowerPlacementActive(false);
+      setTowerPreview(null);
+    }
+  }, []);
+  const selectSkill = useCallback((skill: DivineSkillId | null) => {
+    setSelectedSkill(skill);
+    if (skill !== null) {
+      setSelectedMiracle(null);
       setTowerPlacementActive(false);
       setTowerPreview(null);
     }
@@ -107,6 +120,15 @@ export function GameStoreProvider({
       case "selectMiracle":
         setSelectedMiracle(action.miracle);
         if (action.miracle !== null) {
+          setSelectedSkill(null);
+          setTowerPlacementActive(false);
+          setTowerPreview(null);
+        }
+        return;
+      case "selectSkill":
+        setSelectedSkill(action.skill);
+        if (action.skill !== null) {
+          setSelectedMiracle(null);
           setTowerPlacementActive(false);
           setTowerPreview(null);
         }
@@ -122,6 +144,19 @@ export function GameStoreProvider({
           }),
         );
         setSelectedMiracle(null);
+        return;
+      }
+      case "castSkill": {
+        const current = stateReference.current;
+        commitState(
+          castSkill(current, {
+            type: action.skill,
+            targetX: action.x,
+            targetY: action.y,
+            tick: current.tick,
+          }),
+        );
+        setSelectedSkill(null);
         return;
       }
       case "beginNextWave":
@@ -150,6 +185,7 @@ export function GameStoreProvider({
         return;
       case "selectTowerPlacement":
         setSelectedMiracle(null);
+        setSelectedSkill(null);
         setTowerPlacementActive(true);
         setTowerPreview(null);
         return;
@@ -226,13 +262,17 @@ export function GameStoreProvider({
       dispatch,
       selectedMiracle,
       selectMiracle,
+      selectedSkill,
+      selectSkill,
       towerPlacementActive,
       towerPreview,
     }),
     [
       dispatch,
       selectMiracle,
+      selectSkill,
       selectedMiracle,
+      selectedSkill,
       state,
       towerPlacementActive,
       towerPreview,

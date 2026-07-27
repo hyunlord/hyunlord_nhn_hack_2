@@ -119,6 +119,7 @@ export function spawnWave(
           definition.creatureDamageMultiplier,
       ),
       lastAttackTick: -1,
+      haltedUntilTick: -1,
       };
     });
   });

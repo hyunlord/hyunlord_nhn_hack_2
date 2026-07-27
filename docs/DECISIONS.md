@@ -356,3 +356,47 @@ Tower price growth changed from `1.40` to `1.15`. Wave-three creature HP changed
 from `4.0` to `5.0`; its damage multiplier remains `1.2`. The final 200-seed
 default report measured 38.5% victories, 2.04 towers per run, and 22 median
 tribute after the final shop.
+
+## 2026-07-27 — Phase 3E rarity, divine skills, and hero levels
+
+### Rarity budgets preserve the existing card effects
+
+Draft slots roll independently at `65/27/8` common/rare/legendary weights and
+fall back only toward lower rarities. A one-time third-slot reroll prevents a
+same-rarity offer when another tier remains eligible, while the existing house
+card guarantee stays intact. Sharpened Edge remains at its shipped `+12%`
+effect and is classified rare rather than being weakened to the common
+`+8%` raw-damage ceiling. Rarity colours are centralized beside the weights so
+the later art pass can replace presentation without changing draft logic.
+
+### Conditional legends are evaluated at the damage boundary
+
+Static owned-card effects remain cached in `ResolvedModifiers`. Last Bastion
+and Ironblood instead use the pure `conditionalModifiers` layer at outgoing
+and incoming damage application, where current hall and agent HP ratios are
+available. This prevents volatile combat state from entering the modifier
+cache. Strict thresholds mean exactly 25% hall HP and exactly 40% agent HP do
+not activate the effects.
+
+### Earned skills follow the existing divine resolver boundary
+
+Skill definitions and structural target snapshots live in `divine/`; the
+engine alone mutates agents, threats, towers, cooldowns, and power. Skills are
+absent at run start and enter `unlockedSkills` in acquisition order through
+one-stack draft cards. That order also owns the `R/T/Y/U` hotkeys. The balance
+harness uses the same engine casting path and deterministically targets the
+enemy position containing the largest in-radius cluster.
+
+### Hero growth is run state, not house or meta progression
+
+Hero XP is awarded only from that hero's actual damage and killing blows.
+Level thresholds and derived damage, flat HP, and respawn-time changes are
+stored in the deterministic run snapshot. Hero level-ups never open a draft or
+change phase. Persistent Legacy state remains outside `GameState`.
+
+### Balance remains deliberately deferred
+
+Phase 3E changes the shipped power surface, so harness results are structural
+observations only. No wave multiplier, creature count, shop base price, house
+trait, or existing card effect was adjusted to pursue a win-rate target.
+Balancing waits until the remaining content slices are complete.

@@ -255,3 +255,32 @@
 - No work was offloaded to DGX Spark because Phase 3D required no heavy compute
   or generated assets. The planned 3E sprite pass can replace draw helpers
   without changing simulation state.
+
+## 2026-07-27 — Phase 3E rarity, active skills, and hero levels
+
+- Added weighted common, rare, and legendary draft tiers with downward-only
+  fallback, one-pass offer variety, the retained house-card guarantee, and
+  centralized placeholder colours. The pool now contains 30 cards, including
+  six run-defining legendary effects and four one-stack skill grants.
+- Kept Sharpened Edge's existing `+12%` effect and classified it rare rather
+  than retuning it to fit the new common ceiling.
+- Added Meteor Fall, Sanctuary, Chains of Dusk, and Resurgence as earned divine
+  skills. Pure divine resolution remains separated from engine application;
+  cooldowns, power spending, creature rooting, tower damage, break immunity,
+  deterministic revival, acquisition-order hotkeys, and new-skill feedback
+  are explicit run/UI state.
+- Added personal hero XP and five levels. Hero damage compounds by `1.08`, max
+  HP gains 30 per level, and respawn duration compounds by `0.92`; level-ups
+  update HUD/canvas feedback without pausing or opening a draft.
+- Extended the deterministic harness with offered/picked rarity distribution,
+  per-skill acquisition rates, final hero levels, and skill casts under a
+  largest-enemy-cluster auto strategy. Results are observations only; no wave,
+  creature, base shop, house-trait, or existing-card balance value was tuned.
+- The required 200-seed first-pick observation completed with 88 victories
+  (44.0%), 3.30 average final hero level, and 0.34 skill casts/run. Offered
+  cards were 51.2% common, 37.4% rare, and 11.4% legendary after eligibility,
+  fallback, variety, and house-guarantee rules; picked cards were 9.8%, 78.0%,
+  and 12.2%. Acquisition rates were Meteor 1.5%, Sanctuary 3.5%, Chains 2.0%,
+  and Resurgence 0.5%. These values were recorded without correction.
+- No work was offloaded to DGX Spark because implementation, tests, local
+  simulation, and browser validation remained within local resource limits.

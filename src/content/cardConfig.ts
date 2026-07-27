@@ -1,9 +1,28 @@
 import type { CardDefinition } from "../progression/progression.types";
 
+export const RARITY_WEIGHTS = {
+  common: 65,
+  rare: 27,
+  legendary: 8,
+} as const;
+
+export const RARITY_COLORS = {
+  common: "#9aa0a6",
+  rare: "#5aa9e6",
+  legendary: "#e8b73a",
+} as const;
+
+export const RARITY_TEXT_COLORS = {
+  common: "#50545a",
+  rare: "#1f638f",
+  legendary: "#73520a",
+} as const;
+
 export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "common_sharpened_edge",
     kind: "common",
+    rarity: "rare",
     name: "Sharpened Edge",
     description: "Fresh-honed steel lets every formation strike deeper.",
     maxStacks: 2,
@@ -12,6 +31,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "common_drilled_ranks",
     kind: "common",
+    rarity: "rare",
     name: "Drilled Ranks",
     description: "Relentless drills turn hesitation into a faster cadence.",
     maxStacks: 2,
@@ -20,6 +40,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "common_hardened_flesh",
     kind: "common",
+    rarity: "common",
     name: "Hardened Flesh",
     description: "Old scars become armor against the coming dark.",
     maxStacks: 3,
@@ -28,6 +49,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "common_wider_watch",
     kind: "common",
+    rarity: "common",
     name: "Wider Watch",
     description: "Far-seeing sentries sound the alarm before shadows close.",
     maxStacks: 2,
@@ -36,6 +58,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "common_unbroken_will",
     kind: "common",
+    rarity: "rare",
     name: "Unbroken Will",
     description: "Even bloodied ranks hold when lesser hearts would break.",
     maxStacks: 2,
@@ -44,6 +67,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "common_swift_muster",
     kind: "common",
+    rarity: "common",
     name: "Swift Muster",
     description: "Signal horns bring every warrior swiftly to the line.",
     maxStacks: 2,
@@ -52,6 +76,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "house_a_emberguard",
     kind: "house",
+    rarity: "rare",
     houseId: "house_a",
     name: "Emberguard",
     description: "Ashvale tempers its blades in the fire beneath the hall.",
@@ -61,6 +86,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "house_a_pyre_rites",
     kind: "house",
+    rarity: "rare",
     houseId: "house_a",
     name: "Pyre Rites",
     description: "Warm embers knit wounds while the war drums rest.",
@@ -70,6 +96,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "house_b_tidewall",
     kind: "house",
+    rarity: "rare",
     houseId: "house_b",
     name: "Tidewall",
     description: "Thornhold stands like a seawall against the black tide.",
@@ -79,6 +106,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "house_b_deep_horns",
     kind: "house",
+    rarity: "rare",
     houseId: "house_b",
     name: "Deep Horns",
     description: "Low horns carry the hall's alarm across the battlefield.",
@@ -88,6 +116,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "house_c_greenward",
     kind: "house",
+    rarity: "rare",
     houseId: "house_c",
     name: "Greenward",
     description: "Greymoor's living ward restores flesh and hardens bone.",
@@ -97,6 +126,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "house_c_thicket_pact",
     kind: "house",
+    rarity: "rare",
     houseId: "house_c",
     name: "Thicket Pact",
     description: "Each fallen invader pays tribute to the patient roots.",
@@ -106,6 +136,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "divine_wider_wrath",
     kind: "divine",
+    rarity: "rare",
     name: "Wider Wrath",
     description: "Your judgment rolls outward like thunder over the field.",
     maxStacks: 2,
@@ -114,6 +145,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "divine_open_channel",
     kind: "divine",
+    rarity: "rare",
     name: "Open Channel",
     description: "The veil thins and divine power returns in a brighter stream.",
     maxStacks: 2,
@@ -122,6 +154,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "hero_ashvale_ember_duelist",
     kind: "hero",
+    rarity: "rare",
     houseId: "house_a",
     heroId: "hero_ashvale",
     name: "Ember Duelist",
@@ -132,6 +165,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "hero_ashvale_rising_flame",
     kind: "hero",
+    rarity: "rare",
     houseId: "house_a",
     heroId: "hero_ashvale",
     name: "Rising Flame",
@@ -142,6 +176,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "hero_thornhold_iron_body",
     kind: "hero",
+    rarity: "rare",
     houseId: "house_b",
     heroId: "hero_thornhold",
     name: "Iron Body",
@@ -152,6 +187,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "hero_thornhold_oath_strike",
     kind: "hero",
+    rarity: "rare",
     houseId: "house_b",
     heroId: "hero_thornhold",
     name: "Oath Strike",
@@ -162,6 +198,7 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "hero_greymoor_wider_boughs",
     kind: "hero",
+    rarity: "rare",
     houseId: "house_c",
     heroId: "hero_greymoor",
     name: "Wider Boughs",
@@ -172,11 +209,109 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = [
   {
     id: "hero_greymoor_green_mercy",
     kind: "hero",
+    rarity: "rare",
     houseId: "house_c",
     heroId: "hero_greymoor",
     name: "Green Mercy",
     description: "Ivy's kills mend nearby allies beneath her living ward.",
     maxStacks: 2,
     effect: { heroOnKillHeal: 12 },
+  },
+  {
+    id: "legend_last_bastion",
+    kind: "common",
+    rarity: "legendary",
+    name: "Last Bastion",
+    description:
+      "While any hall is below 25% HP, every agent deals 30% more damage.",
+    maxStacks: 1,
+    effect: {},
+  },
+  {
+    id: "legend_martyrs_ember",
+    kind: "common",
+    rarity: "legendary",
+    name: "Martyr's Ember",
+    description: "Each agent death grants 4 divine power.",
+    maxStacks: 1,
+    effect: { divinePowerPerAgentDeath: 4 },
+  },
+  {
+    id: "legend_ironblood",
+    kind: "common",
+    rarity: "legendary",
+    name: "Ironblood",
+    description: "Agents below 40% HP take 35% less damage.",
+    maxStacks: 1,
+    effect: {},
+  },
+  {
+    id: "legend_ash_crown",
+    kind: "house",
+    rarity: "legendary",
+    houseId: "house_a",
+    name: "Ash Crown",
+    description: "Ashvale agents ignore the break rule entirely.",
+    maxStacks: 1,
+    effect: { ignoreBreak: true },
+  },
+  {
+    id: "legend_deeproot",
+    kind: "house",
+    rarity: "legendary",
+    houseId: "house_c",
+    name: "Deeproot",
+    description: "Gain 6 tribute per kill and towers cost 40% less.",
+    maxStacks: 1,
+    effect: { tributePerKillBonus: 6, towerCostMultiplier: 0.6 },
+  },
+  {
+    id: "legend_twin_souls",
+    kind: "hero",
+    rarity: "legendary",
+    name: "Twin Souls",
+    description:
+      "Heroes respawn in half the time and return with 150% of their normal max HP.",
+    maxStacks: 1,
+    effect: {
+      heroRespawnTicksMultiplier: 0.5,
+      heroRespawnHpMultiplier: 1.5,
+    },
+  },
+  {
+    id: "divine_grant_chains",
+    kind: "divine",
+    rarity: "rare",
+    name: "Chains of Dusk",
+    description: "Unlock the Chains of Dusk active divine skill.",
+    maxStacks: 1,
+    effect: { grantsSkill: "chains_of_dusk" },
+  },
+  {
+    id: "divine_grant_sanctuary",
+    kind: "divine",
+    rarity: "rare",
+    name: "Sanctuary",
+    description: "Unlock the Sanctuary active divine skill.",
+    maxStacks: 1,
+    effect: { grantsSkill: "sanctuary" },
+  },
+  {
+    id: "divine_grant_meteor",
+    kind: "divine",
+    rarity: "legendary",
+    name: "Meteor Fall",
+    description: "Unlock the Meteor Fall active divine skill.",
+    maxStacks: 1,
+    effect: { grantsSkill: "meteor_fall" },
+  },
+  {
+    id: "divine_grant_resurgence",
+    kind: "divine",
+    rarity: "legendary",
+    name: "Resurgence",
+    description: "Unlock the Resurgence active divine skill.",
+    maxStacks: 1,
+    effect: { grantsSkill: "resurgence" },
   },
 ];

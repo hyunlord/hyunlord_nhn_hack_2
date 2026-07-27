@@ -21,6 +21,7 @@ function threat(): ThreatEvent {
         agentDamage: 6,
         hallDamage: 5,
         lastAttackTick: -1,
+        haltedUntilTick: -1,
       },
       {
         id: "creature_a",
@@ -30,6 +31,7 @@ function threat(): ThreatEvent {
         agentDamage: 6,
         hallDamage: 5,
         lastAttackTick: -1,
+        haltedUntilTick: -1,
       },
     ],
   };

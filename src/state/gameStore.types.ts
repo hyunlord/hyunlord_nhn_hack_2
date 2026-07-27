@@ -1,10 +1,12 @@
 import type { Dispatch } from "react";
 import type { MiracleType } from "../divine/divine.types";
+import type { DivineSkillId } from "../divine/skillTypes";
 import type { GameState } from "../engine/engine.types";
 import type { ShopItemId } from "../build/build.types";
 
 export type GameAction =
   | { type: "selectMiracle"; miracle: MiracleType | null }
+  | { type: "selectSkill"; skill: DivineSkillId | null }
   | { type: "beginNextWave" }
   | { type: "chooseDraftCard"; offerId: string; cardId: string }
   | {
@@ -20,6 +22,12 @@ export type GameAction =
       miracle: MiracleType;
       x: number;
       y: number;
+    }
+  | {
+      type: "castSkill";
+      skill: DivineSkillId;
+      x: number;
+      y: number;
     };
 
 export interface CommitStateAction {
@@ -32,6 +40,8 @@ export interface GameStoreValue {
   dispatch: Dispatch<GameAction>;
   selectedMiracle: MiracleType | null;
   selectMiracle: (miracle: MiracleType | null) => void;
+  selectedSkill: DivineSkillId | null;
+  selectSkill: (skill: DivineSkillId | null) => void;
   towerPlacementActive: boolean;
   towerPreview: { x: number; y: number } | null;
 }

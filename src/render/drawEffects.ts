@@ -1,8 +1,15 @@
-import type { MiracleOutcome } from "../divine/divine.types";
+interface DivineVisualEffect {
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  readonly color: string;
+  readonly startTick: number;
+  readonly durationTicks: number;
+}
 
 export function drawEffects(
   context: CanvasRenderingContext2D,
-  effects: readonly MiracleOutcome[],
+  effects: readonly DivineVisualEffect[],
   currentTick: number,
 ): void {
   for (const effect of effects) {

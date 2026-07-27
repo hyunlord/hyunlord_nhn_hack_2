@@ -1,4 +1,7 @@
+import type { DivineSkillId } from "../divine/skillTypes";
+
 export type CardKind = "common" | "house" | "hero" | "divine";
+export type CardRarity = "common" | "rare" | "legendary";
 
 export interface CardEffect {
   attackDamageMultiplier?: number;
@@ -20,11 +23,17 @@ export interface CardEffect {
   heroRespawnTicksMultiplier?: number;
   heroAuraRadiusBonus?: number;
   heroOnKillHeal?: number;
+  grantsSkill?: DivineSkillId;
+  divinePowerPerAgentDeath?: number;
+  ignoreBreak?: boolean;
+  towerCostMultiplier?: number;
+  heroRespawnHpMultiplier?: number;
 }
 
 export interface CardDefinition {
   id: string;
   kind: CardKind;
+  rarity: CardRarity;
   name: string;
   description: string;
   houseId?: string;

@@ -3,9 +3,18 @@ import {
   useRef,
   type CSSProperties,
 } from "react";
-import { CARD_DEFINITIONS } from "../../content/cardConfig";
+import {
+  CARD_DEFINITIONS,
+  RARITY_COLORS,
+  RARITY_TEXT_COLORS,
+} from "../../content/cardConfig";
 import { HOUSE_CONFIG } from "../../content/houseConfig";
 import { useGameStore } from "../../state/gameStore";
+
+type DraftCardStyle = CSSProperties & {
+  readonly "--rarity-color": string;
+  readonly "--rarity-text-color": string;
+};
 
 export function DraftOverlay() {
   const { dispatch, state } = useGameStore();
@@ -114,6 +123,10 @@ export function DraftOverlay() {
           const stacks =
             progress.cards.find((owned) => owned.cardId === card.id)
               ?.stacks ?? 0;
+          const style: DraftCardStyle = {
+            "--rarity-color": RARITY_COLORS[card.rarity],
+            "--rarity-text-color": RARITY_TEXT_COLORS[card.rarity],
+          };
           return (
             <button
               className="draft-card"
@@ -128,10 +141,13 @@ export function DraftOverlay() {
               ref={(element) => {
                 buttonReferences.current[index] = element;
               }}
+              style={style}
               type="button"
             >
               <span className="draft-card__meta">
-                <span>{card.kind}</span>
+                <span>
+                  <b>{card.rarity}</b> · {card.kind}
+                </span>
                 <kbd>{index + 1}</kbd>
               </span>
               <strong>{card.name}</strong>

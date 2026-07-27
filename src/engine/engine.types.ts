@@ -7,6 +7,8 @@ import type {
   MiracleOutcome,
   MiracleType,
 } from "../divine/divine.types";
+import type { SkillOutcome } from "../divine/skillResolver";
+import type { DivineSkillId } from "../divine/skillTypes";
 import type { Highlight } from "../threat/highlightRecorder";
 import type { ThreatEvent } from "../threat/threatTypes";
 import type {
@@ -57,8 +59,15 @@ export interface GameState {
   highlights: Highlight[];
   divinePower: number;
   miracleCooldowns: Record<MiracleType, number>;
-  activeEffects: MiracleOutcome[];
+  unlockedSkills: DivineSkillId[];
+  skillCooldowns: Record<DivineSkillId, number>;
+  activeEffects: (MiracleOutcome | SkillOutcome)[];
   houseProgress: HouseProgress[];
+  heroProgress: {
+    heroId: string;
+    xp: number;
+    level: number;
+  }[];
   houseModifiers: {
     houseId: string;
     modifiers: ResolvedModifiers;

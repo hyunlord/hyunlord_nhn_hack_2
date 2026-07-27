@@ -17,6 +17,7 @@ export function GameCanvas() {
   const {
     dispatch,
     selectedMiracle,
+    selectedSkill,
     state,
     towerPlacementActive,
     towerPreview,
@@ -89,6 +90,7 @@ export function GameCanvas() {
         stateRef.current.agents,
         stateRef.current.houses,
         stateRef.current.houseModifiers,
+        stateRef.current.tick,
       );
       drawThreats(
         context,
@@ -132,14 +134,21 @@ export function GameCanvas() {
       dispatch({ type: "placeTower", ...point });
       return;
     }
-    if (selectedMiracle === null) {
+    if (selectedMiracle !== null) {
+      dispatch({
+        type: "castMiracle",
+        miracle: selectedMiracle,
+        ...point,
+      });
       return;
     }
-    dispatch({
-      type: "castMiracle",
-      miracle: selectedMiracle,
-      ...point,
-    });
+    if (selectedSkill !== null) {
+      dispatch({
+        type: "castSkill",
+        skill: selectedSkill,
+        ...point,
+      });
+    }
   }
 
   useEffect(() => {
@@ -159,7 +168,9 @@ export function GameCanvas() {
     <canvas
       aria-label="Living world with house agents and named heroes"
       className={
-        selectedMiracle === null && !towerPlacementActive
+        selectedMiracle === null &&
+        selectedSkill === null &&
+        !towerPlacementActive
           ? "game-canvas"
           : "game-canvas game-canvas--targeting"
       }

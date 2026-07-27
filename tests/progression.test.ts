@@ -42,6 +42,11 @@ const NEUTRAL_MODIFIERS: ResolvedModifiers = {
   heroRespawnTicksMultiplier: 1,
   heroAuraRadiusBonus: 0,
   heroOnKillHeal: 0,
+  damageTakenMultiplier: 1,
+  divinePowerPerAgentDeath: 0,
+  ignoreBreak: false,
+  towerCostMultiplier: 1,
+  heroRespawnHpMultiplier: 1,
 };
 
 function progress(
@@ -105,6 +110,7 @@ test("Given owned and foreign heroes, when eligibility is filtered, then only th
     {
       id: "hero_matching",
       kind: "hero",
+      rarity: "rare",
       heroId: "hero_ashvale",
       houseId: "house_a",
       name: "Matching Hero",
@@ -115,6 +121,7 @@ test("Given owned and foreign heroes, when eligibility is filtered, then only th
     {
       id: "hero_foreign",
       kind: "hero",
+      rarity: "rare",
       heroId: "hero_thornhold",
       houseId: "house_b",
       name: "Foreign Hero",
@@ -125,6 +132,7 @@ test("Given owned and foreign heroes, when eligibility is filtered, then only th
     {
       id: "hero_undefined",
       kind: "hero",
+      rarity: "rare",
       heroId: "hero_missing",
       houseId: "house_a",
       name: "Undefined Hero",
@@ -159,16 +167,24 @@ test("Given owned and foreign heroes, when eligibility is filtered, then only th
   assert.ok(!offer.cardIds.includes("common_sharpened_edge"));
 });
 
-test("Given the shipped card pool, when its budget is inspected, then it has twenty cards and only two bounded house-wide damage cards", () => {
+test("Given the Phase 3E card pool, when its budget is inspected, then thirty cards obey their rarity damage ceilings", () => {
   const damageCards = CARD_DEFINITIONS.filter(
     ({ effect }) => effect.attackDamageMultiplier !== undefined,
   );
 
-  assert.equal(CARD_DEFINITIONS.length, 20);
+  assert.equal(CARD_DEFINITIONS.length, 30);
   assert.equal(damageCards.length, 2);
   assert.ok(
     damageCards.every(
-      ({ effect }) => (effect.attackDamageMultiplier ?? 1) <= 1.15,
+      ({ effect, rarity }) =>
+        (effect.attackDamageMultiplier ?? 1) <=
+        (
+          rarity === "common"
+            ? 1.08
+            : rarity === "rare"
+              ? 1.15
+              : 1.25
+        ),
     ),
   );
 });

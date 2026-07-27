@@ -31,7 +31,9 @@ export interface Agent {
   isHero: boolean;
   heroId: string | null;
   heroLevel: number;
+  heroLevelUpTick: number;
   respawnAtTick: number | null;
+  breakImmuneUntilTick: number;
 }
 
 export interface ThreatPresence {
@@ -50,4 +52,5 @@ export interface AgentModifiers {
   readonly threatSenseRadiusBonus: number;
   readonly breakHpRatioDelta: number;
   readonly hallDefenseRadiusBonus: number;
+  readonly ignoreBreak?: boolean;
 }

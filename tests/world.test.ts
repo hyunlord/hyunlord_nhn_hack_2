@@ -22,7 +22,9 @@ function createAgent(overrides: Partial<Agent> = {}): Agent {
     isHero: false,
     heroId: null,
     heroLevel: 1,
+    heroLevelUpTick: -1,
     respawnAtTick: null,
+    breakImmuneUntilTick: -1,
     ...overrides,
   };
 }

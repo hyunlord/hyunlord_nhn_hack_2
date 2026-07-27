@@ -4,6 +4,8 @@ import { BALANCE_CONFIG } from "../content/balanceConfig";
 import { applyDamageToThreat } from "../threat/waveDirector";
 import type { ThreatEvent } from "../threat/threatTypes";
 import type { ResolvedModifiers } from "../progression/modifiers";
+import { conditionalModifiers } from "../progression/modifiers";
+import type { HouseProgress } from "../progression/progression.types";
 import { xpForDamage, xpForKill } from "../progression/xp";
 import {
   maxHpForAgent,
@@ -19,11 +21,20 @@ type HouseAmount = {
   readonly houseId: string;
   readonly amount: number;
 };
+type HeroAmount = {
+  readonly heroId: string;
+  readonly amount: number;
+};
 
 export type AgentDecision = {
   readonly agent: Agent;
   readonly intent: AgentIntent;
 };
+
+interface ConditionalCombatContext {
+  readonly houseProgress?: readonly HouseProgress[];
+  readonly hallLowestHpRatio?: number;
+}
 
 function distanceSquared(first: Point, second: Point): number {
   return (first.x - second.x) ** 2 + (first.y - second.y) ** 2;
@@ -35,14 +46,17 @@ export function applyAgentAttacks(
   tick: number,
   modifiersByHouse: ReadonlyMap<string, ResolvedModifiers>,
   bonusesByAgentId: ReadonlyMap<string, AgentCombatBonus> = new Map(),
+  conditionalContext: ConditionalCombatContext = {},
 ): {
   readonly agents: Agent[];
   readonly threat: ThreatEvent;
   readonly xpAwards: HouseAmount[];
+  readonly heroXpAwards: HeroAmount[];
   readonly creatureKillsByHouse: HouseAmount[];
 } {
   let currentThreat = threat;
   const xpByHouse = new Map<string, number>();
+  const xpByHero = new Map<string, number>();
   const creatureKillsByHouse = new Map<string, number>();
   let nextAgents = decisions.map(({ agent }) => agent);
   decisions.forEach(({ intent }, agentIndex) => {
@@ -113,7 +127,20 @@ export function applyAgentAttacks(
     const amount =
       BALANCE_CONFIG.AGENT_ATTACK_DAMAGE *
       modifiers.attackDamageMultiplier *
-      (bonusesByAgentId.get(agent.id)?.damageMultiplier ?? 1);
+      (bonusesByAgentId.get(agent.id)?.damageMultiplier ?? 1) *
+      (
+        conditionalModifiers(
+          conditionalContext.houseProgress?.find(
+            ({ houseId }) => houseId === agent.houseId,
+          )?.cards ?? [],
+          {
+            hallLowestHpRatio:
+              conditionalContext.hallLowestHpRatio ?? 1,
+            agentHpRatio:
+              agent.hp / maxHpForAgent(agent, modifiers),
+          },
+        ).attackDamageMultiplier ?? 1
+      );
     const hit: ThreatHit = {
       creatureId: target.creatureId,
       amount,
@@ -121,12 +148,19 @@ export function applyAgentAttacks(
     const actualDamage = Math.min(target.hp, amount);
     currentThreat = applyDamageToThreat(currentThreat, [hit]);
     const killed = actualDamage >= target.hp;
+    const xp =
+      xpForDamage(actualDamage) +
+      (killed ? xpForKill() : 0);
     xpByHouse.set(
       agent.houseId,
-      (xpByHouse.get(agent.houseId) ?? 0) +
-        xpForDamage(actualDamage) +
-        (killed ? xpForKill() : 0),
+      (xpByHouse.get(agent.houseId) ?? 0) + xp,
     );
+    if (agent.isHero && agent.heroId !== null) {
+      xpByHero.set(
+        agent.heroId,
+        (xpByHero.get(agent.heroId) ?? 0) + xp,
+      );
+    }
     if (killed && target.creatureId !== null) {
       creatureKillsByHouse.set(
         agent.houseId,
@@ -158,9 +192,12 @@ export function applyAgentAttacks(
         }
         return {
           ...candidate,
-          hp: Math.min(
-            maxHpForAgent(candidate, candidateModifiers),
-            candidate.hp + bonus.onKillHeal,
+          hp: Math.max(
+            candidate.hp,
+            Math.min(
+              maxHpForAgent(candidate, candidateModifiers),
+              candidate.hp + bonus.onKillHeal,
+            ),
           ),
         };
       });
@@ -179,6 +216,9 @@ export function applyAgentAttacks(
     xpAwards: [...xpByHouse.entries()]
       .sort(([first], [second]) => first.localeCompare(second))
       .map(([houseId, amount]) => ({ houseId, amount })),
+    heroXpAwards: [...xpByHero.entries()]
+      .sort(([first], [second]) => first.localeCompare(second))
+      .map(([heroId, amount]) => ({ heroId, amount })),
     creatureKillsByHouse: [...creatureKillsByHouse.entries()]
       .sort(([first], [second]) => first.localeCompare(second))
       .map(([houseId, amount]) => ({ houseId, amount })),

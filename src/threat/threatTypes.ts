@@ -36,6 +36,7 @@ export interface Creature {
   agentDamage: number;
   hallDamage: number;
   lastAttackTick: number;
+  haltedUntilTick: number;
 }
 
 export interface DarkMage {

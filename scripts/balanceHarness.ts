@@ -1,5 +1,7 @@
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
+import { CARD_DEFINITIONS } from "../src/content/cardConfig";
 import type { HouseSelection } from "../src/content/houseConfig";
+import type { DivineSkillId } from "../src/divine/skillTypes";
 import { WAVE_DEFINITIONS } from "../src/content/waveConfig";
 import type { GameState } from "../src/engine/engine.types";
 import {
@@ -25,6 +27,7 @@ import {
   type AutoShopDiagnostics,
   type AutoShopState,
 } from "./autoShopStrategy";
+import { castFirstAvailableSkill } from "./autoSkillStrategy";
 
 const MAX_RUN_TICKS = 50_000;
 
@@ -55,7 +58,11 @@ export type RunSample = {
   readonly waves: readonly WaveSample[];
   readonly draftCount: number;
   readonly finalLevels: readonly number[];
+  readonly finalHeroLevels: readonly number[];
+  readonly offeredCardIds: readonly string[];
   readonly pickedCardIds: readonly string[];
+  readonly acquiredSkillIds: readonly DivineSkillId[];
+  readonly skillCasts: number;
   readonly towersBuilt: number;
   readonly tributeUnspent: number;
   readonly heroDeaths: number;
@@ -130,6 +137,8 @@ function runSimulation(
   const kills = WAVE_DEFINITIONS.map(() => 0);
   const clearTicks = WAVE_DEFINITIONS.map<number | null>(() => null);
   const pickedCardIds: string[] = [];
+  const offeredCardIds: string[] = [];
+  let skillCasts = 0;
   let autoShopState: AutoShopState = { nextCategoryIndex: 0 };
   let shopDiagnostics = createAutoShopDiagnostics();
   let tributeAfterFinalShop = 0;
@@ -140,6 +149,7 @@ function runSimulation(
       if (offer === undefined || offer.cardIds.length === 0) {
         throw new SimulationError(seed, state.tick, "draft has no cards");
       }
+      offeredCardIds.push(...offer.cardIds);
       const cardId =
         pickMode === "random"
           ? pickRng.pick(offer.cardIds)
@@ -168,6 +178,11 @@ function runSimulation(
     }
 
     const before = state;
+    const autoSkill = castFirstAvailableSkill(state);
+    state = autoSkill.state;
+    if (autoSkill.castSkillId !== null) {
+      skillCasts += 1;
+    }
     const next = advanceTick(state, world.rng);
     if (before.phase === "preparation" && next.phase === "wave") {
       markReached(reached, next, seed);
@@ -232,7 +247,15 @@ function runSimulation(
     })),
     draftCount: pickedCardIds.length,
     finalLevels: state.houseProgress.map(({ level }) => level),
+    finalHeroLevels: state.heroProgress.map(({ level }) => level),
+    offeredCardIds,
     pickedCardIds,
+    acquiredSkillIds: CARD_DEFINITIONS.flatMap(({ id, effect }) =>
+      pickedCardIds.includes(id) && effect.grantsSkill !== undefined
+        ? [effect.grantsSkill]
+        : [],
+    ),
+    skillCasts,
     towersBuilt: state.shopPurchases.raise_tower,
     tributeUnspent:
       shopMode === "auto" ? tributeAfterFinalShop : state.tribute,

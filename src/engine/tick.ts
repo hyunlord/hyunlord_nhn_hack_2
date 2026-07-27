@@ -25,6 +25,7 @@ import {
 import { CARD_DEFINITIONS } from "../content/cardConfig";
 import { resolveModifiers } from "../progression/modifiers";
 import {
+  applyHeroProgressAwards,
   applyProgressionAwards,
   divineModifiersForState,
   modifiersForHouse,
@@ -35,6 +36,7 @@ import { TOWER_RUBBLE_TICKS } from "../build/structures";
 import type { CardEffect } from "../progression/progression.types";
 
 export { castMiracle } from "./miracleApplication";
+export { castSkill } from "./skillApplication";
 
 function getWaveDefinition(index: number): WaveDefinition {
   const definition = WAVE_DEFINITIONS[index];
@@ -110,6 +112,15 @@ function applyTickMaintenance(state: GameState, tick: number): GameState {
       blessing: Math.max(0, state.miracleCooldowns.blessing - 1),
       curse: Math.max(0, state.miracleCooldowns.curse - 1),
     },
+    skillCooldowns: {
+      meteor_fall: Math.max(0, state.skillCooldowns.meteor_fall - 1),
+      sanctuary: Math.max(0, state.skillCooldowns.sanctuary - 1),
+      chains_of_dusk: Math.max(
+        0,
+        state.skillCooldowns.chains_of_dusk - 1,
+      ),
+      resurgence: Math.max(0, state.skillCooldowns.resurgence - 1),
+    },
     activeEffects: state.activeEffects.filter(
       (effect) => tick < effect.startTick + effect.durationTicks,
     ),
@@ -168,6 +179,26 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
       kills * modifiersForHouse(state, houseId).tributePerKillBonus,
     0,
   );
+  const divinePowerFromDeaths = combat.agents.reduce(
+    (sum, agent) => {
+      const previous = state.agents.find(({ id }) => id === agent.id);
+      if (
+        agent.hp > 0 ||
+        previous === undefined ||
+        previous.hp <= 0
+      ) {
+        return sum;
+      }
+      return (
+        sum +
+        modifiersForHouse(
+          state,
+          agent.houseId,
+        ).divinePowerPerAgentDeath
+      );
+    },
+    0,
+  );
   const tribute =
     state.tribute +
     combat.creatureKills * BALANCE_CONFIG.TRIBUTE_PER_CREATURE_KILL +
@@ -182,6 +213,10 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
       activeThreat: combat.activeThreat,
       tribute,
       heroDeaths,
+      divinePower: Math.min(
+        BALANCE_CONFIG.DIVINE_POWER_MAX,
+        state.divinePower + divinePowerFromDeaths,
+      ),
     },
     tick,
   );
@@ -250,10 +285,12 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
             );
             return {
               ...agent,
-              hp: Math.min(
-                maxHpForAgent(agent, modifiers),
-                agent.hp +
-                  modifiers.interWaveHealBonus,
+              hp: Math.max(
+                agent.hp,
+                Math.min(
+                  maxHpForAgent(agent, modifiers),
+                  agent.hp + modifiers.interWaveHealBonus,
+                ),
               ),
             };
           }),
@@ -262,7 +299,7 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
     }
   }
   return applyProgressionAwards(
-    resolved,
+    applyHeroProgressAwards(resolved, combat.heroXpAwards, tick),
     combat.xpAwards,
     rng,
   );
@@ -329,6 +366,13 @@ export function createInitialState(
       highlights: [],
       divinePower: BALANCE_CONFIG.DIVINE_POWER_START,
       miracleCooldowns: { lightning: 0, blessing: 0, curse: 0 },
+      unlockedSkills: [],
+      skillCooldowns: {
+        meteor_fall: 0,
+        sanctuary: 0,
+        chains_of_dusk: 0,
+        resurgence: 0,
+      },
       activeEffects: [],
       houseProgress: houses.map(({ id }) => ({
         houseId: id,
@@ -336,6 +380,15 @@ export function createInitialState(
         level: 1,
         cards: [],
       })),
+      heroProgress: agents
+        .filter(
+          (agent) => agent.isHero && agent.heroId !== null,
+        )
+        .map((agent) => ({
+          heroId: agent.heroId ?? agent.id,
+          xp: 0,
+          level: 1,
+        })),
       houseModifiers: houses.map(({ id }) => ({
         houseId: id,
         modifiers: resolveModifiers(

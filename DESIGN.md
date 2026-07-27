@@ -42,6 +42,14 @@ restrained blueprint-like interface surrounding a dark, vignetted world map.
 | Draft panel | `--draft-panel` | `#fff8df` | Draft card surface |
 | Draft ink | `--draft-ink` | `#252016` | Draft card text |
 | Draft accent | `--draft-accent` | `#d8c879` | Draft borders and labels |
+| Common rarity | rarity config | `#9aa0a6` border / `#50545a` text | Common draft identity |
+| Rare rarity | rarity config | `#5aa9e6` border / `#1f638f` text | Rare draft identity |
+| Legendary rarity | rarity config | `#e8b73a` border / `#73520a` text | Legendary draft identity |
+| Meteor Fall | skill config | `#f06b3e` | Skill border and selected state |
+| Sanctuary | skill config | `#7ed6a5` | Skill border and selected state |
+| Chains of Dusk | skill config | `#8e73d1` | Skill border and selected state |
+| Resurgence | skill config | `#f3d37a` | Skill border and selected state |
+| Hero progress | HUD token | `#e8b73a` bar / `#9d7217` text | Hero XP and level emphasis |
 | Shop veil | `--shop-veil` | `rgba(26, 22, 19, 0.96)` | Intermission shop surface |
 | Valid placement | canvas token | `rgba(108, 190, 132, 0.22)` | Valid tower preview |
 | Invalid placement | canvas token | `rgba(214, 91, 76, 0.22)` | Invalid tower preview |
@@ -83,11 +91,17 @@ The content width is capped at 1200px and arranged with CSS Grid.
 - One row per house with configured swatch, living-agent count, and power
 - Existing scaffold spacing and border treatment remain unchanged
 
-### Miracle controls
+### Unified ability controls
 
-- One semantic button per configured miracle with label, cost, and cooldown
-- The configured miracle color drives the border/accent and canvas effect
+- One semantic button per configured miracle or acquired divine skill with
+  label, cost, and cooldown
+- Miracles retain `Q`/`W`/`E`; skills take `R`/`T`/`Y`/`U` in acquisition
+  order
+- The configured ability color drives the enabled border, key, selected state,
+  and canvas effect
 - Selected state uses a low-alpha tonal fill; disabled state remains legible
+- Disabled controls use explicit neutral surface, border, and text colors
+  instead of reducing whole-button opacity
 - Keyboard focus uses a two-pixel outline and selected buttons expose
   `aria-pressed`
 
@@ -114,6 +128,8 @@ The content width is capped at 1200px and arranged with CSS Grid.
   high-contrast name plate below so labels never collide with health tracks
 - Greymoor's support radius is shown with a restrained green fill and outline
 - Heroes render after regular agents so their silhouette remains readable
+- The HUD gives each hero a named level row and native XP progress element;
+  canvas labels include level, and a short gold ring marks a level-up
 
 ### Intermission shop
 
@@ -130,8 +146,10 @@ The content width is capped at 1200px and arranged with CSS Grid.
   a dark veil
 - The house color, house name, and newly reached level form the header
 - Up to three bordered cards appear side by side at desktop and tablet widths;
-  each includes kind, name, one-sentence description, current stacks, and its
-  `1`/`2`/`3` shortcut
+  each includes rarity, kind, name, one-sentence description, current stacks,
+  and its `1`/`2`/`3` shortcut
+- Bright centralized rarity colors identify the three-pixel card border while
+  darker companion colors keep the rarity text readable on the light card
 - At 520px and below the cards stack vertically to preserve readable text and
   44px minimum targets
 - The overlay is a labeled modal region, announces the queued-draft count, and

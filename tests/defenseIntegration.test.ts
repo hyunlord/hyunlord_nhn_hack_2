@@ -44,6 +44,7 @@ function combatStateForHouse(houseId: HouseId, hp: number) {
           agentDamage: BALANCE_CONFIG.CREATURE_ATTACK_DAMAGE,
           hallDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
           lastAttackTick: -1,
+          haltedUntilTick: -1,
         }],
       },
     },
@@ -113,6 +114,7 @@ test("Given an agent whose hall is destroyed, when a foreign hall is attacked, t
             agentDamage: BALANCE_CONFIG.CREATURE_ATTACK_DAMAGE,
             hallDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
             lastAttackTick: -1,
+            haltedUntilTick: -1,
           },
         ],
       },
@@ -167,6 +169,7 @@ test("Given a safe home and a threatened foreign hall, when an aggressive defend
         agentDamage: BALANCE_CONFIG.CREATURE_ATTACK_DAMAGE,
         hallDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
         lastAttackTick: -1,
+        haltedUntilTick: -1,
       }],
     },
   };

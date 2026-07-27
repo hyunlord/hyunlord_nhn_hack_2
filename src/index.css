@@ -552,6 +552,7 @@ button {
 }
 
 .miracle-panel {
+  grid-column: span 2;
   min-height: 112px;
   padding: var(--space-4);
   border: 1px solid var(--border);
@@ -566,22 +567,46 @@ button {
 
 .miracle-button-list {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--space-2);
   margin-top: var(--space-4);
 }
 
 .miracle-button {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: var(--space-2);
-  min-height: 40px;
+  min-height: 44px;
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--miracle-color);
   color: var(--text);
   background: var(--panel);
   cursor: pointer;
   text-align: left;
+}
+
+.miracle-button kbd {
+  min-width: 24px;
+  padding: 2px 5px;
+  border: 1px solid currentColor;
+  color: var(--miracle-color);
+  text-align: center;
+}
+
+.miracle-button--new {
+  animation: ability-acquired 500ms ease-in-out 3;
+}
+
+@keyframes ability-acquired {
+  50% {
+    box-shadow: 0 0 0 4px color-mix(
+      in srgb,
+      var(--miracle-color) 42%,
+      transparent
+    );
+    transform: translateY(-2px);
+  }
 }
 
 .miracle-button[aria-pressed="true"] {
@@ -594,8 +619,15 @@ button {
 }
 
 .miracle-button:disabled {
+  border-color: var(--border);
+  color: var(--muted);
+  background: #f1eee5;
   cursor: not-allowed;
-  opacity: 0.5;
+}
+
+.miracle-button:disabled kbd,
+.miracle-button:disabled .miracle-cooldown {
+  color: var(--text);
 }
 
 .miracle-cost,
@@ -721,6 +753,53 @@ button {
   border-radius: 50%;
 }
 
+.hero-progress-list {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.hero-progress-list h3 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.8rem;
+}
+
+.hero-progress-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(80px, 0.6fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.hero-progress-row span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hero-progress-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-progress-row strong {
+  line-height: 1.1;
+}
+
+.hero-progress-row small {
+  color: #9d7217;
+  font-weight: 700;
+}
+
+.hero-progress-row progress {
+  width: 100%;
+  accent-color: #e8b73a;
+}
+
 .draft-overlay {
   --draft-house: var(--draft-accent);
   position: absolute;
@@ -766,7 +845,7 @@ button {
   gap: var(--space-2);
   min-height: 176px;
   padding: var(--space-4);
-  border: 1px solid var(--draft-house);
+  border: 3px solid var(--rarity-color);
   color: var(--draft-ink);
   background: var(--draft-panel);
   cursor: pointer;
@@ -774,8 +853,7 @@ button {
 }
 
 .draft-card:hover {
-  border-color: var(--draft-accent);
-  background: color-mix(in srgb, var(--draft-house) 10%, var(--draft-panel));
+  background: color-mix(in srgb, var(--rarity-color) 12%, var(--draft-panel));
 }
 
 .draft-card:focus-visible {
@@ -789,6 +867,11 @@ button {
   color: var(--muted);
   font-size: 0.7rem;
   text-transform: uppercase;
+}
+
+.draft-card__meta b {
+  color: var(--rarity-text-color);
+  letter-spacing: 0.08em;
 }
 
 .draft-card kbd {
@@ -1053,6 +1136,10 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .miracle-panel {
+    grid-column: span 1;
+  }
+
   .game-canvas {
     min-height: 200px;
   }
@@ -1067,9 +1154,14 @@ button {
   }
 
   .draft-overlay {
+    position: relative;
+    inset: auto;
     align-content: start;
-    overflow-y: auto;
     padding: var(--space-4);
+  }
+
+  .canvas-panel:has(.draft-overlay) .game-canvas {
+    display: none;
   }
 
   .draft-card-list {

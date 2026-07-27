@@ -52,6 +52,7 @@ test("Given two ordered attackers finish one creature, when attacks resolve, the
       agentDamage: 1,
       hallDamage: 1,
       lastAttackTick: -1,
+      haltedUntilTick: -1,
     }],
   };
   const modifiers = new Map(

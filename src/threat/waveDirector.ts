@@ -94,6 +94,9 @@ export function stepThreat(
     ) {
       const targetDistance = Math.sqrt(distanceSquared(creature, target));
       if (targetDistance > BALANCE_CONFIG.CREATURE_ATTACK_RANGE) {
+        if (tick < creature.haltedUntilTick) {
+          return { ...creature };
+        }
         return {
           ...creature,
           ...moveToward(
@@ -129,6 +132,9 @@ export function stepThreat(
       objectiveDistance >
       BALANCE_CONFIG.CREATURE_ATTACK_RANGE + objective.radius
     ) {
+      if (tick < creature.haltedUntilTick) {
+        return { ...creature };
+      }
       return {
         ...creature,
         ...moveToward(

@@ -19,6 +19,7 @@ export function drawHeroes(
   agents: readonly Agent[],
   houses: readonly House[],
   modifiersByHouse: readonly ModifierEntry[],
+  currentTick: number,
 ): void {
   const colorsByHouse = new Map(
     houses.map((house) => [house.id, house.color] as const),
@@ -60,6 +61,26 @@ export function drawHeroes(
     context.strokeStyle = "rgba(255, 248, 214, 0.96)";
     context.lineWidth = 3;
     context.stroke();
+    if (
+      hero.heroLevelUpTick >= 0 &&
+      currentTick - hero.heroLevelUpTick < 40
+    ) {
+      const flourishProgress =
+        (currentTick - hero.heroLevelUpTick) / 40;
+      context.beginPath();
+      context.arc(
+        hero.x,
+        hero.y,
+        HERO_RADIUS + 8 + flourishProgress * 18,
+        0,
+        Math.PI * 2,
+      );
+      context.globalAlpha = Math.max(0, 1 - flourishProgress);
+      context.strokeStyle = "#e8b73a";
+      context.lineWidth = 2;
+      context.stroke();
+      context.globalAlpha = 1;
+    }
 
     const maxHp = maxHpForAgent(hero, modifiers);
     const barX = hero.x - HP_BAR_WIDTH / 2;
@@ -78,7 +99,8 @@ export function drawHeroes(
     context.textAlign = "center";
     context.textBaseline = "top";
     const labelY = hero.y + HERO_RADIUS + 12;
-    const labelWidth = context.measureText(definition.name).width;
+    const label = `${definition.name} · Lv ${hero.heroLevel}`;
+    const labelWidth = context.measureText(label).width;
     context.fillStyle = "rgba(26, 22, 19, 0.88)";
     context.fillRect(
       hero.x - labelWidth / 2 - LABEL_PADDING_X,
@@ -87,6 +109,6 @@ export function drawHeroes(
       LABEL_HEIGHT,
     );
     context.fillStyle = "rgba(255, 253, 246, 0.96)";
-    context.fillText(definition.name, hero.x, labelY);
+    context.fillText(label, hero.x, labelY);
   }
 }

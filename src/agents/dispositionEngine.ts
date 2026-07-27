@@ -9,6 +9,7 @@ import type {
 type Point = { readonly x: number; readonly y: number };
 
 export interface DefenseContext {
+  readonly tick?: number;
   readonly ownHall: { readonly x: number; readonly y: number; readonly hp: number } | null;
   readonly rallyHall: Point | null;
   readonly threatenedHalls: readonly {
@@ -112,6 +113,8 @@ export function decideIntent(
     (BALANCE_CONFIG.INITIAL_HP + modifiers.maxHpBonus) *
     (modifiers.maxHpMultiplier ?? 1);
   const isBroken =
+    !modifiers.ignoreBreak &&
+    (context.tick ?? 0) >= agent.breakImmuneUntilTick &&
     agent.hp <
       maxHp *
         Math.max(
