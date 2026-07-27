@@ -83,6 +83,16 @@ const HALL: HallSnapshot = {
   hp: BALANCE_CONFIG.HALL_HP,
 };
 
+function createDistantThreat(): ThreatEvent {
+  const baseCreature = createThreat().creatures[0];
+  if (baseCreature === undefined) {
+    throw new RangeError("Expected a creature fixture.");
+  }
+  return createThreat({
+    creatures: [{ ...baseCreature, x: 20 }],
+  });
+}
+
 test("Given reordered house ids and equal seeds, when a dormant traitor is assigned directly, then the result is order-independent", () => {
   const first = assignTraitor(
     ["house_c", "house_a", "house_b"],
@@ -121,23 +131,38 @@ test("Given every configured wave, when spawned, then scaling, mage presence, an
   assert.equal(new Set(ids).size, ids.length);
   assert.ok(ids.every((id) => /^w\d+_creature_\d{2}$/.test(id)));
   assert.equal(
-    threats[2]?.creatures[0]?.hp,
+    threats[1]?.creatures[0]?.hp,
     Math.round(
       BALANCE_CONFIG.CREATURE_HP *
-        getDefinition(2).creatureHpMultiplier,
+        getDefinition(1).creatureHpMultiplier,
     ),
   );
   assert.ok(
-    (threats[2]?.creatures[0]?.hp ?? 0) >
+    (threats[1]?.creatures[0]?.hp ?? 0) >
       (threats[0]?.creatures[0]?.hp ?? Number.POSITIVE_INFINITY),
   );
 });
 
-test("Given no nearby agent, when a creature reaches a hall, then it attacks the hall on cadence", () => {
-  const threat = createThreat();
+test("Given no nearby agent, when a distant creature steps, then it moves toward the hall", () => {
+  const threat = createDistantThreat();
   const farAgent = createTarget("agent_far", 400, 400);
+  const result = stepThreat(threat, [farAgent], [HALL], 0);
 
-  const result = stepThreat(threat, [farAgent], [HALL], 9);
+  assert.ok((result.threat.creatures[0]?.x ?? 0) > 20);
+  assert.deepEqual(result.agentDamages, []);
+  assert.deepEqual(result.hallDamages, []);
+});
+
+test("Given no nearby agent, when a distant creature keeps advancing, then it eventually damages the hall on cadence", () => {
+  const farAgent = createTarget("agent_far", 400, 400);
+  let result = stepThreat(createDistantThreat(), [farAgent], [HALL], 0);
+  let tick = 0;
+
+  while (result.hallDamages.length === 0) {
+    tick += 1;
+    assert.ok(tick < 200, "Creature did not reach the hall.");
+    result = stepThreat(result.threat, [farAgent], [HALL], tick);
+  }
 
   assert.deepEqual(result.agentDamages, []);
   assert.deepEqual(result.hallDamages, [
@@ -146,7 +171,7 @@ test("Given no nearby agent, when a creature reaches a hall, then it attacks the
       amount: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
     },
   ]);
-  assert.equal(result.threat.creatures[0]?.lastAttackTick, 9);
+  assert.equal(result.threat.creatures[0]?.lastAttackTick, tick);
 });
 
 test("Given a nearby agent and a hall, when a creature chooses a target, then agent aggro takes priority", () => {

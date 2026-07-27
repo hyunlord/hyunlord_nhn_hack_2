@@ -89,5 +89,11 @@
   and loses during wave 1; browser QA reached defeat at tick 2,191 with 39
   agents alive, four tribute, and 12 of 14 creatures remaining. A later
   balancing pass should address it explicitly.
+- A completion audit sampled 200 consecutive deterministic seeds: none reached
+  wave 2, while the strongest run killed 11 creatures before defeat. Fresh
+  StrictMode browser QA measured exactly 40 ticks over two seconds, captured no
+  console warnings or errors, and reconfirmed visible hall rubble, terminal
+  controls, and full restart reset. Tests now exercise a creature's complete
+  hall-approach path and the first configured HP multiplier directly.
 - No work was offloaded to DGX Spark because implementation, tests, build, and
   browser QA were lightweight local workloads.
