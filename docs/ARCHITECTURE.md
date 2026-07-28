@@ -46,8 +46,9 @@ simulation axis and meta is the eighth application axis.
 APIs remain outside all simulation directories.
 
 `build/` owns the tribute-shop catalogue, tower definitions, and pure placement
-validation. The integrating engine owns live hall/tower snapshots and composes
-their combat effects. Tower-placement mode and its hover point are transient
+validation. The integrating engine owns the live keep, three banners, and tower
+snapshots and composes their combat effects. Tower-placement mode and its hover
+point are transient
 React store state, so cancelling or moving a preview cannot alter the
 replayable simulation snapshot.
 
@@ -61,9 +62,9 @@ phase mounts the simulation provider.
 ## State and randomness
 
 `GameState` contains the complete replayable world snapshot: phase, wave
-index, tribute, houses, halls, towers, agents, heroes, active threats, miracle
-resources, effects, house progression, cached modifiers, shop history, wave
-summaries, and queued drafts. The provider
+index, tribute, houses, one keep, three banners, towers, agents, heroes, active
+threats, miracle resources, effects, house progression, cached modifiers, shop
+history, wave summaries, and queued drafts. The provider
 owns the stateful seeded RNG. Event handlers and the
 animation-frame loop compute a complete next snapshot before dispatching
 `{ type: "commitState", next }`; the reducer only returns that snapshot and
@@ -84,7 +85,7 @@ scaling.
 ```text
 preparation
     ↓ tick 300, spawn wave 0
-wave ── all halls destroyed ──→ defeat
+wave ── keep destroyed ──→ defeat
   │
   ├── non-final clear ──→ intermission ── explicit continue ──→ next wave
   │
@@ -97,39 +98,45 @@ restores it only after the final queued card is selected.
 
 On each wave tick the engine:
 
-1. derives ID-bearing structural threat presences and per-agent hall contexts;
-2. decides personal response, hall defense, reinforcement, or retreat and
-   applies directed movement;
+1. derives ID-bearing defensive-structure threat presences and per-agent keep,
+   banner, and shared battle-line contexts;
+2. decides personal response, shared-line defense, reinforcement, fracture, or
+   retreat and applies directed movement;
 3. resolves defender attacks in stable agent-array order, preserving exact
    damage and killing-blow attribution;
 4. resolves tower fire in stable tower order;
 5. advances creatures and the optional mage;
-6. aggregates agent, tower, and hall damage;
+6. aggregates agent, tower, keep, and banner damage;
 7. awards per-creature tribute and house XP;
 8. checks defeat before wave clear, then awards the clear reward;
 9. applies threshold growth, generates sorted house drafts, and pauses.
 
-Creatures prioritize a living agent within aggro range, then the nearest
-surviving tower or hall. The mage ignores agents and towers and moves directly
-toward a hall.
-Distance ties and returned damage arrays are ordered by stable IDs.
+Creatures prioritize a living agent within aggro range, then the nearest living
+defensive structure among banners, the keep, and towers. The mage ignores
+agents and targets the nearest living defensive structure. Distance ties and
+returned damage arrays are ordered by stable IDs.
 
-Agents whose hall survives defend threats near that objective even when the
-threat is outside personal sense range. Once their hall falls, they rally to
-the nearest surviving hall and enter the helping state while engaging its
-attackers. Low-HP timid agents fall back toward that same rally point, and
-agents outside the home leash return before resuming idle wandering.
+All selected houses occupy one battle line around the keep. The
+`KEEP_DEFENSE_RADIUS` is 230 world units and supplies the shared defense
+context; class rank and chosen-house lateral bias determine each agent's place
+within that line. A living house banner permits wave-start recruitment. When
+that banner reaches zero HP, recruitment stops and the house becomes fractured:
+its regular agents pull inward with reduced cohesion and increased jitter
+instead of switching to a separate structure-specific rally point. Low-HP timid
+agents still fall back toward the shared keep, and agents outside the defense
+context return before resuming idle wandering.
 
 ## Rendering
 
-Canvas draw order is background → halls → towers → tower rubble → agents →
-heroes → threats → effects, followed by the transient tower preview. Halls
-remain visible as rubble at zero HP; destroyed towers leave a timed visual
-record but no longer occupy a placement slot. Phase 4B combat feedback is
-render-local: hit flashes, death puffs, hall pulses, shake, and wave banners
-are derived by renderer-side snapshot comparison and are never persisted into
-`GameState`. Rendering reads immutable snapshots and never consumes RNG or
-advances the simulation. React owns only presentation and user actions: house
+Canvas draw order is background → `drawDefenses` (one keep, then three banners)
+→ towers → tower rubble → the shared agent battle line → heroes → threats →
+effects, followed by the transient tower preview. Destroyed banners retain a
+compact fallen marker; destroyed towers leave a timed visual record but no
+longer occupy a placement slot. Combat feedback is render-local: hit flashes,
+death puffs, keep/banner damage pulses, banner-loss announcements, shake, and
+wave banners are derived by renderer-side snapshot comparison and are never
+persisted into `GameState`. Rendering reads immutable snapshots and never
+consumes RNG or advances the simulation. React owns only presentation and user actions: house
 selection, miracle selection/casting, draft selection, intermission purchases
 and tower placement, continuation, summary processing, and retry with a fresh
 deterministic seed.
@@ -186,8 +193,8 @@ population rules. Creation, wave recruitment, combat, movement, and rendering
 all read the same unit-class definition instead of copying combat constants.
 
 At each wave boundary, `src/engine/population.ts` recruits by current house
-level and living regular count. A destroyed hall produces nothing, caps are
-hard, and existing agents are never healed. The population history is stored
+level and living regular count. A destroyed house banner produces nothing,
+caps are hard, and existing agents are never healed. The population history is stored
 in deterministic run state and copied into the terminal summary.
 
 Modifier resolution is normalized in this order: class base, house traits,

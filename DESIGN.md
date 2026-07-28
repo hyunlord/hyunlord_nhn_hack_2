@@ -51,7 +51,7 @@ restrained blueprint-like interface surrounding a dark, vignetted world map.
 | Resurgence | skill config | `#f3d37a` | Skill border and selected state |
 | Hero progress | HUD token | `#e8b73a` bar / `#9d7217` text | Hero XP and level emphasis |
 | Shop veil | `--shop-veil` | `rgba(26, 22, 19, 0.96)` | Intermission shop surface |
-| Stronghold ground core | `--stronghold-ground-core` | `rgba(149, 116, 72, 0.18)` | Worn-earth center below the three halls |
+| Stronghold ground core | `--stronghold-ground-core` | `rgba(149, 116, 72, 0.18)` | Worn-earth center below the shared keep and three banners |
 | Stronghold ground rim | `--stronghold-ground-rim` | `rgba(94, 72, 48, 0.08)` | Outer falloff for the radius-170 stronghold patch |
 | Keep stone | canvas token | `#8f8a7d` | Shared keep body |
 | Keep HP | canvas token | `#d8c879` | Shared keep health fill |
@@ -241,12 +241,18 @@ The content width is capped at 1200px and arranged with CSS Grid.
 ### Keep, banners, and combat transients
 
 - The shared stronghold is marked by one radius-170 worn-earth patch centered at
-  `STRONGHOLD_CENTER`; it renders below the keep, banners, towers, agents, heroes, and
-  threats.
+  `STRONGHOLD_CENTER`; it renders below the keep, three banners, towers, the
+  shared battle line, heroes, and threats. The simulation's
+  `KEEP_DEFENSE_RADIUS` is 230 world units and is distinct from this visual
+  ground-patch radius.
 - Canvas structure order is exactly one neutral keep followed by three
   house-colour banners. Destroyed banners retain a compact fallen marker.
-- Defense damage pulses, death puffs, ranged volleys, wave-start banners, and
-  one-shot localized banner-destruction announcements are render-local effects.
+- `drawDefenses` owns that keep-then-banner order. Banner HP controls each
+  house's wave-start recruitment and fractured presentation; only keep loss
+  ends the run.
+- Keep and banner damage pulses, death puffs, ranged volleys, wave-start
+  banners, and one-shot localized banner-destruction announcements are
+  render-local effects.
   They consume simulation facts read-only and never add presentation keys to
   `GameState`.
 - Agents whose banner has fallen render at `0.35` alpha, clamped to the
@@ -259,7 +265,7 @@ The content width is capped at 1200px and arranged with CSS Grid.
 - The outcome headline is paired with a factual run ledger, not a celebratory
   illustration
 - Legacy earnings are itemized by base, waves, victory, surviving agents,
-  surviving halls, and newly earned achievements
+  surviving banners, and newly earned achievements
 - Retry preserves the ordered trio with a fresh seed; return exits to the
   persistent Legacy overview
 
