@@ -2,7 +2,8 @@ import type { Agent } from "../agents/agentTypes";
 import type { ResolvedModifiers } from "../progression/modifiers";
 import { conditionalModifiers } from "../progression/modifiers";
 import type { HouseProgress } from "../progression/progression.types";
-import type { Hall } from "./engine.types";
+import type { DefenseStructureId } from "../threat/threatTypes";
+import type { Banner, Keep } from "./engine.types";
 import {
   maxHpForAgent,
   scheduleHeroDeath,
@@ -17,8 +18,8 @@ interface AgentDamage {
   readonly amount: number;
 }
 
-interface HallDamage {
-  readonly hallId: string;
+interface DefenseStructureDamage {
+  readonly structureId: DefenseStructureId;
   readonly amount: number;
 }
 
@@ -30,6 +31,11 @@ interface TowerDamage {
 interface TowerDamageResult {
   readonly towers: Tower[];
   readonly destroyed: TowerDestroyed[];
+}
+
+interface DefenseStructureDamageResult {
+  readonly keep: Keep;
+  readonly banners: Banner[];
 }
 
 export function applyThreatDamages(
@@ -93,24 +99,35 @@ export function applyThreatDamages(
   });
 }
 
-export function applyHallDamages(
-  halls: readonly Hall[],
-  damages: readonly HallDamage[],
-): Hall[] {
+function bannerStructureId(banner: Banner): DefenseStructureId {
+  return `banner:${banner.houseId}`;
+}
+
+export function applyDefenseStructureDamages(
+  keep: Keep,
+  banners: readonly Banner[],
+  damages: readonly DefenseStructureDamage[],
+): DefenseStructureDamageResult {
   const totals = new Map<string, number>();
   for (const damage of damages) {
     totals.set(
-      damage.hallId,
-      (totals.get(damage.hallId) ?? 0) + damage.amount,
+      damage.structureId,
+      (totals.get(damage.structureId) ?? 0) + damage.amount,
     );
   }
-  return halls.map((hall) => ({
-    ...hall,
-    hp: Math.max(
-      0,
-      hall.hp - (totals.get(hall.houseId) ?? 0),
-    ),
-  }));
+  return {
+    keep: {
+      ...keep,
+      hp: Math.max(0, keep.hp - (totals.get("keep") ?? 0)),
+    },
+    banners: banners.map((banner) => ({
+      ...banner,
+      hp: Math.max(
+        0,
+        banner.hp - (totals.get(bannerStructureId(banner)) ?? 0),
+      ),
+    })),
+  };
 }
 
 export function applyTowerDamages(

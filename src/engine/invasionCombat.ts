@@ -5,16 +5,21 @@ import {
 } from "../agents/dispositionEngine";
 import { stepAgent } from "../agents/movement";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
+import type { HouseId } from "../content/houseConfig";
 import type {
   Agent,
   ThreatPresence,
 } from "../agents/agentTypes";
 import { stepThreat } from "../threat/waveDirector";
-import type { ThreatEvent } from "../threat/threatTypes";
-import type { GameState, Hall } from "./engine.types";
+import type {
+  DefenseStructureId,
+  DefenseStructureSnapshot,
+  ThreatEvent,
+} from "../threat/threatTypes";
+import type { Banner, GameState, Keep } from "./engine.types";
 import type { Rng } from "./prng";
 import {
-  applyHallDamages,
+  applyDefenseStructureDamages,
   applyTowerDamages,
   applyThreatDamages,
 } from "./combatDamage";
@@ -33,10 +38,19 @@ import type { TowerDestroyed } from "../build/build.types";
 import { modifiersForAgent } from "./progressionEngine";
 
 type Point = { readonly x: number; readonly y: number };
+type DefensiveAnchor = Point & {
+  readonly houseId: string;
+  readonly hp: number;
+};
+type BannerStructureId = Extract<DefenseStructureId, `banner:${HouseId}`>;
 type WaveCombatStep = Pick<
   GameState,
-  "agents" | "halls" | "activeThreat"
-  | "towers" | "rangedAttackEffects"
+  | "agents"
+  | "keep"
+  | "banners"
+  | "activeThreat"
+  | "towers"
+  | "rangedAttackEffects"
 > & {
   readonly creatureKills: number;
   readonly xpAwards: {
@@ -83,38 +97,43 @@ function toThreatPresences(threat: ThreatEvent | null): ThreatPresence[] {
 
 function createDefenseContext(
   agent: Agent,
-  halls: readonly Hall[],
+  keep: Keep,
+  banners: readonly Banner[],
   threats: readonly ThreatPresence[],
   hallDefenseRadiusBonus: number,
   tick: number,
 ): DefenseContext {
-  const ownHall =
-    halls.find(
-      (hall) => hall.houseId === agent.houseId && hall.hp > 0,
-    ) ?? null;
-  const rallyHall =
-    ownHall ??
-    [...halls]
-      .filter((hall) => hall.hp > 0)
+  const livingBanners = banners.filter((banner) => banner.hp > 0);
+  const livingKeep =
+    keep.hp > 0
+      ? { houseId: "keep", x: keep.x, y: keep.y, hp: keep.hp }
+      : null;
+  const anchors: DefensiveAnchor[] =
+    livingKeep === null
+      ? [...livingBanners]
+      : [...livingBanners, livingKeep];
+  const ownBanner =
+    livingBanners.find((banner) => banner.houseId === agent.houseId) ?? null;
+  const rallyAnchor =
+    ownBanner ??
+    [...anchors]
       .sort((first, second) => {
         const delta =
           distanceSquared(agent, first) - distanceSquared(agent, second);
         return delta === 0
           ? first.houseId.localeCompare(second.houseId)
           : delta;
-      })[0] ??
-    null;
-  const threatenedHalls = halls
-    .filter((hall) => hall.hp > 0)
-    .map((hall) => ({
-      houseId: hall.houseId,
-      x: hall.x,
-      y: hall.y,
+      })[0] ?? null;
+  const threatenedHalls = anchors
+    .map((anchor) => ({
+      houseId: anchor.houseId,
+      x: anchor.x,
+      y: anchor.y,
       hostileCount: threats.filter(
         (threat) =>
           threat.hostile &&
-          distanceSquared(threat, hall) <=
-            (BALANCE_CONFIG.HALL_DEFENSE_RADIUS +
+          distanceSquared(threat, anchor) <=
+            (BALANCE_CONFIG.AGENT_THREAT_SENSE_RADIUS +
               hallDefenseRadiusBonus) ** 2,
       ).length,
     }))
@@ -122,11 +141,13 @@ function createDefenseContext(
   return {
     tick,
     ownHall:
-      ownHall === null
+      ownBanner === null
         ? null
-        : { x: ownHall.x, y: ownHall.y, hp: ownHall.hp },
+        : { x: ownBanner.x, y: ownBanner.y, hp: ownBanner.hp },
     rallyHall:
-      rallyHall === null ? null : { x: rallyHall.x, y: rallyHall.y },
+      rallyAnchor === null
+        ? null
+        : { x: rallyAnchor.x, y: rallyAnchor.y },
     threatenedHalls,
     threats,
   };
@@ -134,7 +155,8 @@ function createDefenseContext(
 
 function moveAgents(
   agents: readonly Agent[],
-  halls: readonly Hall[],
+  keep: Keep,
+  banners: readonly Banner[],
   threat: ThreatEvent | null,
   rng: Rng,
   state: GameState,
@@ -145,7 +167,8 @@ function moveAgents(
     const modifiers = modifiersForAgent(state, agent);
     const context = createDefenseContext(
       agent,
-      halls,
+      keep,
+      banners,
       threats,
       modifiers.hallDefenseRadiusBonus,
       tick,
@@ -196,6 +219,35 @@ function moveAgents(
   });
 }
 
+function bannerStructureId(houseId: HouseId): BannerStructureId {
+  return `banner:${houseId}`;
+}
+
+function createDefenseSnapshots(
+  keep: Keep,
+  banners: readonly Banner[],
+): DefenseStructureSnapshot[] {
+  return [
+    {
+      kind: "keep",
+      id: "keep",
+      x: keep.x,
+      y: keep.y,
+      hp: keep.hp,
+      radius: BALANCE_CONFIG.KEEP_RADIUS,
+    },
+    ...banners.map((banner) => ({
+      kind: "banner" as const,
+      id: bannerStructureId(banner.houseId),
+      houseId: banner.houseId,
+      x: banner.x,
+      y: banner.y,
+      hp: banner.hp,
+      radius: BALANCE_CONFIG.BANNER_RADIUS,
+    })),
+  ];
+}
+
 export function advanceWaveCombat(
   state: GameState,
   tick: number,
@@ -204,7 +256,8 @@ export function advanceWaveCombat(
   if (state.activeThreat === null) {
     return {
       agents: state.agents,
-      halls: state.halls,
+      keep: state.keep,
+      banners: state.banners,
       towers: state.towers,
       activeThreat: null,
       rangedAttackEffects: state.rangedAttackEffects,
@@ -219,7 +272,8 @@ export function advanceWaveCombat(
   const initialCreatureCount = state.activeThreat.creatures.length;
   const decisions = moveAgents(
     state.agents,
-    state.halls,
+    state.keep,
+    state.banners,
     state.activeThreat,
     rng,
     state,
@@ -249,7 +303,8 @@ export function advanceWaveCombat(
     {
       houseProgress: state.houseProgress,
       hallLowestHpRatio: Math.min(
-        ...state.halls
+        state.keep.hp / state.keep.maxHp,
+        ...state.banners
           .filter(({ maxHp }) => maxHp > 0)
           .map(({ hp, maxHp }) => hp / maxHp),
       ),
@@ -263,12 +318,7 @@ export function advanceWaveCombat(
   const stepped = stepThreat(
     towerAttacks.threat,
     attacks.agents,
-    state.halls.map(({ houseId, x, y, hp }) => ({
-      id: houseId,
-      x,
-      y,
-      hp,
-    })),
+    createDefenseSnapshots(state.keep, state.banners),
     tick,
     towerAttacks.towers.map(({ id, x, y, hp }) => ({
       id,
@@ -284,6 +334,11 @@ export function advanceWaveCombat(
     stepped.structureDamages,
     tick,
   );
+  const defenseDamage = applyDefenseStructureDamages(
+    state.keep,
+    state.banners,
+    stepped.defenseStructureDamages,
+  );
 
   return {
     agents: applyThreatDamages(
@@ -293,7 +348,8 @@ export function advanceWaveCombat(
       modifierEntries,
       state.houseProgress,
     ),
-    halls: applyHallDamages(state.halls, stepped.hallDamages),
+    keep: defenseDamage.keep,
+    banners: defenseDamage.banners,
     towers: towerDamage.towers,
     activeThreat: stepped.threat,
     creatureKills:

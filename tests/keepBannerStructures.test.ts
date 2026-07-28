@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
+import { applyDefenseStructureDamages } from "../src/engine/combatDamage";
 import { createDefenseStructures } from "../src/engine/defenseStructures";
 import type { Banner, GameState, Keep } from "../src/engine/engine.types";
 
@@ -72,4 +73,51 @@ test("Given defense structures, when assigned into GameState structure fields, t
     createDefenseStructures(["house_b", "house_c", "house_f"]);
 
   assert.equal(structures.banners.length, 3);
+});
+
+test("Given banner damage for house_a, when defense structure damage is reduced, then only banner:house_a loses HP", () => {
+  const structures = createDefenseStructures([
+    "house_a",
+    "house_b",
+    "house_c",
+  ]);
+
+  const result = applyDefenseStructureDamages(
+    structures.keep,
+    structures.banners,
+    [
+      { structureId: "banner:house_a", amount: 100 },
+      { structureId: "banner:house_a", amount: 50 },
+    ],
+  );
+
+  assert.equal(result.keep.hp, BALANCE_CONFIG.KEEP_HP);
+  assert.equal(
+    result.banners.find(({ houseId }) => houseId === "house_a")?.hp,
+    BALANCE_CONFIG.BANNER_HP - 150,
+  );
+  assert.equal(
+    result.banners.find(({ houseId }) => houseId === "house_b")?.hp,
+    BALANCE_CONFIG.BANNER_HP,
+  );
+});
+
+test("Given lethal keep damage, when defense structure damage is reduced, then keep HP clamps at zero and banners are unchanged", () => {
+  const structures = createDefenseStructures([
+    "house_a",
+    "house_b",
+    "house_c",
+  ]);
+
+  const result = applyDefenseStructureDamages(
+    structures.keep,
+    structures.banners,
+    [
+      { structureId: "keep", amount: BALANCE_CONFIG.KEEP_HP - 1 },
+      { structureId: "keep", amount: 12 },
+    ],
+  );
+
+  assert.equal(result.keep.hp, 0);
+  assert.deepEqual(result.banners, structures.banners);
 });

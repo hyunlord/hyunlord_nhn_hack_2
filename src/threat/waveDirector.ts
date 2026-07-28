@@ -3,7 +3,8 @@ import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type {
   Creature,
   DarkMage,
-  HallSnapshot,
+  DefenseStructureId,
+  DefenseStructureSnapshot,
   StructureSnapshot,
   ThreatEvent,
   ThreatTargetSnapshot,
@@ -22,8 +23,8 @@ type AgentDamage = {
   readonly amount: number;
 };
 
-type HallDamage = {
-  readonly hallId: string;
+type DefenseStructureDamage = {
+  readonly structureId: DefenseStructureId;
   readonly amount: number;
 };
 
@@ -39,13 +40,6 @@ function findNearestTarget(
   return findNearestById(origin, targets);
 }
 
-function findNearestHall(
-  origin: Point,
-  halls: readonly HallSnapshot[],
-): HallSnapshot | undefined {
-  return findNearestById(origin, halls);
-}
-
 export function assignTraitor<T extends string>(
   houseIds: readonly T[],
   rng: Rng,
@@ -56,33 +50,31 @@ export function assignTraitor<T extends string>(
 export function stepThreat(
   threat: ThreatEvent,
   targets: readonly ThreatTargetSnapshot[],
-  halls: readonly HallSnapshot[],
+  defenseStructures: readonly DefenseStructureSnapshot[],
   tick: number,
   structures: readonly StructureSnapshot[] = [],
 ): {
   threat: ThreatEvent;
   agentDamages: AgentDamage[];
-  hallDamages: HallDamage[];
+  defenseStructureDamages: DefenseStructureDamage[];
   structureDamages: StructureDamage[];
 } {
   const livingTargets = targets.filter(
     (target) => target.hp > 0 && target.state !== "dead",
   );
-  const livingHalls = halls.filter((hall) => hall.hp > 0);
+  const livingDefenseStructures = defenseStructures.filter(
+    (structure) => structure.hp > 0,
+  );
   const agentDamages: AgentDamage[] = [];
-  const hallDamages: HallDamage[] = [];
+  const defenseStructureDamages: DefenseStructureDamage[] = [];
   const structureDamages: StructureDamage[] = [];
   const livingObjectives = [
-    ...livingHalls.map((hall) => ({
-      ...hall,
-      radius: BALANCE_CONFIG.HALL_RADIUS,
-      kind: "hall" as const,
-    })),
+    ...livingDefenseStructures,
     ...structures
       .filter(({ hp }) => hp > 0)
       .map((structure) => ({
         ...structure,
-        kind: "structure" as const,
+        kind: "tower" as const,
       })),
   ];
   const creatures = threat.creatures.map((creature): Creature => {
@@ -152,25 +144,30 @@ export function stepThreat(
       return { ...creature };
     }
 
-    if (objective.kind === "hall") {
-      hallDamages.push({
-        hallId: objective.id,
-        amount: creature.hallDamage,
-      });
-    } else {
+    if (objective.kind === "tower") {
       structureDamages.push({
         structureId: objective.id,
-        amount: creature.hallDamage,
+        amount: creature.structureDamage,
+      });
+    } else {
+      defenseStructureDamages.push({
+        structureId: objective.id,
+        amount: creature.structureDamage,
       });
     }
     return { ...creature, lastAttackTick: tick };
   });
-  const mage = stepMage(threat.mage, livingHalls, tick, hallDamages);
+  const mage = stepMage(
+    threat.mage,
+    livingDefenseStructures,
+    tick,
+    defenseStructureDamages,
+  );
   agentDamages.sort((first, second) =>
     first.agentId.localeCompare(second.agentId),
   );
-  hallDamages.sort((first, second) =>
-    first.hallId.localeCompare(second.hallId),
+  defenseStructureDamages.sort((first, second) =>
+    first.structureId.localeCompare(second.structureId),
   );
   structureDamages.sort((first, second) =>
     first.structureId.localeCompare(second.structureId),
@@ -183,16 +180,16 @@ export function stepThreat(
       creatures,
     },
     agentDamages,
-    hallDamages,
+    defenseStructureDamages,
     structureDamages,
   };
 }
 
 function stepMage(
   mage: DarkMage | null,
-  halls: readonly HallSnapshot[],
+  defenseStructures: readonly DefenseStructureSnapshot[],
   tick: number,
-  damages: HallDamage[],
+  damages: DefenseStructureDamage[],
 ): DarkMage | null {
   if (mage === null) {
     return null;
@@ -200,18 +197,18 @@ function stepMage(
   if (mage.hp <= 0) {
     return { ...mage };
   }
-  const hall = findNearestHall(mage, halls);
-  if (hall === undefined) {
+  const objective = findNearestById(mage, defenseStructures);
+  if (objective === undefined) {
     return { ...mage };
   }
-  const hallDistance = Math.sqrt(distanceSquared(mage, hall));
+  const objectiveDistance = Math.sqrt(distanceSquared(mage, objective));
   if (
-    hallDistance >
-    BALANCE_CONFIG.CREATURE_ATTACK_RANGE + BALANCE_CONFIG.HALL_RADIUS
+    objectiveDistance >
+    BALANCE_CONFIG.CREATURE_ATTACK_RANGE + objective.radius
   ) {
     return {
       ...mage,
-      ...moveToward(mage, hall, BALANCE_CONFIG.DARK_MAGE_SPEED),
+      ...moveToward(mage, objective, BALANCE_CONFIG.DARK_MAGE_SPEED),
     };
   }
   if (
@@ -221,7 +218,10 @@ function stepMage(
     return { ...mage };
   }
 
-  damages.push({ hallId: hall.id, amount: mage.hallDamage });
+  damages.push({
+    structureId: objective.id,
+    amount: mage.structureDamage,
+  });
   return { ...mage, lastAttackTick: tick };
 }
 

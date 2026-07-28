@@ -1,3 +1,5 @@
+import type { HouseId } from "../content/houseConfig";
+
 export type ThreatType =
   | "dark_mage_invasion"
   | "monster_horde"
@@ -5,54 +7,72 @@ export type ThreatType =
   | "human_army";
 
 export interface ThreatTargetSnapshot {
-  id: string;
-  houseId: string;
-  x: number;
-  y: number;
-  hp: number;
-  state: string;
+  readonly id: string;
+  readonly houseId: string;
+  readonly x: number;
+  readonly y: number;
+  readonly hp: number;
+  readonly state: string;
 }
 
-export interface HallSnapshot {
-  id: string;
-  x: number;
-  y: number;
-  hp: number;
+export type DefenseStructureId = "keep" | `banner:${HouseId}`;
+
+export interface KeepDefenseSnapshot {
+  readonly kind: "keep";
+  readonly id: "keep";
+  readonly x: number;
+  readonly y: number;
+  readonly hp: number;
+  readonly radius: number;
 }
+
+export interface BannerDefenseSnapshot {
+  readonly kind: "banner";
+  readonly id: `banner:${HouseId}`;
+  readonly houseId: HouseId;
+  readonly x: number;
+  readonly y: number;
+  readonly hp: number;
+  readonly radius: number;
+}
+
+export type DefenseStructureSnapshot =
+  | KeepDefenseSnapshot
+  | BannerDefenseSnapshot;
 
 export interface StructureSnapshot {
-  id: string;
-  x: number;
-  y: number;
-  hp: number;
-  radius: number;
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  readonly hp: number;
+  readonly radius: number;
 }
 
 export interface Creature {
-  id: string;
-  x: number;
-  y: number;
-  hp: number;
-  agentDamage: number;
-  hallDamage: number;
-  lastAttackTick: number;
-  haltedUntilTick: number;
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  readonly hp: number;
+  readonly agentDamage: number;
+  readonly structureDamage: number;
+  readonly lastAttackTick: number;
+  readonly haltedUntilTick: number;
 }
 
 export interface DarkMage {
-  x: number;
-  y: number;
-  hp: number;
-  hallDamage: number;
-  lastAttackTick: number;
+  readonly x: number;
+  readonly y: number;
+  readonly hp: number;
+  readonly structureDamage: number;
+  readonly lastAttackTick: number;
 }
 
 export interface ThreatEvent {
-  type: ThreatType;
-  waveIndex: number;
-  startTick: number;
-  traitorHouseId: string | null;
+  readonly type: ThreatType;
+  readonly waveIndex: number;
+  readonly startTick: number;
+  readonly traitorHouseId: string | null;
   readonly daylightRaid?: boolean;
-  mage: DarkMage | null;
-  creatures: Creature[];
+  readonly mage: DarkMage | null;
+  readonly creatures: readonly Creature[];
 }
