@@ -4,7 +4,7 @@ import type { Banner, Keep } from "./engine.types";
 
 export interface DefenseStructures {
   readonly keep: Keep;
-  readonly banners: readonly [Banner, Banner, Banner];
+  readonly banners: [Banner, Banner, Banner];
 }
 
 const KEEP_CENTER = { x: 480, y: 300 } as const;

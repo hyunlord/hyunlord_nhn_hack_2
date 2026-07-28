@@ -66,3 +66,10 @@ test("Given engine structure types, when game state contracts are checked, then 
 
   assert.deepEqual(structures, { keep, banners: [banner] });
 });
+
+test("Given defense structures, when assigned into GameState structure fields, then banners need no cast", () => {
+  const structures: Pick<GameState, "keep" | "banners"> =
+    createDefenseStructures(["house_b", "house_c", "house_f"]);
+
+  assert.equal(structures.banners.length, 3);
+});
