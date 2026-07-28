@@ -25,8 +25,9 @@ function signedNumber(value: number): string {
   return `${value > 0 ? "+" : ""}${value}`;
 }
 
-function percentPoints(value: number): string {
-  return `${Math.round(Math.abs(value) * 100)}%`;
+function signedPercentPoints(value: number): string {
+  const rounded = Math.round(value * 100);
+  return `${rounded > 0 ? "+" : ""}${rounded}%`;
 }
 
 function pushSignedNumberEffect(writer: EffectLineWriter, key: LocaleKey, value: number | undefined): void {
@@ -47,9 +48,13 @@ function pushReciprocalSpeedEffect(writer: EffectLineWriter, key: LocaleKey, val
   }
 }
 
-function pushPercentPointEffect(writer: EffectLineWriter, key: LocaleKey, value: number | undefined): void {
+function pushBreakHpRatioEffect(writer: EffectLineWriter, value: number | undefined): void {
   if (value !== undefined && value !== 0) {
-    writer.lines.push(writer.t(key, { value: percentPoints(value) }));
+    const key =
+      value > 0
+        ? "card.effect.breakHpRatioHigher"
+        : "card.effect.breakHpRatioLower";
+    writer.lines.push(writer.t(key, { value: signedPercentPoints(value) }));
   }
 }
 
@@ -71,7 +76,7 @@ export function formatCardEffect(effect: CardEffect, t: Translate): string[] {
   pushMultiplierEffect(writer, "card.effect.maxHpMultiplier", effect.maxHpMultiplier);
   pushMultiplierEffect(writer, "card.effect.moveSpeedMultiplier", effect.moveSpeedMultiplier);
   pushSignedNumberEffect(writer, "card.effect.threatSenseRadiusBonus", effect.threatSenseRadiusBonus);
-  pushPercentPointEffect(writer, "card.effect.breakHpRatioDelta", effect.breakHpRatioDelta);
+  pushBreakHpRatioEffect(writer, effect.breakHpRatioDelta);
   pushSignedNumberEffect(writer, "card.effect.hallDefenseRadiusBonus", effect.hallDefenseRadiusBonus);
   pushMultiplierEffect(writer, "card.effect.divineRegenMultiplier", effect.divineRegenMultiplier);
   pushMultiplierEffect(writer, "card.effect.divineCostMultiplier", effect.divineCostMultiplier);

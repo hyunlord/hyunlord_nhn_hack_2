@@ -1,12 +1,32 @@
 import { STRONGHOLD_CENTER } from "../content/houseConfig";
-import { drawSprite } from "./assets/drawSprite";
+import {
+  drawSprite,
+  type BrowserSpriteDrawContext,
+} from "./assets/drawSprite";
 import { mixRgba } from "./dayNight";
 import { CANVAS_VISUAL_TOKENS, STRONGHOLD_PATCH_RADIUS } from "./visualTokens";
 
 const GRID_SIZE = 40;
 
+export type BackgroundDrawingContext = BrowserSpriteDrawContext &
+  Pick<
+    CanvasRenderingContext2D,
+    | "arc"
+    | "beginPath"
+    | "createRadialGradient"
+    | "fill"
+    | "fillRect"
+    | "fillStyle"
+    | "globalCompositeOperation"
+    | "lineTo"
+    | "lineWidth"
+    | "moveTo"
+    | "stroke"
+    | "strokeStyle"
+  >;
+
 function drawBackgroundPrimitive(
-  context: CanvasRenderingContext2D,
+  context: BackgroundDrawingContext,
   width: number,
   height: number,
   dayNightFactor: number,
@@ -36,7 +56,7 @@ function drawBackgroundPrimitive(
   context.stroke();
 }
 
-function drawStrongholdPatch(context: CanvasRenderingContext2D): void {
+function drawStrongholdPatch(context: BackgroundDrawingContext): void {
   context.save();
   const wornEarth = context.createRadialGradient(
     STRONGHOLD_CENTER.x,
@@ -71,7 +91,7 @@ function drawStrongholdPatch(context: CanvasRenderingContext2D): void {
 }
 
 function drawLighting(
-  context: CanvasRenderingContext2D,
+  context: BackgroundDrawingContext,
   width: number,
   height: number,
   dayNightFactor: number,
@@ -108,7 +128,7 @@ function drawLighting(
 }
 
 export function drawBackground(
-  context: CanvasRenderingContext2D,
+  context: BackgroundDrawingContext,
   width: number,
   height: number,
   dayNightFactor = 0,

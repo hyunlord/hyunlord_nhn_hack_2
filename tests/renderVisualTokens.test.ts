@@ -4,6 +4,7 @@ import test from "node:test";
 import { STRONGHOLD_CENTER } from "../src/content/houseConfig";
 import { drawBackground } from "../src/render/drawBackground";
 import { drawCombatTransients } from "../src/render/drawEffects";
+import type { BrowserSpriteSource } from "../src/render/assets/drawSprite";
 import {
   CANVAS_VISUAL_TOKENS,
   STRONGHOLD_PATCH_RADIUS,
@@ -42,6 +43,20 @@ class TokenGradient {
 
 class TokenContext {
   private readonly recordedOperations: RenderTokenOperation[] = [];
+  public globalCompositeOperation: GlobalCompositeOperation = "source-over";
+  public imageSmoothingEnabled = false;
+
+  public drawImage(
+    _image: BrowserSpriteSource,
+    _sx: number,
+    _sy: number,
+    _sw: number,
+    _sh: number,
+    _dx: number,
+    _dy: number,
+    _dw: number,
+    _dh: number,
+  ): void {}
 
   public set fillStyle(value: string | CanvasGradient | CanvasPattern) {
     this.recordedOperations.push({ kind: "setFillStyle", value: String(value) });
@@ -93,6 +108,8 @@ class TokenContext {
     this.recordedOperations.push({ kind: "restore" });
   }
 
+  public scale(_x: number, _y: number): void {}
+
   public save(): void {
     this.recordedOperations.push({ kind: "save" });
   }
@@ -100,6 +117,8 @@ class TokenContext {
   public stroke(): void {
     this.recordedOperations.push({ kind: "stroke" });
   }
+
+  public translate(_x: number, _y: number): void {}
 
   public arc(x: number, y: number, radius: number): void {
     this.recordedOperations.push({ kind: "arc", x, y, radius });
@@ -124,10 +143,6 @@ class TokenContext {
   public operations(): readonly RenderTokenOperation[] {
     return this.recordedOperations;
   }
-}
-
-function canvasContext(context: TokenContext): CanvasRenderingContext2D {
-  return context as never as CanvasRenderingContext2D;
 }
 
 function designTokenValue(cssName: string): string {
@@ -166,7 +181,7 @@ test("Given documented canvas tokens, when the render token module is inspected,
 test("Given the stronghold background, when it is drawn, then gradient stops consume documented ground tokens", () => {
   const context = new TokenContext();
 
-  drawBackground(canvasContext(context), 960, 600);
+  drawBackground(context, 960, 600);
 
   const gradient = context.operations().find(
     (operation): operation is Extract<RenderTokenOperation, { readonly kind: "gradient" }> =>
@@ -190,7 +205,7 @@ test("Given render-only combat transients, when they are drawn, then death puff,
     { kind: "wave_banner", id: "wave:1", wave: 1, creatureCount: 9, daylightRaid: false, startTick: 5, durationTicks: 60 },
   ];
 
-  drawCombatTransients(canvasContext(context), events, 5, () => "Wave 1 · Creatures 9");
+  drawCombatTransients(context, events, 5, () => "Wave 1 · Creatures 9");
 
   const operations = context.operations();
   assert.ok(

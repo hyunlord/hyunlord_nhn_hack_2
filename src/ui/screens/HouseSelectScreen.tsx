@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { HOUSE_CONFIG, HOUSE_SPAWN_SLOTS } from "../../content/houseConfig";
-import { useLocale } from "../../content/locale";
+import { useLocale, type LocaleKey } from "../../content/locale";
 import {
   houseIdentity,
   houseName,
@@ -24,6 +24,12 @@ const FRAME_CONTENT_STYLE = {
   top: `${HOUSE_FRAME_CONTENT_PERCENT.top}%`,
   width: `${HOUSE_FRAME_CONTENT_PERCENT.width}%`,
 } as const satisfies CSSProperties;
+
+const SLOT_LABEL_KEYS = {
+  north: "selection.slot.north",
+  southeast: "selection.slot.southeast",
+  southwest: "selection.slot.southwest",
+} as const satisfies Record<typeof HOUSE_SPAWN_SLOTS[number]["id"], LocaleKey>;
 
 function rosterComposition(houseId: typeof HOUSE_CONFIG[number]["id"]) {
   const house = HOUSE_CONFIG.find(({ id }) => id === houseId);
@@ -74,7 +80,7 @@ export function HouseSelectScreen() {
               <span>{index + 1}</span>
               <div>
                 <strong>{houseId === undefined ? t("selection.openSlot") : houseName(t, houseId)}</strong>
-                <small>{t(`selection.slot.${slot.id}` as never)}</small>
+                <small>{t(SLOT_LABEL_KEYS[slot.id])}</small>
               </div>
             </li>
           );

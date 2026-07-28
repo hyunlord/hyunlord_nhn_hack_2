@@ -2,7 +2,10 @@ import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { Hall } from "../engine/engine.types";
 import type { House } from "../agents/agentTypes";
 import { houseName, type Translate } from "../content/locale/display";
-import { drawSprite } from "./assets/drawSprite";
+import {
+  drawSprite,
+  type BrowserSpriteDrawContext,
+} from "./assets/drawSprite";
 
 const RUBBLE_COLOR = "#3d3732";
 const HP_TRACK_COLOR = "rgba(14, 12, 10, 0.85)";
@@ -13,8 +16,28 @@ const STRONGHOLD_LABEL_OFFSET_Y = 24;
 const HOUSE_MARK = "*";
 const MAX_HALL_LABEL_LENGTH = 18;
 
+export type HallDrawingContext = BrowserSpriteDrawContext &
+  Pick<
+    CanvasRenderingContext2D,
+    | "beginPath"
+    | "closePath"
+    | "fill"
+    | "fillRect"
+    | "fillStyle"
+    | "fillText"
+    | "font"
+    | "lineTo"
+    | "lineWidth"
+    | "moveTo"
+    | "rect"
+    | "stroke"
+    | "strokeStyle"
+    | "strokeText"
+    | "textAlign"
+  >;
+
 function drawHallPrimitive(
-  context: CanvasRenderingContext2D,
+  context: HallDrawingContext,
   hall: Hall,
   color: string,
   isDestroyed: boolean,
@@ -57,7 +80,7 @@ function shortHallLabel(label: string): string {
 }
 
 export function drawHalls(
-  context: CanvasRenderingContext2D,
+  context: HallDrawingContext,
   halls: readonly Hall[],
   houses: readonly House[],
   housesSelected = true,

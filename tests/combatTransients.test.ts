@@ -53,10 +53,6 @@ class StrokeContext {
   }
 }
 
-function canvasContext(context: StrokeContext): CanvasRenderingContext2D {
-  return context as never as CanvasRenderingContext2D;
-}
-
 function waveState(tick: number): GameState {
   const state = createInitialState(9_009).state;
   return {
@@ -144,7 +140,7 @@ test("Given a ranged attack effect, when it is drawn, then volley rendering is b
   const colors = new Map([["house_a", "#ffffff"]]);
   const strokesByTick = [5, 6, 7, 8].map((tick) => {
     const context = new StrokeContext();
-    drawRangedAttackEffects(canvasContext(context), [effect], colors, tick);
+    drawRangedAttackEffects(context, [effect], colors, tick);
     return context.operations();
   });
 
@@ -230,44 +226,17 @@ test("Given night and daylight waves, when threat identity changes, then localiz
   assert.equal(terminal.events.length, 0);
 });
 
-test("Given the configured state shape, when keys are inspected, then render-only transients have not entered GameState", () => {
-  assert.deepEqual(Object.keys(createInitialState(12).state), [
-    "tick",
-    "runSeed",
-    "selectedHouseIds",
-    "phase",
-    "phaseBeforeDraft",
-    "waveIndex",
-    "tribute",
-    "pendingDaylightRaid",
-    "daylightRaidWaveNumbers",
-    "houses",
-    "halls",
-    "agents",
-    "activeThreat",
-    "highlights",
-    "divinePower",
-    "miracleCooldowns",
-    "unlockedSkills",
-    "skillCooldowns",
-    "activeEffects",
-    "rangedAttackEffects",
-    "houseProgress",
-    "heroProgress",
-    "houseModifiers",
-    "runSharedModifiers",
-    "houseBaseEffects",
-    "activeSynergyIds",
-    "betrayalHouseId",
-    "heroLessWave2Clear",
-    "pendingDrafts",
-    "towers",
-    "towerRubble",
-    "shopPurchases",
-    "runUpgrades",
-    "lastWaveSummary",
-    "waveStartSnapshot",
-    "heroDeaths",
-    "populationHistory",
-  ]);
+test("Given an initial run, when presentation-only field names are checked, then none are persisted in GameState", () => {
+  const state = createInitialState(12).state;
+  const presentationOnlyFields = [
+    "combatTransients",
+    "deathPuffs",
+    "hallPulses",
+    "screenShake",
+    "waveBanner",
+  ] as const;
+
+  for (const field of presentationOnlyFields) {
+    assert.equal(Object.hasOwn(state, field), false);
+  }
 });

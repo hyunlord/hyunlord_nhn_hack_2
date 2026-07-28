@@ -14,6 +14,7 @@ import type { LocaleKey, LocaleParams } from "../src/content/locale";
 import type { House } from "../src/agents/agentTypes";
 import { drawBackground } from "../src/render/drawBackground";
 import { drawHalls } from "../src/render/drawHalls";
+import type { BrowserSpriteSource } from "../src/render/assets/drawSprite";
 
 type DrawOperation =
   | { readonly kind: "arc"; readonly x: number; readonly y: number; readonly radius: number }
@@ -37,6 +38,11 @@ class RecordingGradient {
 
 class RecordingContext {
   private readonly recordedOperations: DrawOperation[] = [];
+  public globalAlpha = 1;
+  public globalCompositeOperation: GlobalCompositeOperation = "source-over";
+  public imageSmoothingEnabled = false;
+
+  public drawImage(_image: BrowserSpriteSource, _sx: number, _sy: number, _sw: number, _sh: number, _dx: number, _dy: number, _dw: number, _dh: number): void {}
 
   public set fillStyle(value: string | CanvasGradient | CanvasPattern) {
     this.recordedOperations.push({ kind: "setFillStyle", value: String(value) });
@@ -94,6 +100,8 @@ class RecordingContext {
     this.recordedOperations.push({ kind: "restore" });
   }
 
+  public scale(_x: number, _y: number): void {}
+
   public save(): void {
     this.recordedOperations.push({ kind: "save" });
   }
@@ -105,6 +113,8 @@ class RecordingContext {
   public strokeText(text: string, x: number, y: number): void {
     this.recordedOperations.push({ kind: "strokeText", text, x, y });
   }
+
+  public translate(_x: number, _y: number): void {}
 
   public arc(x: number, y: number, radius: number): void {
     this.recordedOperations.push({ kind: "arc", x, y, radius });
@@ -127,10 +137,6 @@ class RecordingContext {
   }
 }
 
-function canvasContext(context: RecordingContext): CanvasRenderingContext2D {
-  return context as never as CanvasRenderingContext2D;
-}
-
 const TEST_HOUSES: readonly House[] = HOUSE_CONFIG.map((house) => ({
   id: house.id,
   name: house.name,
@@ -150,12 +156,12 @@ test("Given the world background, when it is drawn, then a worn-earth stronghold
   const context = new RecordingContext();
 
   drawBackground(
-    canvasContext(context),
+    context,
     BALANCE_CONFIG.WORLD_WIDTH,
     BALANCE_CONFIG.WORLD_HEIGHT,
   );
   drawHalls(
-    canvasContext(context),
+    context,
     [
       {
         houseId: "house_a",
@@ -199,7 +205,7 @@ test("Given a selected house hall, when its banner is drawn, then only localized
   const context = new RecordingContext();
 
   drawHalls(
-    canvasContext(context),
+    context,
     [
       {
         houseId: "house_a",

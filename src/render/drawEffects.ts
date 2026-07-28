@@ -10,8 +10,35 @@ interface DivineVisualEffect {
   readonly durationTicks: number;
 }
 
+export type RangedAttackDrawingContext = Pick<
+  CanvasRenderingContext2D,
+  | "beginPath"
+  | "globalAlpha"
+  | "lineTo"
+  | "lineWidth"
+  | "moveTo"
+  | "stroke"
+  | "strokeStyle"
+>;
+
+export type CombatTransientDrawingContext = Pick<
+  CanvasRenderingContext2D,
+  | "arc"
+  | "beginPath"
+  | "fill"
+  | "fillStyle"
+  | "fillText"
+  | "font"
+  | "globalAlpha"
+  | "lineWidth"
+  | "stroke"
+  | "strokeStyle"
+  | "textAlign"
+  | "textBaseline"
+>;
+
 export function drawRangedAttackEffects(
-  context: CanvasRenderingContext2D,
+  context: RangedAttackDrawingContext,
   effects: readonly {
     readonly houseId: string;
     readonly fromX: number;
@@ -46,7 +73,7 @@ export function drawRangedAttackEffects(
 }
 
 export function drawCombatTransients(
-  context: CanvasRenderingContext2D,
+  context: CombatTransientDrawingContext,
   events: readonly CombatTransientEvent[],
   currentTick: number,
   bannerText: (event: Extract<CombatTransientEvent, { kind: "wave_banner" }>) => string,
@@ -100,7 +127,7 @@ export function drawEffects(
 }
 
 function drawDeathPuff(
-  context: CanvasRenderingContext2D,
+  context: CombatTransientDrawingContext,
   event: Extract<CombatTransientEvent, { kind: "death_puff" }>,
   progress: number,
 ): void {
@@ -117,7 +144,7 @@ function drawDeathPuff(
 }
 
 function drawHallPulse(
-  context: CanvasRenderingContext2D,
+  context: CombatTransientDrawingContext,
   event: Extract<CombatTransientEvent, { kind: "hall_pulse" }>,
   progress: number,
 ): void {
@@ -130,7 +157,7 @@ function drawHallPulse(
 }
 
 function drawWaveBanner(
-  context: CanvasRenderingContext2D,
+  context: CombatTransientDrawingContext,
   label: string,
   progress: number,
 ): void {

@@ -70,7 +70,22 @@ test("Given attack interval multipliers, when card effects are formatted, then s
   ]);
 });
 
-
+test("Given break HP ratio deltas, when card effects are formatted, then higher lower and unchanged directions are explicit in English and Korean", () => {
+  assert.deepEqual(formatCardEffect({ breakHpRatioDelta: 0.1 }, english), [
+    "Breaks at +10%p higher",
+  ]);
+  assert.deepEqual(formatCardEffect({ breakHpRatioDelta: -0.1 }, english), [
+    "Breaks at -10%p lower",
+  ]);
+  assert.deepEqual(formatCardEffect({ breakHpRatioDelta: 0.1 }, korean), [
+    "+10%p 더 높은 체력에서 붕괴",
+  ]);
+  assert.deepEqual(formatCardEffect({ breakHpRatioDelta: -0.1 }, korean), [
+    "-10%p 더 낮은 체력에서 붕괴",
+  ]);
+  assert.deepEqual(formatCardEffect({ breakHpRatioDelta: 0 }, english), []);
+  assert.deepEqual(formatCardEffect({ breakHpRatioDelta: 0 }, korean), []);
+});
 
 test("Given Korean max HP card effects, when values are signed by the formatter, then the locale does not add a second plus sign", () => {
   assert.deepEqual(formatCardEffect({ maxHpBonus: 25 }, korean), [

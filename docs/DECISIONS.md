@@ -686,9 +686,9 @@ Draft, shop, investment, and house-selection copy now route through typed presen
 
 Hit flashes, death puffs, volley visibility, hall pulses, shake, and wave banners are derived from renderer snapshots and transient trackers. Boundary checks confirm `src/engine` and `src/state` do not import render/transient modules, and store tests verify no Phase 4B presentation-only keys were added to `GameState`.
 
-### Command lane passed; browser lane is still blocking
+### Historical command lane passed; browser lane was still blocking
 
-DGX command verification passed: `npm run typecheck`, `npm run build`, `npm test` (340/340), `npm run check:determinism`, `npm run assets:check`, `npm run balance`, and `git diff --check` all exited 0. Additional changed-source LOC, structural no-excuse, boundary grep, and missing-locale negative-control evidence is under `/tmp/phase4b-evidence/`.
+At this intermediate checkpoint, DGX command verification passed: `npm run typecheck`, `npm run build`, `npm test` (340/340), `npm run check:determinism`, `npm run assets:check`, `npm run balance`, and `git diff --check` all exited 0. Additional changed-source size, structural no-excuse, boundary grep, and missing-locale negative-control evidence was recorded under `/tmp/phase4b-evidence/`; later final-review follow-up supersedes its cleanup claims.
 
 The 200-seed `abc` balance observation is now 87.5% victory, compared with the prior Phase 4A observation of 52.5%. This is recorded as an observation only; no compensating tuning was made because Phase 4B forbids balance edits outside the specified layout/presentation work.
 

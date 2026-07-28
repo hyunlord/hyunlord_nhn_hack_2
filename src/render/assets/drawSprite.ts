@@ -96,7 +96,8 @@ export function createSpriteDrawer<TSource extends SpriteDrawSource>(
   };
 }
 
-type BrowserSpriteSource = CanvasImageSource & SpriteDrawSource;
+export type BrowserSpriteSource = CanvasImageSource & SpriteDrawSource;
+export type BrowserSpriteDrawContext = SpriteDrawContext<BrowserSpriteSource>;
 
 const browserSpriteDrawer = createSpriteDrawer<BrowserSpriteSource>({
   getImage,
@@ -106,7 +107,7 @@ const browserSpriteDrawer = createSpriteDrawer<BrowserSpriteSource>({
 });
 
 export function drawSprite(
-  context: CanvasRenderingContext2D,
+  context: BrowserSpriteDrawContext,
   id: SpriteId,
   x: number,
   y: number,

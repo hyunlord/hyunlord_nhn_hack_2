@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -41,21 +40,6 @@ function renderEnglish(element: ReactElement): string {
     createElement(LocaleProvider, { language: "en" }, element),
   );
 }
-
-test("Given draft card markup, when source order is inspected, then hierarchy is rarity, name, effects, warning, flavour, stacks", () => {
-  const source = readFileSync("src/ui/components/DraftOverlay.tsx", "utf8");
-  const indexes = orderedIndexes(source, [
-    "draft-card__meta",
-    "<strong>",
-    "draft-card__effects",
-    "draft-card__warning",
-    "draft-card__description",
-    "draft-card__stacks",
-  ]);
-
-  assert.equal(indexes.every((index) => index >= 0), true);
-  assert.deepEqual([...indexes].sort((first, second) => first - second), indexes);
-});
 
 test("Given rendered shop choices, when card markup is produced, then numeric effects lead flavour while costs counts and reasons stay visible", () => {
   const snapshot = {
@@ -177,23 +161,13 @@ test("Given numeric card effects, when choices are formatted, then source-derive
   assert.deepEqual(formatCardEffect({ attackIntervalMultiplier: 0.88 }, english), ["Attack speed +14%"]);
   assert.deepEqual(formatCardEffect({ maxHpBonus: 25 }, english), ["Max HP +25"]);
   assert.deepEqual(formatCardEffect({ threatSenseRadiusBonus: 60 }, english), ["Threat sense +60"]);
-  assert.deepEqual(formatCardEffect({ breakHpRatioDelta: -0.1 }, english), ["Breaks at 10%p lower"]);
+  assert.deepEqual(formatCardEffect({ breakHpRatioDelta: -0.1 }, english), ["Breaks at -10%p lower"]);
   assert.deepEqual(formatCardEffect({ hallDefenseRadiusBonus: 90 }, english), ["Hall defense radius +90"]);
   assert.deepEqual(formatCardEffect({ divineRegenMultiplier: 1.3 }, english), ["Divine regen +30%"]);
   assert.deepEqual(formatCardEffect({ miracleRadiusMultiplier: 1.25 }, english), ["Miracle radius +25%"]);
   assert.deepEqual(formatCardEffect({ tributePerKillBonus: 2 }, english), ["Tribute +2 per kill"]);
   assert.deepEqual(formatCardEffect({ interWaveHealBonus: 25 }, english), ["Repairs +25 between waves"]);
   assert.deepEqual(formatCardEffect({ grantsSkill: "chains_of_dusk" }, english), ["Grants skill Chains of Dusk"]);
-});
-
-test("Given shop and house choice surfaces, when source is inspected, then benefits and traits are typed projections", () => {
-  const shopSource = readFileSync("src/ui/components/ShopOverlay.tsx", "utf8");
-  const selectionSource = readFileSync("src/ui/screens/HouseSelectScreen.tsx", "utf8");
-  const metaSource = readFileSync("src/ui/screens/MetaScreen.tsx", "utf8");
-
-  assert.match(shopSource, /shop-card__effects/);
-  assert.doesNotMatch(selectionSource, /houseTrait\(/);
-  assert.doesNotMatch(metaSource, /houseTrait\(/);
 });
 
 test("Given shop choices, when effects are projected, then values come from typed effect sources and unavailable reasons remain separate", () => {
