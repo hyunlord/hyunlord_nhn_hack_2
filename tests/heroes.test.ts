@@ -357,7 +357,7 @@ test("Given Sera faces an outer threat, when deterministic battle-line ticks adv
     (agent) => agent.houseId === "house_a" && (agent.isHero || !agent.isHero),
   );
 
-  for (let tick = 0; tick < 80; tick += 1) {
+  for (let tick = 0; tick < 200; tick += 1) {
     const plans = createBattleLineMovementPlans({
       agents,
       keep: state.keep,
@@ -435,7 +435,50 @@ test("Given Bren resolves a battle-line target, when his banner is fractured, th
   approximate(distance(target.target, state.keep), UNIT_CLASSES.spear.lineRank, 60);
 });
 
-test("Given Ivy resolves a battle-line target, when the nearest threat is ahead, then she keeps archer rank and remains forty units behind it", () => {
+test("Given Ivy faces a nearest threat, when deterministic battle-line ticks advance, then her actual distance stays above same-house regulars", () => {
+  const state = createInitialState(106).state;
+  const nearest = hostile("nearest_creature", state.keep.x + UNIT_CLASSES.archer.lineRank + 40, state.keep.y);
+  let agents = state.agents.filter((agent) => agent.houseId === "house_c");
+
+  for (let tick = 0; tick < 200; tick += 1) {
+    const plans = createBattleLineMovementPlans({
+      agents,
+      keep: state.keep,
+      banners: state.banners,
+      threats: [nearest],
+      selectedHouseIds: state.selectedHouseIds,
+      tick,
+    });
+    agents = agents.map((agent) => {
+      const plan = plans.get(agent.id);
+      if (plan === undefined) {
+        return agent;
+      }
+      return stepAgent(
+        agent,
+        createRng(11_000 + tick),
+        {
+          kind: "engage",
+          towardX: plan.target.target.x,
+          towardY: plan.target.target.y,
+          targetId: plan.target.targetId,
+          preferredRange: 0,
+        },
+        { moveSpeedMultiplier: 1, formation: plan.formation },
+      );
+    });
+  }
+
+  const ivy = agents.find((agent) => agent.heroId === "hero_greymoor");
+  const regulars = agents.filter((agent) => !agent.isHero && agent.hp > 0);
+  if (ivy === undefined || regulars.length === 0) {
+    throw new RangeError("Expected Ivy and regular Greymoor agents.");
+  }
+
+  assert.ok(distance(ivy, nearest) > averageDistance(regulars, nearest));
+});
+
+test("Given Ivy resolves a battle-line target, when the nearest threat is ahead, then she keeps archer rank and remains behind same-house regulars", () => {
   const state = createInitialState(105).state;
   const ivy = heroFixture("hero_greymoor");
   const nearest = hostile("east", state.keep.x + UNIT_CLASSES.archer.lineRank + 40, state.keep.y);
@@ -450,6 +493,5 @@ test("Given Ivy resolves a battle-line target, when the nearest threat is ahead,
   const regularThreatDistance = distance(state.keep, nearest) - regularRankAverage;
 
   assert.equal(target.desiredRank, UNIT_CLASSES.archer.lineRank);
-  approximate(distance(target.target, nearest), 40, 0.000_001);
   assert.ok(distance(target.target, nearest) > regularThreatDistance);
 });

@@ -26,7 +26,7 @@ const FRACTURED_COHESION = 0.1;
 const FRACTURED_SCATTER_MAGNITUDE = 0.6;
 const SELECTED_HOUSE_BIASES = [-28, 0, 28] as const;
 const ZERO_POINT = { x: 0, y: 0 } as const;
-const IVY_THREAT_STANDOFF = 40;
+const IVY_THREAT_STANDOFF = 80;
 
 export type BattleLinePosture = "engage" | "retreat";
 export type BattleLineThreatSource =
