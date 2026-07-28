@@ -437,7 +437,7 @@ test("Given Bren resolves a battle-line target, when his banner is fractured, th
 
 test("Given Ivy faces a nearest threat, when deterministic battle-line ticks advance, then her actual distance stays above same-house regulars", () => {
   const state = createInitialState(106).state;
-  const nearest = hostile("nearest_creature", state.keep.x + UNIT_CLASSES.archer.lineRank + 40, state.keep.y);
+  const nearest = hostile("nearest_creature", state.keep.x, state.keep.y - 40);
   let agents = state.agents.filter((agent) => agent.houseId === "house_c");
 
   for (let tick = 0; tick < 200; tick += 1) {
@@ -478,7 +478,7 @@ test("Given Ivy faces a nearest threat, when deterministic battle-line ticks adv
   assert.ok(distance(ivy, nearest) > averageDistance(regulars, nearest));
 });
 
-test("Given Ivy resolves a battle-line target, when the nearest threat is ahead, then she keeps archer rank and remains behind same-house regulars", () => {
+test("Given Ivy resolves a battle-line target, when the nearest threat is ahead, then she keeps archer rank and remains forty units behind it", () => {
   const state = createInitialState(105).state;
   const ivy = heroFixture("hero_greymoor");
   const nearest = hostile("east", state.keep.x + UNIT_CLASSES.archer.lineRank + 40, state.keep.y);
@@ -493,5 +493,6 @@ test("Given Ivy resolves a battle-line target, when the nearest threat is ahead,
   const regularThreatDistance = distance(state.keep, nearest) - regularRankAverage;
 
   assert.equal(target.desiredRank, UNIT_CLASSES.archer.lineRank);
+  approximate(distance(target.target, nearest), 40, 0.000_001);
   assert.ok(distance(target.target, nearest) > regularThreatDistance);
 });
