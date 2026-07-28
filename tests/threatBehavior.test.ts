@@ -29,7 +29,7 @@ function createThreat(
         y: 100,
         hp: BALANCE_CONFIG.CREATURE_HP,
         agentDamage: BALANCE_CONFIG.CREATURE_ATTACK_DAMAGE,
-        structureDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+        structureDamage: BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE,
         lastAttackTick: -1,
         haltedUntilTick: -1,
       },
@@ -115,7 +115,7 @@ test("Given no nearby agent, when a distant creature keeps advancing, then it ev
   assert.deepEqual(result.defenseStructureDamages, [
     {
       structureId: KEEP.id,
-      amount: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+      amount: BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE,
     },
   ]);
   assert.equal(result.threat.creatures[0]?.lastAttackTick, tick);
@@ -152,7 +152,7 @@ test("Given a tower is the nearest structural objective, when a creature attacks
   assert.deepEqual(result.structureDamages, [
     {
       structureId: "tower_01",
-      amount: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+      amount: BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE,
     },
   ]);
   assert.deepEqual(result.defenseStructureDamages, []);
@@ -164,7 +164,7 @@ test("Given no surviving defensive structures, when threats step, then creatures
       x: 80,
       y: 80,
       hp: BALANCE_CONFIG.DARK_MAGE_HP,
-      structureDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+      structureDamage: BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE,
       lastAttackTick: -1,
     },
   });
@@ -184,7 +184,7 @@ test("Given a mage and surviving keep and banners, when the threat steps, then t
       x: 100,
       y: 100,
       hp: BALANCE_CONFIG.DARK_MAGE_HP,
-      structureDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+      structureDamage: BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE,
       lastAttackTick: -1,
     },
   });
@@ -200,7 +200,7 @@ test("Given a mage and surviving keep and banners, when the threat steps, then t
   assert.deepEqual(result.defenseStructureDamages, [
     {
       structureId: "banner:house_a",
-      amount: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+      amount: BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE,
     },
   ]);
 });
@@ -219,7 +219,7 @@ test("Given reversed equal-distance defensive structures, when a creature attack
   assert.deepEqual(result.defenseStructureDamages, [
     {
       structureId: "banner:house_a",
-      amount: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+      amount: BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE,
     },
   ]);
 });
@@ -262,14 +262,14 @@ test("Given shipped keep and banner geometry, when a creature chooses without an
   assert.deepEqual(result.defenseStructureDamages, [
     {
       structureId: "banner:house_a",
-      amount: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+      amount: BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE,
     },
   ]);
 });
 
 test("Given a real spawned mage wave, when generated enemies attack a defensive structure, then emitted structure damage is finite and exact", () => {
   const expectedDamage = Math.round(
-    BALANCE_CONFIG.CREATURE_HALL_DAMAGE * 1.2,
+    BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE * 1.2,
   );
   const generated = spawnWave(
     {
@@ -329,7 +329,7 @@ test("Given simultaneous hits, when threat damage is applied, then dead creature
       x: 100,
       y: 100,
       hp: BALANCE_CONFIG.DARK_MAGE_HP,
-      structureDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+      structureDamage: BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE,
       lastAttackTick: -1,
     },
   });

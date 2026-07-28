@@ -4,13 +4,13 @@ import {
   displayThreatId,
   identityForThreat,
   snapshotAgents,
-  snapshotHalls,
+  snapshotDefenses,
   snapshotThreats,
 } from "./combatTransientSnapshots";
 import {
   DEATH_PUFF_TICKS,
-  HALL_DANGER_RATIO,
-  HALL_PULSE_TICKS,
+  DEFENSE_DANGER_RATIO,
+  DEFENSE_PULSE_TICKS,
   SHAKE_TICKS,
   WAVE_BANNER_TICKS,
   type CombatTransientEvent,
@@ -22,10 +22,10 @@ export function createCombatTransientTracker(): CombatTransientTracker {
   return {
     agents: new Map(),
     threats: new Map(),
-    halls: new Map(),
+    defenses: new Map(),
     threatIdentity: null,
     activeEvents: [],
-    shakenHallIds: new Set(),
+    shakenDefenseIds: new Set(),
   };
 }
 
@@ -35,17 +35,17 @@ export function updateCombatTransients(
 ): CombatTransientUpdate {
   const agentSnapshots = snapshotAgents(state.agents);
   const threatSnapshots = snapshotThreats(state.activeThreat);
-  const hallSnapshots = snapshotHalls(state.halls);
+  const defenseSnapshots = snapshotDefenses(state.keep, state.banners);
   const threatIdentity = identityForThreat(state);
 
   if (state.phase === "victory" || state.phase === "defeat") {
     const nextTracker = {
       agents: agentSnapshots,
       threats: threatSnapshots,
-      halls: hallSnapshots,
+      defenses: defenseSnapshots,
       threatIdentity,
       activeEvents: [],
-      shakenHallIds: tracker.shakenHallIds,
+      shakenDefenseIds: tracker.shakenDefenseIds,
     };
     return { tracker: nextTracker, events: [], newEvents: [] };
   }
@@ -54,7 +54,8 @@ export function updateCombatTransients(
   const newEvents = [
     ...deathPuffsForAgents(state, tracker, activeEvents, agentSnapshots),
     ...deathPuffsForThreats(state, tracker, activeEvents, threatSnapshots),
-    ...hallDamageEvents(state, tracker, activeEvents),
+    ...defenseDamageEvents(state, tracker, activeEvents),
+    ...bannerDestroyedEvents(state, tracker),
     ...waveBannerEvents(state, tracker, threatIdentity),
   ];
   const nextEvents =
@@ -67,10 +68,10 @@ export function updateCombatTransients(
   const nextTracker = {
     agents: agentSnapshots,
     threats: threatSnapshots,
-    halls: hallSnapshots,
+    defenses: defenseSnapshots,
     threatIdentity,
     activeEvents: nextEvents,
-    shakenHallIds: shakenHallIdsAfter(state, tracker, newEvents),
+    shakenDefenseIds: shakenDefenseIdsAfter(tracker, newEvents),
   };
 
   return { tracker: nextTracker, events: nextEvents, newEvents };
@@ -133,36 +134,43 @@ function deathPuffsForThreats(
   return events;
 }
 
-function hallDamageEvents(
+function defenseDamageEvents(
   state: GameState,
   tracker: CombatTransientTracker,
   activeEvents: readonly CombatTransientEvent[],
 ): readonly CombatTransientEvent[] {
   const events: CombatTransientEvent[] = [];
-  for (const hall of state.halls) {
-    const previous = tracker.halls.get(hall.houseId);
-    if (previous === undefined || hall.hp >= previous.hp) {
+  const defenses = [
+    { id: "keep", ...state.keep },
+    ...state.banners.map((banner) => ({
+      id: `banner:${banner.houseId}`,
+      ...banner,
+    })),
+  ];
+  for (const defense of defenses) {
+    const previous = tracker.defenses.get(defense.id);
+    if (previous === undefined || defense.hp >= previous.hp) {
       continue;
     }
-    if (!hasEvent(activeEvents, `hall:${hall.houseId}:pulse`)) {
+    if (!hasEvent(activeEvents, `${defense.id}:pulse`)) {
       events.push({
-        kind: "hall_pulse",
-        id: `hall:${hall.houseId}:pulse`,
-        x: hall.x,
-        y: hall.y,
+        kind: "defense_pulse",
+        id: `${defense.id}:pulse`,
+        x: defense.x,
+        y: defense.y,
         startTick: state.tick,
-        durationTicks: HALL_PULSE_TICKS,
+        durationTicks: DEFENSE_PULSE_TICKS,
         hpBefore: previous.hp,
-        hpAfter: hall.hp,
+        hpAfter: defense.hp,
       });
     }
     if (
-      crossedDangerThreshold(hall.maxHp, previous.hp, hall.hp) &&
-      !tracker.shakenHallIds.has(hall.houseId)
+      crossedDangerThreshold(defense.maxHp, previous.hp, defense.hp) &&
+      !tracker.shakenDefenseIds.has(defense.id)
     ) {
       events.push({
         kind: "shake",
-        id: `hall:${hall.houseId}:shake`,
+        id: `${defense.id}:shake`,
         startTick: state.tick,
         durationTicks: SHAKE_TICKS,
         strength: 5,
@@ -170,6 +178,24 @@ function hallDamageEvents(
     }
   }
   return events;
+}
+
+function bannerDestroyedEvents(
+  state: GameState,
+  tracker: CombatTransientTracker,
+): readonly CombatTransientEvent[] {
+  return state.banners.flatMap((banner) => {
+    const previous = tracker.defenses.get(`banner:${banner.houseId}`);
+    return previous !== undefined && previous.hp > 0 && banner.hp <= 0
+      ? [{
+          kind: "banner_destroyed" as const,
+          id: `banner:${banner.houseId}:destroyed`,
+          startTick: state.tick,
+          durationTicks: WAVE_BANNER_TICKS,
+          houseId: banner.houseId,
+        }]
+      : [];
+  });
 }
 
 function waveBannerEvents(
@@ -201,27 +227,21 @@ function crossedDangerThreshold(
   previousHp: number,
   currentHp: number,
 ): boolean {
-  const threshold = maxHp * HALL_DANGER_RATIO;
+  const threshold = maxHp * DEFENSE_DANGER_RATIO;
   return previousHp >= threshold && currentHp < threshold;
 }
 
-function shakenHallIdsAfter(
-  state: GameState,
+function shakenDefenseIdsAfter(
   tracker: CombatTransientTracker,
   events: readonly CombatTransientEvent[],
 ): ReadonlySet<string> {
-  const shakenHallIds = new Set(tracker.shakenHallIds);
+  const shakenDefenseIds = new Set(tracker.shakenDefenseIds);
   for (const event of events) {
     if (event.kind === "shake") {
-      const hallId = state.halls.find(
-        (hall) => event.id === `hall:${hall.houseId}:shake`,
-      )?.houseId;
-      if (hallId !== undefined) {
-        shakenHallIds.add(hallId);
-      }
+      shakenDefenseIds.add(event.id.slice(0, -":shake".length));
     }
   }
-  return shakenHallIds;
+  return shakenDefenseIds;
 }
 
 function activeEventsAt(

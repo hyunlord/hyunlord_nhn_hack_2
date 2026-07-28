@@ -116,10 +116,10 @@ class FakeSpriteStore {
   }
 }
 
-const TEST_SPEC: SpriteSpec = { id: "hall", src: "/assets/world/hall.png", frameWidth: 32, frameHeight: 16, frames: 4, pivotX: 0.25, pivotY: 1, renderWidth: 20, renderHeight: 10, tintable: true };
+const TEST_SPEC: SpriteSpec = { id: "keep", src: "/assets/world/keep.png", frameWidth: 32, frameHeight: 16, frames: 4, pivotX: 0.25, pivotY: 1, renderWidth: 20, renderHeight: 10, tintable: true };
 
 const MANIFEST = {
-  hall: TEST_SPEC,
+  keep: TEST_SPEC,
   creature: { ...TEST_SPEC, id: "creature", tintable: false },
 } satisfies Partial<Record<SpriteId, SpriteSpec>>;
 
@@ -145,7 +145,7 @@ function context(smoothing = true, alpha = 1): FakeContext {
   return new FakeContext({ smoothing, alpha });
 }
 
-function readyHarness(id: SpriteId = "hall"): {
+function readyHarness(id: SpriteId = "keep"): {
   readonly image: FakeSource;
   readonly store: FakeSpriteStore;
   readonly draw: ReturnType<typeof makeDrawer>;
@@ -173,7 +173,7 @@ test("Given a missing sprite image, when drawing, then it returns false and make
   const draw = makeDrawer({ store });
   const canvas = context(true, 0.8);
 
-  assert.equal(draw(canvas, "hall", 10, 20), false);
+  assert.equal(draw(canvas, "keep", 10, 20), false);
   assert.deepEqual(canvas.operations(), []);
 });
 
@@ -182,7 +182,7 @@ test("Given sprites are disabled, when drawing, then it returns false and makes 
   store.disableSprites();
   const canvas = context(true, 0.8);
 
-  assert.equal(draw(canvas, "hall", 10, 20), false);
+  assert.equal(draw(canvas, "keep", 10, 20), false);
   assert.deepEqual(canvas.operations(), []);
 });
 
@@ -209,7 +209,7 @@ test("Given a ready sprite, when drawing frame defaults, then the 9-argument sou
   const { image, draw } = readyHarness();
   const canvas = context(true, 0.8);
 
-  assert.equal(draw(canvas, "hall", 50, 80), true);
+  assert.equal(draw(canvas, "keep", 50, 80), true);
   assert.deepEqual(canvas.operations(), [
     { kind: "setSmoothing", value: false },
     { kind: "setAlpha", value: 1 },
@@ -227,7 +227,7 @@ test("Given the canvas rejects a ready sprite, when drawing, then it returns fal
     throwOnDraw: true,
   });
 
-  assert.equal(draw(canvas, "hall", 50, 80), false);
+  assert.equal(draw(canvas, "keep", 50, 80), false);
   assert.equal(canvas.imageSmoothingEnabled, true);
   assert.equal(canvas.globalAlpha, 0.8);
 });
@@ -236,7 +236,7 @@ test("Given alpha outside the valid range, when drawing, then alpha is clamped a
   const { draw } = readyHarness();
   const canvas = context(false, 0.4);
 
-  assert.equal(draw(canvas, "hall", 50, 80, { alpha: 3 }), true);
+  assert.equal(draw(canvas, "keep", 50, 80, { alpha: 3 }), true);
   assert.equal(canvas.imageSmoothingEnabled, false);
   assert.equal(canvas.globalAlpha, 0.4);
   assert.deepEqual(
@@ -251,19 +251,19 @@ test("Given alpha outside the valid range, when drawing, then alpha is clamped a
 test("Given tint is requested for a tintable sprite, when the cache returns a surface, then that surface is drawn", () => {
   const { store, draw } = readyHarness();
   const tinted = source("tinted");
-  store.setTintedImage("hall", "#ff0000", tinted);
+  store.setTintedImage("keep", "#ff0000", tinted);
   const canvas = context();
 
-  assert.equal(draw(canvas, "hall", 50, 80, { tint: "#ff0000" }), true);
+  assert.equal(draw(canvas, "keep", 50, 80, { tint: "#ff0000" }), true);
   assert.deepEqual(operationAt(canvas, 2), expectedDraw(tinted));
 });
 
 test("Given tinting fails for a tintable sprite, when drawing, then no untinted fallback is drawn", () => {
   const { store, draw } = readyHarness();
-  store.setTintedImage("hall", "#ff0000", null);
+  store.setTintedImage("keep", "#ff0000", null);
   const canvas = context();
 
-  assert.equal(draw(canvas, "hall", 50, 80, { tint: "#ff0000" }), false);
+  assert.equal(draw(canvas, "keep", 50, 80, { tint: "#ff0000" }), false);
   assert.deepEqual(canvas.operations(), []);
 });
 
@@ -280,8 +280,8 @@ test("Given overflowing and negative frame numbers, when drawing, then the horiz
   const overflowCanvas = context();
   const negativeCanvas = context();
 
-  assert.equal(draw(overflowCanvas, "hall", 50, 80, { frame: 5 }), true);
-  assert.equal(draw(negativeCanvas, "hall", 50, 80, { frame: -1 }), true);
+  assert.equal(draw(overflowCanvas, "keep", 50, 80, { frame: 5 }), true);
+  assert.equal(draw(negativeCanvas, "keep", 50, 80, { frame: -1 }), true);
   assert.deepEqual(operationAt(overflowCanvas, 2), expectedDraw(image, { sx: 32 }));
   assert.deepEqual(operationAt(negativeCanvas, 2), expectedDraw(image, { sx: 96 }));
 });
@@ -295,7 +295,7 @@ test("Given a nonpositive or nonfinite scale, when drawing, then drawing is reje
 
   for (const options of cases) {
     const canvas = context();
-    assert.equal(draw(canvas, "hall", 50, 80, options), false);
+    assert.equal(draw(canvas, "keep", 50, 80, options), false);
     assert.deepEqual(canvas.operations(), []);
   }
 });
@@ -304,7 +304,7 @@ test("Given flipX is enabled, when drawing, then the transform is saved and rest
   const { image, draw } = readyHarness();
   const canvas = context();
 
-  assert.equal(draw(canvas, "hall", 50, 80, { flipX: true }), true);
+  assert.equal(draw(canvas, "keep", 50, 80, { flipX: true }), true);
   assert.deepEqual(canvas.operations(), [
     { kind: "setSmoothing", value: false },
     { kind: "setAlpha", value: 1 },

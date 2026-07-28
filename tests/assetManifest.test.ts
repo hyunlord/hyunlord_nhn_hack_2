@@ -9,8 +9,10 @@ import {
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 
 const EXPECTED_SPRITE_IDS: readonly SpriteId[] = [
-  "hall",
-  "hall_rubble",
+  "keep",
+  "keep_rubble",
+  "banner",
+  "banner_rubble",
   "tower",
   "tower_rubble",
   "agent",
@@ -48,8 +50,10 @@ const EXPECTED_SPEC_FIELDS = [
 ] as const;
 
 const EXPECTED_SPRITE_SRCS: Readonly<Record<SpriteId, string>> = {
-  hall: "/assets/world/hall.png",
-  hall_rubble: "/assets/world/hall_rubble.png",
+  keep: "/assets/world/keep.png",
+  keep_rubble: "/assets/world/keep_rubble.png",
+  banner: "/assets/world/banner.png",
+  banner_rubble: "/assets/world/banner_rubble.png",
   tower: "/assets/world/tower.png",
   tower_rubble: "/assets/world/tower_rubble.png",
   agent: "/assets/world/agent.png",
@@ -93,8 +97,8 @@ test("Given the sprite manifest, when specs are read, then every entry uses the 
 });
 
 test("Given world token sprites, when render sizes are read, then they mirror gameplay geometry", () => {
-  assert.equal(SPRITE_MANIFEST.hall.renderWidth, BALANCE_CONFIG.HALL_RADIUS * 2);
-  assert.equal(SPRITE_MANIFEST.hall.renderHeight, BALANCE_CONFIG.HALL_RADIUS * 2);
+  assert.equal(SPRITE_MANIFEST.keep.renderWidth, BALANCE_CONFIG.KEEP_RADIUS * 2);
+  assert.equal(SPRITE_MANIFEST.keep.renderHeight, BALANCE_CONFIG.KEEP_RADIUS * 2);
   assert.equal(SPRITE_MANIFEST.tower.renderWidth, TOWER_RADIUS * 2);
   assert.equal(SPRITE_MANIFEST.tower.renderHeight, TOWER_RADIUS * 2);
   assert.equal(

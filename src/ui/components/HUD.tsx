@@ -6,6 +6,7 @@ import { useGameStore } from "../../state/gameStore";
 import type { LegacyRiteGroup } from "../investmentSummary";
 import { HeroProgressList } from "./hud/HeroProgressList";
 import { HouseStatusList } from "./hud/HouseStatusList";
+import { houseName } from "../../content/locale/display";
 
 const EMPTY_LEGACY_RITES: readonly LegacyRiteGroup[] = [];
 
@@ -69,6 +70,26 @@ export function HUD({
       </div>
 
       <div className="run-hud-bottom-left hud-panel hud-panel--compact">
+        <section className="defense-status" aria-label={t("hud.defenses")}>
+          <label className="keep-health">
+            <span>{t("hud.keepHp", { current: state.keep.hp, max: state.keep.maxHp })}</span>
+            <progress max={state.keep.maxHp} value={state.keep.hp} />
+          </label>
+          <div className="banner-status">
+            {state.banners.map((banner) => (
+              <span
+                aria-label={t("hud.bannerStatus", {
+                  house: houseName(t, banner.houseId),
+                  status: t(banner.hp > 0 ? "hud.bannerIntact" : "hud.bannerDestroyed"),
+                })}
+                className="banner-status__pip"
+                data-destroyed={banner.hp <= 0}
+                key={banner.houseId}
+                style={{ backgroundColor: state.houses.find(({ id }) => id === banner.houseId)?.color }}
+              />
+            ))}
+          </div>
+        </section>
         <HouseStatusList state={state} t={t} />
         <HeroProgressList state={state} t={t} />
         {legacyRites.length === 0 ? null : (

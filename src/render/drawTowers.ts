@@ -7,7 +7,7 @@ import {
   validateTowerPlacement,
 } from "../build/structures";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
-import type { Hall } from "../engine/engine.types";
+import type { Banner, Keep } from "../engine/engine.types";
 import { drawSprite } from "./assets/drawSprite";
 
 type Preview = { readonly x: number; readonly y: number };
@@ -112,7 +112,8 @@ export function drawTowerPreview(
   context: CanvasRenderingContext2D,
   preview: Preview | null,
   towers: readonly Tower[],
-  halls: readonly Hall[],
+  keep: Keep,
+  banners: readonly Banner[],
 ): void {
   if (preview === null) {
     return;
@@ -120,14 +121,14 @@ export function drawTowerPreview(
   const placement = validateTowerPlacement(preview.x, preview.y, {
     worldWidth: BALANCE_CONFIG.WORLD_WIDTH,
     worldHeight: BALANCE_CONFIG.WORLD_HEIGHT,
-    halls: halls.map(({ houseId, x, y, hp, maxHp }) => ({
-      id: houseId,
-      x,
-      y,
-      hp,
-      maxHp,
-      radius: BALANCE_CONFIG.HALL_RADIUS,
-    })),
+    structures: [
+      { id: "keep", ...keep, radius: BALANCE_CONFIG.KEEP_RADIUS },
+      ...banners.map((banner) => ({
+        id: `banner:${banner.houseId}` as const,
+        ...banner,
+        radius: BALANCE_CONFIG.BANNER_RADIUS,
+      })),
+    ],
     towers,
   });
   const fill = placement.ok

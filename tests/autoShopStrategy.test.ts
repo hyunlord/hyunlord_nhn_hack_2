@@ -25,8 +25,8 @@ function intermissionState(tribute: number) {
           ? { ...agent, hp: Math.max(1, agent.hp - 40) }
           : agent,
     ),
-    halls: initial.halls.map((hall, index) =>
-      index === 0 ? { ...hall, hp: hall.hp - 350 } : hall,
+    banners: initial.banners.map((banner, index) =>
+      index === 0 ? { ...banner, hp: banner.hp - 350 } : banner,
     ),
   };
 }

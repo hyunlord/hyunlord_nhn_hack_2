@@ -10,6 +10,7 @@ import {
   createTower,
   validateTowerPlacement,
 } from "../src/build/structures";
+import type { TowerPlacementContext } from "../src/build/build.types";
 
 test("Given shop purchases, when prices resolve, then exact growth curves are rounded", () => {
   assert.equal(priceForItem("recruit_squad", EMPTY_PURCHASES), 40);
@@ -32,7 +33,7 @@ test("Given a neutral shop snapshot, when availability resolves, then every item
     purchases: EMPTY_PURCHASES,
     towerCount: 0,
     damagedAgentCount: 0,
-    damagedHallCount: 0,
+    damagedStructureCount: 0,
     deadHeroCount: 0,
     deadRegularAgentCount: 1,
   });
@@ -52,15 +53,15 @@ test("Given a neutral shop snapshot, when availability resolves, then every item
   );
 });
 
-test("Given tower placement candidates, when pure validation runs, then bounds, spacing, hall distance, and max living towers are enforced", () => {
+test("Given tower placement candidates, when pure validation runs, then bounds, spacing, defense structure distance, and max living towers are enforced", () => {
   const base = {
     worldWidth: 960,
     worldHeight: 600,
-    halls: [
-      { id: "house_a", x: 120, y: 120, hp: 900, maxHp: 900, radius: 16 },
+    structures: [
+      { id: "keep", x: 120, y: 120, hp: 900, maxHp: 900, radius: 16 },
     ],
     towers: [createTower("tower_0", 300, 300)],
-  };
+  } satisfies TowerPlacementContext;
 
   assert.equal(
     validateTowerPlacement(20, 20, base).ok,
@@ -76,7 +77,7 @@ test("Given tower placement candidates, when pure validation runs, then bounds, 
   );
   assert.equal(
     validateTowerPlacement(130, 120, base).reason,
-    "too close to a hall",
+    "too close to keep or banner",
   );
   assert.equal(
     validateTowerPlacement(800, 300, {

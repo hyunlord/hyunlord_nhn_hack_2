@@ -151,7 +151,8 @@ test("Given draft phase, when ticks advance, then only tick and effect expiry ch
 
   assert.equal(result.tick, drafted.tick + 1);
   assert.deepEqual(result.agents, drafted.agents);
-  assert.deepEqual(result.halls, drafted.halls);
+  assert.deepEqual(result.keep, drafted.keep);
+  assert.deepEqual(result.banners, drafted.banners);
   assert.deepEqual(result.activeThreat, drafted.activeThreat);
   assert.equal(result.divinePower, drafted.divinePower);
 });

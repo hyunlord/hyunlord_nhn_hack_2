@@ -5,10 +5,8 @@ import {
   EMPTY_STARTING_MODIFIER_BUNDLE,
   type StartingModifierBundle,
 } from "../src/content/runConfiguration";
-import {
-  DEFAULT_HOUSE_IDS,
-  HOUSE_SPAWN_SLOTS,
-} from "../src/content/houseConfig";
+import { DEFAULT_HOUSE_IDS } from "../src/content/houseConfig";
+import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import {
   divineModifiersForState,
   modifiersForHouse,
@@ -25,13 +23,15 @@ test("Given no explicit selection, when a run is created, then the original trio
     DEFAULT_HOUSE_IDS,
   );
   assert.deepEqual(
-    state.halls.map(({ houseId, x, y }) => ({ houseId, x, y })),
-    HOUSE_SPAWN_SLOTS.map((slot, index) => ({
-      houseId: DEFAULT_HOUSE_IDS[index],
-      x: slot.x,
-      y: slot.y,
-    })),
+    state.banners.map(({ houseId }) => houseId),
+    DEFAULT_HOUSE_IDS,
   );
+  assert.deepEqual(state.keep, {
+    x: 480,
+    y: 300,
+    hp: BALANCE_CONFIG.KEEP_HP,
+    maxHp: BALANCE_CONFIG.KEEP_HP,
+  });
 });
 
 test("Given different persistent meta saves, when seed trio and derived bundle match, then complete initial run state is identical", () => {

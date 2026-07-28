@@ -7,7 +7,7 @@
   --choice-warning-text: color-mix(in srgb, #d4693f 72%, var(--draft-ink));
   --combat-hit-flash: rgba(255, 243, 196, 0.95);
   --combat-death-puff: rgba(214, 196, 161, 0.45);
-  --hall-pulse: rgba(255, 214, 138, 0.32);
+  --defense-pulse: rgba(255, 214, 138, 0.32);
   --wave-banner-ink: var(--draft-panel);
   --motion-quick: 140ms;
   --motion-combat: 300ms;

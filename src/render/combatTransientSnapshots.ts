@@ -1,5 +1,5 @@
 import type { Agent } from "../agents/agentTypes";
-import type { GameState, Hall } from "../engine/engine.types";
+import type { Banner, GameState, Keep } from "../engine/engine.types";
 import type { ThreatEvent } from "../threat/threatTypes";
 import type { CombatSnapshot } from "./combatTransientTypes";
 
@@ -42,18 +42,22 @@ export function snapshotThreats(
   return snapshots;
 }
 
-export function snapshotHalls(
-  halls: readonly Hall[],
+export function snapshotDefenses(
+  keep: Keep,
+  banners: readonly Banner[],
 ): ReadonlyMap<string, CombatSnapshot> {
   return new Map(
-    halls.map((hall) => [
-      hall.houseId,
+    [
+      ["keep", { x: keep.x, y: keep.y, hp: keep.hp }],
+      ...banners.map((banner) => [
+      `banner:${banner.houseId}`,
       {
-        x: hall.x,
-        y: hall.y,
-        hp: hall.hp,
+        x: banner.x,
+        y: banner.y,
+        hp: banner.hp,
       },
-    ]),
+    ] as const),
+    ],
   );
 }
 
@@ -77,8 +81,4 @@ export function displayThreatId(threatId: string): string {
   return threatId.startsWith("creature:")
     ? threatId.slice("creature:".length)
     : threatId;
-}
-
-export function maxHallHp(halls: readonly Hall[], houseId: string): number {
-  return halls.find((hall) => hall.houseId === houseId)?.maxHp ?? 1;
 }

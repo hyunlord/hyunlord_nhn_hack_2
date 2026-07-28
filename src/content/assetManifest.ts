@@ -16,8 +16,10 @@ export type SpriteSpec = {
 };
 
 export const SPRITE_IDS = [
-  "hall",
-  "hall_rubble",
+  "keep",
+  "keep_rubble",
+  "banner",
+  "banner_rubble",
   "tower",
   "tower_rubble",
   "agent",
@@ -71,22 +73,40 @@ const HERO_RENDER = {
 } as const;
 
 export const SPRITE_MANIFEST = {
-  hall: {
-    id: "hall",
-    src: "/assets/world/hall.png",
+  keep: {
+    id: "keep",
+    src: "/assets/world/keep.png",
     ...FRAME,
     ...CENTER_PIVOT,
-    renderWidth: BALANCE_CONFIG.HALL_RADIUS * 2,
-    renderHeight: BALANCE_CONFIG.HALL_RADIUS * 2,
+    renderWidth: BALANCE_CONFIG.KEEP_RADIUS * 2,
+    renderHeight: BALANCE_CONFIG.KEEP_RADIUS * 2,
     tintable: true,
   },
-  hall_rubble: {
-    id: "hall_rubble",
-    src: "/assets/world/hall_rubble.png",
+  keep_rubble: {
+    id: "keep_rubble",
+    src: "/assets/world/keep_rubble.png",
     ...FRAME,
     ...CENTER_PIVOT,
-    renderWidth: BALANCE_CONFIG.HALL_RADIUS * 2,
-    renderHeight: BALANCE_CONFIG.HALL_RADIUS * 2,
+    renderWidth: BALANCE_CONFIG.KEEP_RADIUS * 2,
+    renderHeight: BALANCE_CONFIG.KEEP_RADIUS * 2,
+    tintable: true,
+  },
+  banner: {
+    id: "banner",
+    src: "/assets/world/banner.png",
+    ...FRAME,
+    ...CENTER_PIVOT,
+    renderWidth: BALANCE_CONFIG.BANNER_RADIUS * 2,
+    renderHeight: BALANCE_CONFIG.BANNER_RADIUS * 2,
+    tintable: true,
+  },
+  banner_rubble: {
+    id: "banner_rubble",
+    src: "/assets/world/banner_rubble.png",
+    ...FRAME,
+    ...CENTER_PIVOT,
+    renderWidth: BALANCE_CONFIG.BANNER_RADIUS * 2,
+    renderHeight: BALANCE_CONFIG.BANNER_RADIUS * 2,
     tintable: true,
   },
   tower: {

@@ -101,31 +101,31 @@ test("Given an idle sprite, when image reads happen, then no image request start
   const { factory, loader } = makeLoader();
 
   // When
-  const firstRead = loader.getImage("hall");
-  const secondRead = loader.getImage("hall");
-  const thirdRead = loader.getImage("hall");
+  const firstRead = loader.getImage("keep");
+  const secondRead = loader.getImage("keep");
+  const thirdRead = loader.getImage("keep");
 
   // Then
   assert.equal(firstRead, null);
   assert.equal(secondRead, null);
   assert.equal(thirdRead, null);
   assert.equal(factory.createdCount(), 0);
-  assert.equal(loader.getStatus("hall"), "idle");
+  assert.equal(loader.getStatus("keep"), "idle");
 });
 
 test("Given a sprite image loads, when it is read again, then the exact cached image is returned", () => {
   // Given
   const { factory, loader } = makeLoader();
-  void loader.preload("hall");
+  void loader.preload("keep");
   const image = requireCreatedImage(factory, 0);
 
   // When
   image.completeLoad();
-  const loadedImage = loader.getImage("hall");
+  const loadedImage = loader.getImage("keep");
 
   // Then
   assert.equal(loadedImage, image);
-  assert.equal(loader.getStatus("hall"), "ready");
+  assert.equal(loader.getStatus("keep"), "ready");
   assert.equal(factory.createdCount(), 1);
   assert.equal(image.onload, null);
   assert.equal(image.onerror, null);
@@ -157,7 +157,7 @@ test("Given a mixed preload, when some sprites load and some are missing, then c
 test("Given a failed sprite request, when status and image are read repeatedly, then reads stay null and do not throw", async () => {
   // Given
   const { factory, loader } = makeLoader();
-  const spriteId: SpriteId = "hall";
+  const spriteId: SpriteId = "keep";
   const preload = loader.preload(spriteId);
   requireCreatedImage(factory, 0).failLoad();
   await preload;
@@ -177,7 +177,7 @@ test("Given src assignment throws synchronously, when a sprite loads, then it re
   // Given
   const throwingImage = new ThrowingSrcImage();
   const loader = new SpriteLoader(() => throwingImage);
-  const spriteId: SpriteId = "hall";
+  const spriteId: SpriteId = "keep";
 
   // When
   await assert.doesNotReject(() => loader.preload(spriteId));

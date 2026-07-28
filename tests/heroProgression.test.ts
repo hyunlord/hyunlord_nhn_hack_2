@@ -42,7 +42,7 @@ function threat(hp: number): ThreatEvent {
       y: 100,
       hp,
       agentDamage: 1,
-      hallDamage: 1,
+      structureDamage: 1,
       lastAttackTick: -1,
       haltedUntilTick: -1,
     }],

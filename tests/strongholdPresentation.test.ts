@@ -7,13 +7,12 @@ import {
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import {
   HOUSE_CONFIG,
-  HOUSE_SPAWN_SLOTS,
   STRONGHOLD_CENTER,
 } from "../src/content/houseConfig";
 import type { LocaleKey, LocaleParams } from "../src/content/locale";
 import type { House } from "../src/agents/agentTypes";
 import { drawBackground } from "../src/render/drawBackground";
-import { drawHalls } from "../src/render/drawHalls";
+import { drawDefenses } from "../src/render/drawDefenses";
 import type { BrowserSpriteSource } from "../src/render/assets/drawSprite";
 
 type DrawOperation =
@@ -152,29 +151,25 @@ function translate(key: LocaleKey, _params?: LocaleParams): string {
   return labels[key] ?? key;
 }
 
-test("Given the world background, when it is drawn, then a worn-earth stronghold patch is centered below hall actors", () => {
+test("Given one keep and three banners, when defenses are drawn, then the shared keep precedes all three house sectors", () => {
   const context = new RecordingContext();
+  const state = {
+    keep: { x: STRONGHOLD_CENTER.x, y: STRONGHOLD_CENTER.y, hp: 2_400, maxHp: 2_400 },
+    banners: TEST_HOUSES.slice(0, 3).map((house, index) => ({
+      houseId: house.id,
+      x: STRONGHOLD_CENTER.x + (index - 1) * 45,
+      y: STRONGHOLD_CENTER.y - 52,
+      hp: 420,
+      maxHp: 420,
+    })),
+  };
 
   drawBackground(
     context,
     BALANCE_CONFIG.WORLD_WIDTH,
     BALANCE_CONFIG.WORLD_HEIGHT,
   );
-  drawHalls(
-    context,
-    [
-      {
-        houseId: "house_a",
-        x: HOUSE_SPAWN_SLOTS[0].x,
-        y: HOUSE_SPAWN_SLOTS[0].y,
-        hp: 900,
-        maxHp: 900,
-      },
-    ],
-    TEST_HOUSES,
-    true,
-    translate,
-  );
+  drawDefenses(context, state.keep, state.banners, TEST_HOUSES, translate);
 
   const patchIndex = context.operations().findIndex(
     (operation) =>
@@ -184,39 +179,38 @@ test("Given the world background, when it is drawn, then a worn-earth stronghold
       operation.innerRadius === 0 &&
       operation.outerRadius === 170,
   );
-  const labelIndex = context.operations().findIndex(
-    (operation) => operation.kind === "fillText" && operation.text.includes("Ashvale Local"),
-  );
-  const hallPrimitiveIndex = context.operations().findIndex(
+  const keepPrimitiveIndex = context.operations().findIndex(
     (operation) =>
       operation.kind === "rect" &&
-      operation.x === HOUSE_SPAWN_SLOTS[0].x - BALANCE_CONFIG.HALL_RADIUS &&
-      operation.y === HOUSE_SPAWN_SLOTS[0].y - BALANCE_CONFIG.HALL_RADIUS,
+      operation.width === BALANCE_CONFIG.KEEP_RADIUS * 2 &&
+      operation.height === BALANCE_CONFIG.KEEP_RADIUS * 2,
+  );
+  const bannerMarks = context.operations().filter(
+    (operation) => operation.kind === "fillText" && operation.text === "*",
   );
 
   assert.notEqual(patchIndex, -1);
-  assert.notEqual(hallPrimitiveIndex, -1);
-  assert.notEqual(labelIndex, -1);
-  assert.ok(patchIndex < hallPrimitiveIndex);
-  assert.ok(patchIndex < labelIndex);
+  assert.notEqual(keepPrimitiveIndex, -1);
+  assert.equal(bannerMarks.length, 3);
+  assert.ok(patchIndex < keepPrimitiveIndex);
 });
 
-test("Given a selected house hall, when its banner is drawn, then only localized short name and color mark are rendered", () => {
+test("Given a selected house banner, when it is drawn, then its localized short name and color mark are rendered", () => {
   const context = new RecordingContext();
 
-  drawHalls(
+  drawDefenses(
     context,
+    { x: STRONGHOLD_CENTER.x, y: STRONGHOLD_CENTER.y, hp: 2_400, maxHp: 2_400 },
     [
       {
         houseId: "house_a",
-        x: HOUSE_SPAWN_SLOTS[0].x,
-        y: HOUSE_SPAWN_SLOTS[0].y,
-        hp: 900,
-        maxHp: 900,
+        x: STRONGHOLD_CENTER.x,
+        y: STRONGHOLD_CENTER.y - 52,
+        hp: 420,
+        maxHp: 420,
       },
     ],
     TEST_HOUSES,
-    true,
     translate,
   );
 
@@ -227,7 +221,7 @@ test("Given a selected house hall, when its banner is drawn, then only localized
 
   assert.deepEqual(
     textOperations.map(({ text }) => text),
-    ["* Ashvale Local", "* Ashvale Local"],
+    ["*", "*", "Ashvale Local", "Ashvale Local"],
   );
   assert.ok(
     context.operations().some(
@@ -237,16 +231,26 @@ test("Given a selected house hall, when its banner is drawn, then only localized
   );
 });
 
-test("Given deterministic stronghold-region candidates, when production placement validation runs, then viable build slots and hall rejections are stable", () => {
-  const halls = HOUSE_SPAWN_SLOTS.map((slot, index) => ({
-    id: slot.id,
-    x: slot.x,
-    y: slot.y,
-    hp: 900,
-    maxHp: 900,
-    radius: BALANCE_CONFIG.HALL_RADIUS,
-    houseId: HOUSE_CONFIG[index]?.id ?? "house_a",
-  }));
+test("Given deterministic stronghold-region candidates, when production placement validation runs, then viable build slots and defense rejections are stable", () => {
+  const structures = [
+    {
+      id: "keep" as const,
+      x: STRONGHOLD_CENTER.x,
+      y: STRONGHOLD_CENTER.y,
+      hp: 2_400,
+      maxHp: 2_400,
+      radius: BALANCE_CONFIG.KEEP_RADIUS,
+    },
+    ...TEST_HOUSES.slice(0, 3).map((house, index) => ({
+      id: `banner:${house.id}` as const,
+      houseId: house.id,
+      x: STRONGHOLD_CENTER.x + (index - 1) * 45,
+      y: STRONGHOLD_CENTER.y - 52,
+      hp: 420,
+      maxHp: 420,
+      radius: BALANCE_CONFIG.BANNER_RADIUS,
+    })),
+  ];
   const offsets = [-160, -120, -80, -40, 0, 40, 80, 120, 160] as const;
   const candidates = offsets.flatMap((xOffset) =>
     offsets.map((yOffset) => ({
@@ -264,22 +268,22 @@ test("Given deterministic stronghold-region candidates, when production placemen
       validateTowerPlacement(candidate.x, candidate.y, {
         worldWidth: BALANCE_CONFIG.WORLD_WIDTH,
         worldHeight: BALANCE_CONFIG.WORLD_HEIGHT,
-        halls,
+        structures,
         towers: [],
       }).ok,
   );
 
   assert.equal(TOWER_CONFIG.TOWER_MIN_SPACING, 60);
   assert.ok(validCandidates.length >= 5);
-  for (const hall of halls) {
+  for (const structure of structures) {
     assert.equal(
-      validateTowerPlacement(hall.x, hall.y, {
+      validateTowerPlacement(structure.x, structure.y, {
         worldWidth: BALANCE_CONFIG.WORLD_WIDTH,
         worldHeight: BALANCE_CONFIG.WORLD_HEIGHT,
-        halls,
+        structures,
         towers: [],
       }).reason,
-      "too close to a hall",
+      "too close to keep or banner",
     );
   }
 });

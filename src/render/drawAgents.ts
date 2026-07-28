@@ -5,6 +5,7 @@ import {
   type UnitClassDefinition,
 } from "../content/unitClassConfig";
 import type { SpriteId } from "../content/assetManifest";
+import type { HouseId } from "../content/houseConfig";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import { drawSprite } from "./assets/drawSprite";
 import { mixRgba } from "./dayNight";
@@ -57,18 +58,6 @@ function traceAgentBody(
   }
 }
 
-function drawAgentPrimitiveBody(
-  context: CanvasRenderingContext2D,
-  agent: Agent,
-  color: string,
-  definition: UnitClassDefinition,
-): void {
-  traceAgentBody(context, agent, definition);
-  context.fillStyle = color;
-  context.globalAlpha = agent.state === "fleeing" ? 0.42 : 1;
-  context.fill();
-  context.globalAlpha = 1;
-}
 
 export function drawAgents(
   context: CanvasRenderingContext2D,
@@ -77,11 +66,13 @@ export function drawAgents(
   currentTick: number,
   dayNightFactor = 0,
   brightenedAgentIds: readonly string[] = [],
+  fracturedHouseIds: readonly HouseId[] = [],
 ): void {
   const colorsByHouse = new Map(
     houses.map((house) => [house.id, house.color] as const),
   );
   const brightened = new Set(brightenedAgentIds);
+  const fractured = new Set(fracturedHouseIds);
 
   context.lineWidth = 1;
   const ambientOutline = mixRgba(
@@ -127,7 +118,11 @@ export function drawAgents(
       continue;
     }
 
-    const alpha = agent.state === "fleeing" ? 0.42 : 1;
+    const isFractured = fractured.has(agent.houseId);
+    const alpha = Math.max(
+      0.15,
+      isFractured ? 0.35 : agent.state === "fleeing" ? 0.42 : 1,
+    );
     const spriteDrawn = drawSprite(
       context,
       AGENT_SPRITE_IDS[agent.unitClass],
@@ -136,9 +131,13 @@ export function drawAgents(
       { tint: color, alpha },
     );
     if (!spriteDrawn) {
-      drawAgentPrimitiveBody(context, agent, color, definition);
+      context.globalAlpha = alpha;
+      traceAgentBody(context, agent, definition);
+      context.fillStyle = color;
+      context.fill();
+      context.globalAlpha = 1;
     }
-    if (brightened.has(agent.id) && agent.state !== "fleeing") {
+    if (!isFractured && brightened.has(agent.id) && agent.state !== "fleeing") {
       traceAgentBody(context, agent, definition);
       context.lineWidth = 3;
       context.strokeStyle = "rgba(255, 250, 230, 0.88)";
@@ -147,7 +146,7 @@ export function drawAgents(
     const recentlyDamaged =
       agent.lastDamagedTick >= 0 &&
       currentTick - agent.lastDamagedTick < BALANCE_CONFIG.DAMAGE_FLASH_TICKS;
-    if (agent.state !== "fleeing") {
+    if (!isFractured && agent.state !== "fleeing") {
       if (spriteDrawn) {
         traceAgentBody(context, agent, definition);
       }

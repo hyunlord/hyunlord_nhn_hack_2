@@ -81,7 +81,7 @@ test("Given the same seed range, when serial and parallel harnesses finish, then
       assert.ok(wave.creatureSpawns > 0);
       assert.ok(wave.creatureKills <= wave.creatureSpawns);
       assert.ok(wave.mageOnlyTicks >= 0);
-      assert.ok(wave.hallDamage >= 0);
+      assert.ok(wave.keepDamage + wave.bannerDamage >= 0);
     }
   }
 });

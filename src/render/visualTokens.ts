@@ -24,8 +24,8 @@ export const CANVAS_VISUAL_TOKENS = {
     cssName: "--combat-death-puff",
     value: "rgba(214, 196, 161, 0.45)",
   },
-  hallPulse: {
-    cssName: "--hall-pulse",
+  defensePulse: {
+    cssName: "--defense-pulse",
     value: "rgba(255, 214, 138, 0.32)",
   },
   waveBannerInk: {

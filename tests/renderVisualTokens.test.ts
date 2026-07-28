@@ -167,7 +167,7 @@ test("Given documented canvas tokens, when the render token module is inspected,
     "strongholdGroundRim",
     "combatHitFlash",
     "combatDeathPuff",
-    "hallPulse",
+    "defensePulse",
     "waveBannerInk",
   ] as const satisfies readonly CanvasVisualTokenName[];
 
@@ -197,11 +197,11 @@ test("Given the stronghold background, when it is drawn, then gradient stops con
   ]);
 });
 
-test("Given render-only combat transients, when they are drawn, then death puff, hall pulse, and wave banner use documented tokens", () => {
+test("Given render-only combat transients, when they are drawn, then death puff, defense pulse, and wave banner use documented tokens", () => {
   const context = new TokenContext();
   const events: readonly CombatTransientEvent[] = [
     { kind: "death_puff", id: "death:1", target: "agent", x: 10, y: 20, startTick: 5, durationTicks: 10 },
-    { kind: "hall_pulse", id: "hall:1", x: 30, y: 40, startTick: 5, durationTicks: 10, hpBefore: 900, hpAfter: 650 },
+    { kind: "defense_pulse", id: "hall:1", x: 30, y: 40, startTick: 5, durationTicks: 10, hpBefore: 900, hpAfter: 650 },
     { kind: "wave_banner", id: "wave:1", wave: 1, creatureCount: 9, daylightRaid: false, startTick: 5, durationTicks: 60 },
   ];
 
@@ -217,7 +217,7 @@ test("Given render-only combat transients, when they are drawn, then death puff,
   assert.ok(
     operations.some(
       (operation) =>
-        operation.kind === "setStrokeStyle" && operation.value === CANVAS_VISUAL_TOKENS.hallPulse.value,
+        operation.kind === "setStrokeStyle" && operation.value === CANVAS_VISUAL_TOKENS.defensePulse.value,
     ),
   );
   assert.ok(

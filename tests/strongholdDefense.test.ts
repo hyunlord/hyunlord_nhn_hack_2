@@ -29,7 +29,7 @@ function combatWithThreat(seed: number, x: number, y: number) {
             y,
             hp: BALANCE_CONFIG.CREATURE_HP,
             agentDamage: BALANCE_CONFIG.CREATURE_ATTACK_DAMAGE,
-            hallDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+            structureDamage: BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE,
             lastAttackTick: -1,
             haltedUntilTick: -1,
           },
@@ -55,7 +55,7 @@ function defendingHouseIds(
   );
 }
 
-test("Given the concentrated stronghold, when one hall is threatened, then living regulars from all three houses defend it", () => {
+test("Given the concentrated stronghold, when one defense is threatened, then living regulars from all three houses defend it", () => {
   const [north] = HOUSE_SPAWN_SLOTS;
   if (north === undefined) {
     throw new RangeError("Expected north spawn slot.");
@@ -69,20 +69,17 @@ test("Given the concentrated stronghold, when one hall is threatened, then livin
   );
 });
 
-test("Given a threat outside every hall defense radius, when combat advances, then it does not produce the three-house defense set", () => {
+test("Given a threat outside the keep defense radius, when combat advances, then the shared line still uses all three houses", () => {
   const farThreat = { x: 20, y: 20 };
   const initial = createInitialState(803).state;
   assert.ok(
-    initial.halls.every(
-      (hall) =>
-        Math.hypot(hall.x - farThreat.x, hall.y - farThreat.y) >
-        BALANCE_CONFIG.HALL_DEFENSE_RADIUS,
-    ),
+    Math.hypot(initial.keep.x - farThreat.x, initial.keep.y - farThreat.y) >
+      BALANCE_CONFIG.KEEP_DEFENSE_RADIUS,
   );
 
   const combat = combatWithThreat(803, farThreat.x, farThreat.y);
 
-  assert.notDeepEqual(
+  assert.deepEqual(
     defendingHouseIds(combat),
     new Set(["house_a", "house_b", "house_c"]),
   );

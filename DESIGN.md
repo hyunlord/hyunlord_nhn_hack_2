@@ -53,13 +53,17 @@ restrained blueprint-like interface surrounding a dark, vignetted world map.
 | Shop veil | `--shop-veil` | `rgba(26, 22, 19, 0.96)` | Intermission shop surface |
 | Stronghold ground core | `--stronghold-ground-core` | `rgba(149, 116, 72, 0.18)` | Worn-earth center below the three halls |
 | Stronghold ground rim | `--stronghold-ground-rim` | `rgba(94, 72, 48, 0.08)` | Outer falloff for the radius-170 stronghold patch |
+| Keep stone | canvas token | `#8f8a7d` | Shared keep body |
+| Keep HP | canvas token | `#d8c879` | Shared keep health fill |
+| Banner fallen | canvas token | `#3d3732` | Destroyed banner marker |
+| Fractured agent | canvas alpha | `0.35` minimum `0.15` | Reduced-opacity house agents after banner loss; no outline |
 | Composition empty | `--composition-empty` | `color-mix(in srgb, var(--border) 18%, transparent)` | Zero-agent class-composition track |
 | Composition divider | `--composition-divider` | `rgba(0, 0, 0, 0.42)` | Hairline separation between class-composition segments |
 | Choice effect text | `--choice-effect-text` | `color-mix(in srgb, var(--text) 78%, var(--accent))` | Numeric effect lines on choice cards |
 | Choice warning text | `--choice-warning-text` | `color-mix(in srgb, #d4693f 72%, var(--draft-ink))` | Applicability and raid warning copy |
 | Combat hit flash | `--combat-hit-flash` | `rgba(255, 243, 196, 0.95)` | Recent-hit outline and ranged volley emphasis |
 | Combat death puff | `--combat-death-puff` | `rgba(214, 196, 161, 0.45)` | Render-local death-puff fade |
-| Hall pulse | `--hall-pulse` | `rgba(255, 214, 138, 0.32)` | Hall damage pulse and low-HP attention |
+| Defense pulse | `--defense-pulse` | `rgba(255, 214, 138, 0.32)` | Keep and banner damage pulse and low-HP attention |
 | Wave banner ink | `--wave-banner-ink` | `#fff8df` | Wave-start banner text |
 | Motion quick | `--motion-quick` | `140ms` | Targeted hover/active feedback |
 | Motion combat | `--motion-combat` | `300ms` | Render-local combat transient fade |
@@ -120,15 +124,18 @@ The content width is capped at 1200px and arranged with CSS Grid.
 ### World HUD
 
 - Tick count and current/max divine-power meter
+- One native progress element reports shared keep HP and three compact,
+  house-labelled pips report banner integrity
 - One row per house with configured swatch, living-agent count, and power
 - Legacy rites appear as a compact bordered run summary only when permanent
   investments are active for global or selected-house tracks
 - Run-visible rites name the track, rank, scope, and per-rank effect without
   storing MetaState in GameState or implying unselected-house effects apply
 - Existing scaffold spacing and border treatment remain unchanged
-- Phase 4B composition bars use one compact stacked track per house. Segment
-  widths derive from living regular-agent class percentages, with an empty
-  track for zero-agent states and fixed class-order tie-breaking.
+- Phase 4B composition bars use one accessible thin stacked strip per house.
+  Segment widths derive from living regular-agent class percentages, with an
+  empty track for zero-agent states and fixed class-order tie-breaking. The
+  redundant dominant-role word tag is omitted.
 
 ### Unified ability controls
 
@@ -231,14 +238,19 @@ The content width is capped at 1200px and arranged with CSS Grid.
 - Selection cards reuse the same class-composition projection as the HUD and
   keep numeric trait/roster lines before identity prose.
 
-### Stronghold ground and combat transients
+### Keep, banners, and combat transients
 
 - The shared stronghold is marked by one radius-170 worn-earth patch centered at
-  `STRONGHOLD_CENTER`; it renders below halls, towers, agents, heroes, and
+  `STRONGHOLD_CENTER`; it renders below the keep, banners, towers, agents, heroes, and
   threats.
-- Hall damage pulses, death puffs, ranged volleys, and wave-start banners are
-  render-local effects. They consume simulation facts read-only and never add
-  presentation keys to `GameState`.
+- Canvas structure order is exactly one neutral keep followed by three
+  house-colour banners. Destroyed banners retain a compact fallen marker.
+- Defense damage pulses, death puffs, ranged volleys, wave-start banners, and
+  one-shot localized banner-destruction announcements are render-local effects.
+  They consume simulation facts read-only and never add presentation keys to
+  `GameState`.
+- Agents whose banner has fallen render at `0.35` alpha, clamped to the
+  documented `0.15` floor, and omit every outline.
 - Combat motion uses transform and opacity only. Shake is setting-gated and
   applied to the canvas wrapper, not layout dimensions.
 

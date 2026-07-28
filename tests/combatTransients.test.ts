@@ -72,7 +72,7 @@ function waveState(tick: number): GameState {
           y: 100,
           hp: BALANCE_CONFIG.CREATURE_HP,
           agentDamage: BALANCE_CONFIG.CREATURE_ATTACK_DAMAGE,
-          hallDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+          structureDamage: BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE,
           lastAttackTick: -1,
           haltedUntilTick: -1,
         },
@@ -160,32 +160,50 @@ test("Given a ranged attack effect, when it is drawn, then volley rendering is b
   );
 });
 
-test("Given hall damage and first danger threshold crossing, when transients update, then hall pulse and one shake are emitted with settings gating", () => {
+test("Given keep damage and first danger threshold crossing, when transients update, then defense pulse and one shake are emitted with settings gating", () => {
   const live = waveState(3);
   let result = updateCombatTransients(live, createCombatTransientTracker());
   const wounded = {
     ...live,
     tick: 4,
-    halls: live.halls.map((hall, index) =>
-      index === 0 ? { ...hall, hp: hall.hp - 100 } : hall,
-    ),
+    keep: { ...live.keep, hp: live.keep.hp - 100 },
   };
   result = updateCombatTransients(wounded, result.tracker);
   const critical = {
     ...wounded,
     tick: 5,
-    halls: wounded.halls.map((hall, index) =>
-      index === 0 ? { ...hall, hp: Math.floor(hall.maxHp * 0.25) - 1 } : hall,
-    ),
+    keep: { ...wounded.keep, hp: Math.floor(wounded.keep.maxHp * 0.25) - 1 },
   };
   result = updateCombatTransients(critical, result.tracker);
   const repeated = updateCombatTransients(critical, result.tracker);
 
-  assert.equal(result.events.filter(({ kind }) => kind === "hall_pulse").length, 1);
+  assert.equal(result.events.filter(({ kind }) => kind === "defense_pulse").length, 1);
   assert.equal(result.events.filter(({ kind }) => kind === "shake").length, 1);
   assert.equal(repeated.events.filter(({ kind }) => kind === "shake").length, 1);
   assert.equal(transientShakeTransform(result.events, critical.tick, false), "");
   assert.match(transientShakeTransform(result.events, critical.tick, true), /^translate3d\(/);
+});
+
+test("Given a living banner crosses to destroyed, when render-local transients update twice, then one localized announcement event is emitted", () => {
+  const live = waveState(30);
+  let result = updateCombatTransients(live, createCombatTransientTracker());
+  const destroyed = {
+    ...live,
+    tick: 31,
+    banners: live.banners.map((banner, index) =>
+      index === 0 ? { ...banner, hp: 0 } : banner,
+    ),
+  };
+
+  result = updateCombatTransients(destroyed, result.tracker);
+  const repeated = updateCombatTransients(destroyed, result.tracker);
+  const announcements = result.newEvents.filter(
+    (event): event is Extract<CombatTransientEvent, { kind: "banner_destroyed" }> =>
+      event.kind === "banner_destroyed",
+  );
+
+  assert.deepEqual(announcements.map(({ houseId }) => houseId), ["house_a"]);
+  assert.equal(repeated.newEvents.filter(({ kind }) => kind === "banner_destroyed").length, 0);
 });
 
 test("Given night and daylight waves, when threat identity changes, then localized banner inputs are emitted only for active waves", () => {
@@ -231,7 +249,8 @@ test("Given an initial run, when presentation-only field names are checked, then
   const presentationOnlyFields = [
     "combatTransients",
     "deathPuffs",
-    "hallPulses",
+    "defensePulses",
+    "bannerAnnouncements",
     "screenShake",
     "waveBanner",
   ] as const;

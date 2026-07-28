@@ -9,6 +9,7 @@ import { maxHpForAgent } from "../src/engine/heroEngine";
 import { modifiersForAgent } from "../src/engine/progressionEngine";
 import { createInitialState } from "../src/engine/tick";
 import { drawHeroes } from "../src/render/drawHeroes";
+import { drawAgents } from "../src/render/drawAgents";
 import { createHeroRenderTracker, projectHeroRenderState } from "../src/render/heroRenderProjection";
 import { GameStoreProvider } from "../src/state/gameStore";
 import { HUD } from "../src/ui/components/HUD";
@@ -105,6 +106,25 @@ test("Given localized hero identity, when translations and the HUD render, then 
   assert.match(html, /가시노래 아이비/);
   assert.match(html, /지원/);
   assert.match(html, /HP/);
+  assert.equal((html.match(/class="keep-health"/g) ?? []).length, 1);
+  assert.equal((html.match(/class="banner-status__pip"/g) ?? []).length, 3);
+  assert.doesNotMatch(html, /house-role-tag/);
+  assert.match(html, /aria-label="잿골 진형"/);
+});
+
+test("Given a house has fractured, when regular agents are drawn, then alpha stays above the floor and no outline is stroked", () => {
+  const state = createInitialState(82).state;
+  const regular = state.agents.find(({ houseId, isHero }) => houseId === "house_a" && !isHero);
+  if (regular === undefined) {
+    throw new RangeError("Expected Ashvale regular.");
+  }
+  const context = new HeroRecordingContext();
+
+  drawAgents(context as unknown as CanvasRenderingContext2D, [regular], state.houses, state.tick, 0, [], ["house_a"]);
+
+  const operations = context.operations();
+  assert.ok(operations.some((operation) => operation.kind === "setAlpha" && operation.value >= 0.15 && operation.value < 1));
+  assert.equal(operations.filter(({ kind }) => kind === "stroke").length, 0);
 });
 
 test("Given living heroes in projection, when effective max HP is resolved, then labels can always show HP without engine state additions", () => {
@@ -152,6 +172,8 @@ class HeroRecordingContext {
   public beginPath(): void {
     this.recordedOperations.push({ kind: "beginPath" });
   }
+
+  public closePath(): void {}
 
   public fill(): void {
     this.recordedOperations.push({ kind: "fill" });

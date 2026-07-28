@@ -4,7 +4,6 @@ import { LEVEL_THRESHOLDS } from "../../../progression/xp";
 import type { Translate } from "../../../content/locale/display";
 import {
   classShareFromTally,
-  dominantUnitClass,
   houseName,
   unitClassLabel,
   unitTallyByHouse,
@@ -33,7 +32,6 @@ export function HouseStatusList({ state, t }: HouseStatusListProps) {
         ).length;
         const composition = unitTallyByHouse(state.agents, house.id);
         const compositionShare = classShareFromTally(composition);
-        const roleClass = dominantUnitClass(composition);
         const name = houseName(t, house.id);
         return (
           <li key={house.id}>
@@ -55,9 +53,6 @@ export function HouseStatusList({ state, t }: HouseStatusListProps) {
               />
             </span>
             <div className="house-composition" aria-label={t("hud.houseComposition", { house: name })} role="group">
-              <strong className="house-role-tag">
-                {roleClass === undefined ? t("hud.role.empty") : unitClassLabel(t, roleClass)}
-              </strong>
               <div className="house-composition__bar">
                 {compositionShare.map(({ unitClass, count, percent }, index) => {
                   const label = t("hud.classShare", {

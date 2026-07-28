@@ -15,7 +15,7 @@ import {
   drawEffects,
   drawRangedAttackEffects,
 } from "./drawEffects";
-import { drawHalls } from "./drawHalls";
+import { drawDefenses } from "./drawDefenses";
 import { drawHeroes } from "./drawHeroes";
 import {
   projectHeroRenderState,
@@ -113,7 +113,13 @@ function drawWorld(
     BALANCE_CONFIG.WORLD_HEIGHT,
     lightingFactor,
   );
-  drawHalls(context, currentState.halls, currentState.houses, true, translate);
+  drawDefenses(
+    context,
+    currentState.keep,
+    currentState.banners,
+    currentState.houses,
+    translate,
+  );
   drawTowers(context, currentState.towers);
   drawTowerRubble(context, currentState.towerRubble, currentState.tick);
   drawAgents(
@@ -123,6 +129,9 @@ function drawWorld(
     currentState.tick,
     lightingFactor,
     heroProjection.brightenedAgentIds,
+    currentState.banners
+      .filter(({ hp }) => hp <= 0)
+      .map(({ houseId }) => houseId),
   );
   drawHeroes(
     context,
@@ -159,7 +168,8 @@ function drawWorld(
       context,
       input.placement.preview,
       currentState.towers,
-      currentState.halls,
+      currentState.keep,
+      currentState.banners,
     );
   }
 }

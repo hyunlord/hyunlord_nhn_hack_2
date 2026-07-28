@@ -18,7 +18,7 @@ const RENDER_ONLY_GAMESTATE_KEYS = [
   "combatTransients",
   "deathPuffs",
   "hitFlashes",
-  "hallPulses",
+  "defensePulses",
   "screenShake",
   "waveBanner",
   "heroFallMarkers",

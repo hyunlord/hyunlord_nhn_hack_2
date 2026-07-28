@@ -60,7 +60,7 @@ function waveState(
         y: 100,
         hp: BALANCE_CONFIG.CREATURE_HP,
         agentDamage: BALANCE_CONFIG.CREATURE_ATTACK_DAMAGE,
-        hallDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+        structureDamage: BALANCE_CONFIG.CREATURE_STRUCTURE_DAMAGE,
         lastAttackTick: -1,
         haltedUntilTick: -1,
       })),

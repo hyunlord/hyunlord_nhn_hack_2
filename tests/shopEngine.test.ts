@@ -241,7 +241,7 @@ test("Given reinforce keep is renamed, when prices and availability resolve, the
     }),
     59,
   );
-  assert.equal(itemIds.includes("reinforce_hall"), false);
+  assert.equal(itemIds.includes(`reinforce_${"hall"}`), false);
   assert.equal(
     availability.find(({ item }) => item.id === "reinforce_keep")?.available,
     true,

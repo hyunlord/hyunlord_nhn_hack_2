@@ -76,7 +76,12 @@ export function drawCombatTransients(
   context: CombatTransientDrawingContext,
   events: readonly CombatTransientEvent[],
   currentTick: number,
-  bannerText: (event: Extract<CombatTransientEvent, { kind: "wave_banner" }>) => string,
+  bannerText: (
+    event: Extract<
+      CombatTransientEvent,
+      { kind: "wave_banner" | "banner_destroyed" }
+    >,
+  ) => string,
 ): void {
   for (const event of events) {
     const age = currentTick - event.startTick;
@@ -86,9 +91,12 @@ export function drawCombatTransients(
     const progress = age / event.durationTicks;
     if (event.kind === "death_puff") {
       drawDeathPuff(context, event, progress);
-    } else if (event.kind === "hall_pulse") {
-      drawHallPulse(context, event, progress);
-    } else if (event.kind === "wave_banner") {
+    } else if (event.kind === "defense_pulse") {
+      drawDefensePulse(context, event, progress);
+    } else if (
+      event.kind === "wave_banner" ||
+      event.kind === "banner_destroyed"
+    ) {
       drawWaveBanner(context, bannerText(event), progress);
     }
   }
@@ -143,16 +151,16 @@ function drawDeathPuff(
   context.stroke();
 }
 
-function drawHallPulse(
+function drawDefensePulse(
   context: CombatTransientDrawingContext,
-  event: Extract<CombatTransientEvent, { kind: "hall_pulse" }>,
+  event: Extract<CombatTransientEvent, { kind: "defense_pulse" }>,
   progress: number,
 ): void {
   context.beginPath();
   context.arc(event.x, event.y, 26 + progress * 22, 0, Math.PI * 2);
   context.globalAlpha = Math.max(0, 0.75 * (1 - progress));
   context.lineWidth = 2.5;
-  context.strokeStyle = CANVAS_VISUAL_TOKENS.hallPulse.value;
+  context.strokeStyle = CANVAS_VISUAL_TOKENS.defensePulse.value;
   context.stroke();
 }
 
