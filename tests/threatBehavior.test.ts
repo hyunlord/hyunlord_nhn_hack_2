@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
+import { createRng } from "../src/engine/prng";
 import {
   applyDamageToThreat,
+  spawnWave,
   stepThreat,
 } from "../src/threat/waveDirector";
 import type {
@@ -263,6 +265,56 @@ test("Given shipped keep and banner geometry, when a creature chooses without an
       amount: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
     },
   ]);
+});
+
+test("Given a real spawned mage wave, when generated enemies attack a defensive structure, then emitted structure damage is finite and exact", () => {
+  const expectedDamage = Math.round(
+    BALANCE_CONFIG.CREATURE_HALL_DAMAGE * 1.2,
+  );
+  const generated = spawnWave(
+    {
+      index: 2,
+      label: "producer contract",
+      creatureCount: 1,
+      creatureHpMultiplier: 1,
+      creatureDamageMultiplier: 1.2,
+      spawnEdges: 1,
+      hasMage: true,
+      tributeReward: 0,
+    },
+    BALANCE_CONFIG.WORLD_WIDTH,
+    BALANCE_CONFIG.WORLD_HEIGHT,
+    0,
+    createRng(42),
+  );
+  if (generated.mage === null) {
+    throw new RangeError("Expected generated mage fixture.");
+  }
+  const generatedCreature = generated.creatures[0];
+  if (generatedCreature === undefined) {
+    throw new RangeError("Expected generated creature fixture.");
+  }
+
+  const result = stepThreat(
+    {
+      ...generated,
+      creatures: [{ ...generatedCreature, x: 100, y: 100 }],
+      mage: { ...generated.mage, x: 100, y: 100 },
+    },
+    [],
+    [{ ...HOUSE_A_BANNER, x: 100, y: 100 }],
+    BALANCE_CONFIG.CREATURE_ATTACK_INTERVAL_TICKS,
+  );
+
+  assert.deepEqual(result.defenseStructureDamages, [
+    { structureId: "banner:house_a", amount: expectedDamage },
+    { structureId: "banner:house_a", amount: expectedDamage },
+  ]);
+  assert.ok(
+    result.defenseStructureDamages.every(({ amount }) =>
+      Number.isFinite(amount),
+    ),
+  );
 });
 
 test("Given simultaneous hits, when threat damage is applied, then dead creatures are removed and nullable mage HP clamps", () => {

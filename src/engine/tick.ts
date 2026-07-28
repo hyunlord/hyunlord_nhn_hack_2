@@ -100,7 +100,7 @@ function spawnConfiguredWave(
           .map((creature) => ({
             ...creature,
             agentDamage: Math.round(creature.agentDamage * DAYLIGHT_RAID_DAMAGE_FACTOR),
-            hallDamage: Math.round(creature.hallDamage * DAYLIGHT_RAID_DAMAGE_FACTOR),
+            structureDamage: Math.round(creature.structureDamage * DAYLIGHT_RAID_DAMAGE_FACTOR),
           })),
       }
     : spawnedThreat;

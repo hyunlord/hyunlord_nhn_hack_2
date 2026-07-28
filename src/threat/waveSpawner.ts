@@ -114,7 +114,7 @@ export function spawnWave(
         BALANCE_CONFIG.CREATURE_ATTACK_DAMAGE *
           definition.creatureDamageMultiplier,
       ),
-      hallDamage: Math.round(
+      structureDamage: Math.round(
         BALANCE_CONFIG.CREATURE_HALL_DAMAGE *
           definition.creatureDamageMultiplier,
       ),
@@ -137,7 +137,7 @@ export function spawnWave(
           rng,
         ),
         hp: BALANCE_CONFIG.DARK_MAGE_HP,
-        hallDamage: Math.round(
+        structureDamage: Math.round(
           BALANCE_CONFIG.CREATURE_HALL_DAMAGE *
             definition.creatureDamageMultiplier,
         ),
