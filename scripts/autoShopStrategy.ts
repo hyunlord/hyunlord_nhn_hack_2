@@ -1,7 +1,6 @@
 import type {
   ShopItemId,
 } from "../src/build/build.types";
-import { SHOP_CATALOG } from "../src/build/shop";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import type { GameState } from "../src/engine/engine.types";
 import {
