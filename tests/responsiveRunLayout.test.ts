@@ -99,6 +99,22 @@ test("Given mobile overlays render at phone width, when CSS applies the phone br
   assert.match(cssBlock(phone, ".shop-grid"), /grid-template-columns:\s*1fr;/);
 });
 
+test("Given the run HUD renders at phone width, when CSS applies the phone breakpoint, then phase text and house rows stay compact", () => {
+  const phone = cssMediaBlock(PHASE_4B_CSS, "(max-width: 520px)");
+  const phaseStatus = cssBlock(phone, ".phase-status--stacked");
+  const bottomLeft = cssBlock(phone, ".run-hud-bottom-left");
+  const houseRows = cssBlock(phone, ".house-status-list li");
+  const houseDetails = cssBlock(phone, ".house-status__details");
+  const houseComposition = cssBlock(phone, ".house-composition");
+
+  assert.match(phaseStatus, /display:\s*flex;/);
+  assert.match(phaseStatus, /white-space:\s*nowrap;/);
+  assert.match(bottomLeft, /max-height:\s*92px;/);
+  assert.match(houseRows, /grid-template-columns:\s*10px\s+minmax\(0,\s*1fr\);/);
+  assert.match(houseDetails, /display:\s*none;/);
+  assert.match(houseComposition, /display:\s*none;/);
+});
+
 test("Given the default landscape layout, when CSS is parsed, then the canvas keeps the established 8 by 5 aspect lock", () => {
   const canvas = cssBlock(INDEX_CSS, ".game-canvas");
 

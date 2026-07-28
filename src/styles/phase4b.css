@@ -208,6 +208,65 @@ body:has(.run-viewport) {
     overflow: visible;
   }
 
+  .phase-status--stacked {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .phase-status--stacked > span,
+  .phase-status--stacked strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .run-hud-bottom-left {
+    width: calc(50% - 12px);
+    max-height: 92px;
+    overflow: auto;
+  }
+
+  .defense-status {
+    gap: 4px;
+    padding-bottom: 4px;
+  }
+
+  .keep-health {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    font-size: 0.68rem;
+  }
+
+  .keep-health progress {
+    height: 4px;
+  }
+
+  .house-status-list {
+    gap: 2px;
+    margin-top: 4px;
+  }
+
+  .house-status-list li {
+    grid-template-columns: 10px minmax(0, 1fr);
+    gap: 4px;
+    font-size: 0.68rem;
+  }
+
+  .house-status__name {
+    white-space: nowrap;
+  }
+
+  .house-status__details {
+    display: none;
+  }
+
+  .house-composition {
+    display: none;
+  }
+
   .draft-overlay,
   .shop-overlay:not(.shop-overlay--placing) {
     position: fixed;
