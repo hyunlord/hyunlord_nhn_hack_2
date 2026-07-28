@@ -133,7 +133,7 @@ function createDefenseContext(
         (threat) =>
           threat.hostile &&
           distanceSquared(threat, anchor) <=
-            (BALANCE_CONFIG.AGENT_THREAT_SENSE_RADIUS +
+            (BALANCE_CONFIG.KEEP_DEFENSE_RADIUS +
               hallDefenseRadiusBonus) ** 2,
       ).length,
     }))
