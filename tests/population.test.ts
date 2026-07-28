@@ -87,12 +87,12 @@ test("Given level-three Ashvale at intermission, when wave two starts, then twel
   assert.ok(recruits.every(({ hp }) => hp > 0));
 });
 
-test("Given a destroyed Ashvale hall, when the next wave starts, then that house produces zero recruits", () => {
+test("Given a destroyed Ashvale banner, when the next wave starts, then only that house produces zero recruits", () => {
   const intermission = clearIntoIntermission();
   const before = {
     ...intermission.state,
-    halls: intermission.state.halls.map((hall) =>
-      hall.houseId === "house_a" ? { ...hall, hp: 0 } : hall,
+    banners: intermission.state.banners.map((banner) =>
+      banner.houseId === "house_a" ? { ...banner, hp: 0 } : banner,
     ),
   };
   const livingBefore = before.agents.filter(
@@ -108,6 +108,16 @@ test("Given a destroyed Ashvale hall, when the next wave starts, then that house
         houseId === "house_a" && !isHero && hp > 0,
     ).length,
     livingBefore,
+  );
+  assert.ok(
+    result.agents.filter(
+      ({ houseId, isHero, hp }) =>
+        houseId === "house_b" && !isHero && hp > 0,
+    ).length >
+      before.agents.filter(
+        ({ houseId, isHero, hp }) =>
+          houseId === "house_b" && !isHero && hp > 0,
+      ).length,
   );
 });
 

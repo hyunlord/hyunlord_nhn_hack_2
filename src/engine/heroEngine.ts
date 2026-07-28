@@ -6,7 +6,7 @@ import {
   type HeroDefinition,
 } from "../content/heroConfig";
 import type { ResolvedModifiers } from "../progression/modifiers";
-import type { Hall } from "./engine.types";
+import type { Banner, Keep } from "./engine.types";
 
 type ModifierEntry = {
   readonly houseId: string;
@@ -175,33 +175,24 @@ export function scheduleHeroDeath(
   };
 }
 
-function nearestSurvivingHall(
+function revivalAnchor(
   agent: Agent,
-  halls: readonly Hall[],
-): Hall | null {
-  const ownHall = halls.find(
+  keep: Keep,
+  banners: readonly Banner[],
+): { readonly x: number; readonly y: number } | null {
+  const ownBanner = banners.find(
     ({ houseId, hp }) => houseId === agent.houseId && hp > 0,
   );
-  if (ownHall !== undefined) {
-    return ownHall;
+  if (ownBanner !== undefined) {
+    return ownBanner;
   }
-  return [...halls]
-    .filter(({ hp }) => hp > 0)
-    .sort((first, second) => {
-      const firstDistance =
-        (agent.x - first.x) ** 2 + (agent.y - first.y) ** 2;
-      const secondDistance =
-        (agent.x - second.x) ** 2 + (agent.y - second.y) ** 2;
-      return (
-        firstDistance - secondDistance ||
-        first.houseId.localeCompare(second.houseId)
-      );
-    })[0] ?? null;
+  return keep.hp > 0 ? keep : null;
 }
 
 export function respawnHeroes(
   agents: Agent[],
-  halls: readonly Hall[],
+  keep: Keep,
+  banners: readonly Banner[],
   modifiersByHouse: readonly ModifierEntry[],
   tick: number,
 ): Agent[] {
@@ -219,15 +210,15 @@ export function respawnHeroes(
     if (modifiers.disableHeroRespawn) {
       return agent;
     }
-    const hall = nearestSurvivingHall(agent, halls);
-    if (hall === null) {
+    const anchor = revivalAnchor(agent, keep, banners);
+    if (anchor === null) {
       return agent;
     }
     changed = true;
     return {
       ...agent,
-      x: hall.x,
-      y: hall.y,
+      x: anchor.x,
+      y: anchor.y,
       hp: Math.round(
         maxHpForAgent(agent, modifiers) * modifiers.heroRespawnHpMultiplier,
       ),
@@ -242,7 +233,8 @@ export function respawnHeroes(
 
 export function respawnHeroNow(
   agent: Agent,
-  halls: readonly Hall[],
+  keep: Keep,
+  banners: readonly Banner[],
   modifiersByHouse: readonly ModifierEntry[],
   tick: number,
 ): Agent {
@@ -251,7 +243,8 @@ export function respawnHeroNow(
   }
   return respawnHeroes(
     [{ ...agent, respawnAtTick: tick }],
-    halls,
+    keep,
+    banners,
     modifiersByHouse,
     tick,
   )[0] ?? agent;

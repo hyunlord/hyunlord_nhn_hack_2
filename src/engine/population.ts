@@ -78,10 +78,10 @@ export function recruitForWaveStart(
   let agents = state.agents;
   if (waveIndex > 0) {
     for (const houseId of state.selectedHouseIds) {
-      const hall = state.halls.find(
+      const banner = state.banners.find(
         (candidate) => candidate.houseId === houseId && candidate.hp > 0,
       );
-      if (hall === undefined) {
+      if (banner === undefined) {
         continue;
       }
       const level = houseLevel(state, houseId);
@@ -117,7 +117,7 @@ export function recruitForWaveStart(
           houseId,
           count,
           idStart,
-          spawn: { x: hall.x, y: hall.y },
+          spawn: { x: banner.x, y: banner.y },
           rng,
           modifiersByClass,
         }),

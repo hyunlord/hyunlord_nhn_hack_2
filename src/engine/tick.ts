@@ -1,4 +1,5 @@
 import { createAgents, createHouses } from "../agents/agentFactory";
+import type { Agent } from "../agents/agentTypes";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import {
   DEFAULT_HOUSE_IDS,
@@ -40,6 +41,7 @@ import { EMPTY_PURCHASES } from "../build/shop";
 import { TOWER_RUBBLE_TICKS } from "../build/structures";
 import type { CardEffect } from "../progression/progression.types";
 import { recruitForWaveStart } from "./population";
+import { createDefenseStructures } from "./defenseStructures";
 
 export { castMiracle } from "./miracleApplication";
 export { castSkill } from "./skillApplication";
@@ -111,7 +113,8 @@ function spawnConfiguredWave(
     waveIndex,
     waveStartSnapshot: {
       livingAgents: state.agents.filter(({ hp }) => hp > 0).length,
-      hallHp: state.halls.reduce((sum, { hp }) => sum + hp, 0),
+      keepHp: state.keep.hp,
+      bannerHp: state.banners.reduce((sum, { hp }) => sum + hp, 0),
     },
     activeThreat: { ...threat, traitorHouseId },
     pendingDaylightRaid: false,
@@ -173,7 +176,8 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
   const tick = state.tick + 1;
   const respawnedAgents = respawnHeroes(
     state.agents,
-    state.halls,
+    state.keep,
+    state.banners,
     state.agents.map((agent) => ({
       agentId: agent.id,
       houseId: agent.houseId,
@@ -253,7 +257,8 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
     {
       ...state,
       agents: combat.agents,
-      halls: combat.halls,
+      keep: combat.keep,
+      banners: combat.banners,
       towers: combat.towers,
       towerRubble: [...state.towerRubble, ...combat.destroyedTowers],
       activeThreat: combat.activeThreat,
@@ -268,67 +273,71 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
     tick,
   );
   let resolved: GameState;
-  if (combat.halls.every(({ hp }) => hp <= 0)) {
+  if (combat.keep.hp <= 0) {
     resolved = { ...maintained, phase: "defeat" };
-    } else {
-      const threatCleared =
+  } else {
+    const threatCleared =
       combat.activeThreat !== null &&
       combat.activeThreat.creatures.length === 0 &&
       (combat.activeThreat.mage === null ||
         combat.activeThreat.mage.hp <= 0);
-      if (!threatCleared) {
-        resolved = maintained;
+    if (!threatCleared) {
+      resolved = maintained;
+    } else {
+      const selectedHeroes = maintained.agents.filter(
+        ({ isHero }) => isHero,
+      );
+      const heroLessWave2Clear =
+        maintained.heroLessWave2Clear ||
+        (state.waveIndex === 1 &&
+          selectedHeroes.length > 0 &&
+          selectedHeroes.every(({ hp }) => hp <= 0));
+      const daylightRaid = combat.activeThreat?.daylightRaid === true;
+      const reward = Math.round(
+        getWaveDefinition(state.waveIndex).tributeReward *
+          (daylightRaid ? DAYLIGHT_RAID_REWARD_FACTOR : 1),
+      );
+      const lastWaveSummary =
+        state.waveStartSnapshot === null
+          ? null
+          : {
+              agentsLost: Math.max(
+                0,
+                state.waveStartSnapshot.livingAgents -
+                  maintained.agents.filter(({ hp }) => hp > 0).length,
+              ),
+              keepDamage: Math.max(
+                0,
+                state.waveStartSnapshot.keepHp - maintained.keep.hp,
+              ),
+              bannerDamage: Math.max(
+                0,
+                state.waveStartSnapshot.bannerHp -
+                  maintained.banners.reduce((sum, { hp }) => sum + hp, 0),
+              ),
+              tributeEarned: reward,
+            };
+      if (isFinalWave(state.waveIndex)) {
+        resolved = {
+          ...maintained,
+          phase: "victory",
+          tribute: tribute + reward,
+          activeThreat: null,
+          heroLessWave2Clear,
+          lastWaveSummary,
+          waveStartSnapshot: null,
+        };
       } else {
-        const selectedHeroes = maintained.agents.filter(
-          ({ isHero }) => isHero,
-        );
-        const heroLessWave2Clear =
-          maintained.heroLessWave2Clear ||
-          (state.waveIndex === 1 &&
-            selectedHeroes.length > 0 &&
-            selectedHeroes.every(({ hp }) => hp <= 0));
-        const daylightRaid = combat.activeThreat?.daylightRaid === true;
-        const reward = Math.round(
-          getWaveDefinition(state.waveIndex).tributeReward *
-            (daylightRaid ? DAYLIGHT_RAID_REWARD_FACTOR : 1),
-        );
-        const lastWaveSummary =
-          state.waveStartSnapshot === null
-            ? null
-            : {
-                agentsLost: Math.max(
-                  0,
-                  state.waveStartSnapshot.livingAgents -
-                    maintained.agents.filter(({ hp }) => hp > 0).length,
-                ),
-                hallDamage: Math.max(
-                  0,
-                  state.waveStartSnapshot.hallHp -
-                    maintained.halls.reduce((sum, { hp }) => sum + hp, 0),
-                ),
-                tributeEarned: reward,
-              };
-        if (isFinalWave(state.waveIndex)) {
-          resolved = {
-            ...maintained,
-            phase: "victory",
-            tribute: tribute + reward,
-            activeThreat: null,
-            heroLessWave2Clear,
-            lastWaveSummary,
-            waveStartSnapshot: null,
-          };
-        } else {
         resolved = {
           ...maintained,
           phase: "intermission",
-            tribute: tribute + reward,
-            activeThreat: null,
-            heroLessWave2Clear,
-            lastWaveSummary,
-            pendingDaylightRaid: rng.next() < DAYLIGHT_RAID_CHANCE,
-            waveStartSnapshot: null,
-            agents: maintained.agents.map((agent) => {
+          tribute: tribute + reward,
+          activeThreat: null,
+          heroLessWave2Clear,
+          lastWaveSummary,
+          pendingDaylightRaid: rng.next() < DAYLIGHT_RAID_CHANCE,
+          waveStartSnapshot: null,
+          agents: maintained.agents.map((agent) => {
             if (agent.hp <= 0) {
               return agent;
             }
@@ -369,6 +378,27 @@ function traitEffect(houseId: HouseId): CardEffect {
     moveSpeedMultiplier: config.traits.moveSpeedMultiplier,
     tributePerKillBonus: config.traits.tributePerKillBonus,
   };
+}
+
+function moveAgentsToBannerAnchors(
+  agents: readonly Agent[],
+  placements: ReturnType<typeof expandHouseSelection>,
+  banners: GameState["banners"],
+): Agent[] {
+  return agents.map((agent) => {
+    const placement = placements.find(
+      ({ houseId }) => houseId === agent.houseId,
+    );
+    const banner = banners.find(({ houseId }) => houseId === agent.houseId);
+    if (placement === undefined || banner === undefined) {
+      return agent;
+    }
+    return {
+      ...agent,
+      x: agent.x + banner.x - placement.slot.x,
+      y: agent.y + banner.y - placement.slot.y,
+    };
+  });
 }
 
 export function createInitialState(
@@ -417,7 +447,12 @@ export function createInitialState(
   const modifiersByHouse = new Map(
     houseModifiers.map(({ houseId, modifiers }) => [houseId, modifiers]),
   );
-  const agents = createAgents(houses, rng, modifiersByHouse);
+  const defenseStructures = createDefenseStructures(selectedHouseIds);
+  const agents = moveAgentsToBannerAnchors(
+    createAgents(houses, rng, modifiersByHouse),
+    placements,
+    defenseStructures.banners,
+  );
 
   return {
     state: {
@@ -431,13 +466,8 @@ export function createInitialState(
       pendingDaylightRaid: false,
       daylightRaidWaveNumbers: [],
       houses,
-      halls: placements.map(({ houseId, slot }) => ({
-        houseId,
-        x: slot.x,
-        y: slot.y,
-        hp: BALANCE_CONFIG.HALL_HP,
-        maxHp: BALANCE_CONFIG.HALL_HP,
-      })),
+      keep: defenseStructures.keep,
+      banners: defenseStructures.banners,
       agents,
       activeThreat: null,
       highlights: [],

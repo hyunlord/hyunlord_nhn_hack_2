@@ -66,23 +66,45 @@ function enterFirstWave(): {
   return { state, rng: world.rng };
 }
 
-test("Given a new run, when initialized, then halls and preparation state use the configured schema", () => {
+test("Given a new run, when initialized, then one keep and ordered banners use the configured schema", () => {
   const { state } = createInitialState(BALANCE_CONFIG.DEFAULT_SEED);
 
   assert.equal(state.phase, "preparation");
   assert.equal(state.waveIndex, 0);
   assert.equal(state.tribute, 0);
-  assert.equal(state.halls.length, state.houses.length);
-  assert.ok(state.halls.every(({ hp }) => hp === BALANCE_CONFIG.HALL_HP));
+  assert.equal(state.keep.hp, BALANCE_CONFIG.KEEP_HP);
+  assert.equal(state.keep.maxHp, BALANCE_CONFIG.KEEP_HP);
+  assert.equal(state.banners.length, 3);
+  assert.deepEqual(
+    state.banners.map(({ houseId }) => houseId),
+    state.selectedHouseIds,
+  );
+  assert.ok(state.banners.every(({ hp }) => hp === BALANCE_CONFIG.BANNER_HP));
   assert.ok(
-    state.halls.every(
+    state.banners.every(
       ({ houseId, hp, maxHp }) =>
         houseId.startsWith("house_") &&
         hp === maxHp &&
-        maxHp === BALANCE_CONFIG.HALL_HP,
+        maxHp === BALANCE_CONFIG.BANNER_HP,
     ),
   );
   assert.ok(state.houses.every(({ isTraitor }) => !isTraitor));
+});
+
+test("Given the last preparation tick, when wave zero starts, then the wave snapshot records keep and banner hp", () => {
+  const world = createInitialState(BALANCE_CONFIG.DEFAULT_SEED);
+  const before = {
+    ...world.state,
+    tick: BALANCE_CONFIG.PREPARATION_TICKS - 1,
+  };
+
+  const result = advanceTick(before, world.rng);
+
+  assert.deepEqual(result.waveStartSnapshot, {
+    livingAgents: result.agents.filter(({ hp }) => hp > 0).length,
+    keepHp: BALANCE_CONFIG.KEEP_HP,
+    bannerHp: BALANCE_CONFIG.BANNER_HP * 3,
+  });
 });
 
 test("Given the last preparation tick, when time advances, then wave zero spawns exactly once", () => {
@@ -213,8 +235,8 @@ test("Given a seeded daylight-raid roll, when intermission starts and the next w
     Math.round(normalCreature.agentDamage * DAYLIGHT_RAID_DAMAGE_FACTOR),
   );
   assert.equal(
-    raidCreature.hallDamage,
-    Math.round(normalCreature.hallDamage * DAYLIGHT_RAID_DAMAGE_FACTOR),
+    raidCreature.structureDamage,
+    Math.round(normalCreature.structureDamage * DAYLIGHT_RAID_DAMAGE_FACTOR),
   );
   assert.deepEqual(raid.daylightRaidWaveNumbers, [2]);
 });
@@ -274,11 +296,11 @@ test("Given a final wave clear, when resolved, then victory wins and no literal 
   assert.equal(isFinalWave(definition.index, extended), false);
 });
 
-test("Given the last hall falls while the last enemy dies, when resolved, then defeat takes priority", () => {
+test("Given the keep falls while the last enemy dies, when resolved, then defeat takes priority", () => {
   const wave = enterFirstWave();
   const result = advanceTick(
     withClearedThreat(wave.state, {
-      halls: wave.state.halls.map((hall) => ({ ...hall, hp: 0 })),
+      keep: { ...wave.state.keep, hp: 0 },
     }),
     wave.rng,
   );
@@ -286,17 +308,31 @@ test("Given the last hall falls while the last enemy dies, when resolved, then d
   assert.equal(result.phase, "defeat");
 });
 
-test("Given no living hall during a wave, when time advances, then defeat occurs even with enemies remaining", () => {
+test("Given no living keep during a wave, when time advances, then defeat occurs even with enemies remaining", () => {
   const wave = enterFirstWave();
   const result = advanceTick(
     {
       ...wave.state,
-      halls: wave.state.halls.map((hall) => ({ ...hall, hp: 0 })),
+      keep: { ...wave.state.keep, hp: 0 },
     },
     wave.rng,
   );
 
   assert.equal(result.phase, "defeat");
+  assert.notEqual(result.activeThreat, null);
+});
+
+test("Given every banner is destroyed while the keep lives, when time advances, then structural defeat does not occur", () => {
+  const wave = enterFirstWave();
+  const result = advanceTick(
+    {
+      ...wave.state,
+      banners: wave.state.banners.map((banner) => ({ ...banner, hp: 0 })),
+    },
+    wave.rng,
+  );
+
+  assert.equal(result.phase, "wave");
   assert.notEqual(result.activeThreat, null);
 });
 
@@ -321,7 +357,8 @@ test("Given a frozen or terminal phase, when ticks and miracles are requested, t
 
     assert.equal(advanced.tick, state.tick + 1);
     assert.deepEqual(advanced.agents, state.agents);
-    assert.deepEqual(advanced.halls, state.halls);
+    assert.deepEqual(advanced.keep, state.keep);
+    assert.deepEqual(advanced.banners, state.banners);
     assert.deepEqual(advanced.activeThreat, state.activeThreat);
     assert.equal(advanced.tribute, state.tribute);
     assert.strictEqual(cast, state);

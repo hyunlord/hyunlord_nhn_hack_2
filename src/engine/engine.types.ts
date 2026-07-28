@@ -44,9 +44,10 @@ export interface Banner {
 }
 
 export interface WaveSummary {
-  agentsLost: number;
-  hallDamage: number;
-  tributeEarned: number;
+  readonly agentsLost: number;
+  readonly keepDamage: number;
+  readonly bannerDamage: number;
+  readonly tributeEarned: number;
 }
 
 export interface PopulationHistoryEntry {
@@ -114,8 +115,9 @@ export interface GameState {
   };
   lastWaveSummary: WaveSummary | null;
   waveStartSnapshot: {
-    livingAgents: number;
-    hallHp: number;
+    readonly livingAgents: number;
+    readonly keepHp: number;
+    readonly bannerHp: number;
   } | null;
   heroDeaths: number;
   populationHistory: PopulationHistoryEntry[];
