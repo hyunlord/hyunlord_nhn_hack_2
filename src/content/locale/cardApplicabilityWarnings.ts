@@ -19,10 +19,8 @@ export function formatCardApplicabilityWarning(
       return t("draft.warning.deadHero", {
         hero: heroName(t, warning.heroId),
       });
-    case "fallenHouseHall":
-      return t("draft.warning.fallenHall", {
-        house: houseName(t, warning.houseId),
-      });
+    case "fallenHouseStronghold":
+      return `${houseName(t, warning.houseId)} keep/banner anchor has fallen.`;
     default:
       return assertNever(warning);
   }

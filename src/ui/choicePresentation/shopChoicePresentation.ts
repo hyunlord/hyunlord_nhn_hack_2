@@ -27,8 +27,8 @@ function formatShopEffect(t: Translate, effect: ShopEffect): string {
       return t("shop.effect.runAttackDamage", {
         value: multiplierPercent(effect.multiplier),
       });
-    case "repairHall":
-      return t("shop.effect.repairHall", { hp: effect.hp });
+    case "repairStronghold":
+      return `Keep/banner repair +${effect.hp} HP`;
     case "reviveHero":
       return t("shop.effect.reviveHero");
     default:

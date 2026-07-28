@@ -3,7 +3,7 @@ import test from "node:test";
 import type { Agent } from "../src/agents/agentTypes";
 import type { HouseSelection } from "../src/content/houseConfig";
 import type { UnitClassId } from "../src/content/unitClassConfig";
-import type { Hall } from "../src/engine/engine.types";
+import type { Banner, Keep } from "../src/engine/engine.types";
 import type { CardDefinition } from "../src/progression/progression.types";
 import {
   cardApplicabilityWarnings,
@@ -50,7 +50,17 @@ function agents(
   );
 }
 
-function hall(overrides: Partial<Hall> = {}): Hall {
+function keep(overrides: Partial<Keep> = {}): Keep {
+  return {
+    x: 0,
+    y: 0,
+    hp: 100,
+    maxHp: 100,
+    ...overrides,
+  };
+}
+
+function banner(overrides: Partial<Banner> = {}): Banner {
   return {
     houseId: "house_a",
     x: 0,
@@ -79,7 +89,8 @@ function warningsFor(cardDefinition: CardDefinition, army: readonly Agent[] = []
     card: cardDefinition,
     selectedHouseIds: SELECTED_HOUSES,
     agents: army,
-    halls: [hall()],
+    keep: keep(),
+    banners: [banner()],
   });
 }
 
@@ -170,26 +181,35 @@ test("Given hero-scoped cards, when the scoped hero is alive, dead, or respawnin
   ]);
 });
 
-test("Given house-scoped cards, when the scoped hall is alive or fallen, then only fallen halls warn", () => {
+test("Given house-scoped cards, when the scoped banner or fallback keep is alive or fallen, then only missing live anchors warn", () => {
   const houseCard = card({ houseId: "house_b" });
-  const liveHall = hall({ houseId: "house_b", hp: 40 });
-  const fallenHall = hall({ houseId: "house_b", hp: 0 });
+  const liveBanner = banner({ houseId: "house_b", hp: 40 });
+  const fallenBanner = banner({ houseId: "house_b", hp: 0 });
 
   assert.deepEqual(cardApplicabilityWarnings({
     card: houseCard,
     selectedHouseIds: SELECTED_HOUSES,
     agents: [],
-    halls: [liveHall],
+    keep: keep({ hp: 0 }),
+    banners: [liveBanner],
   }), []);
   assert.deepEqual(cardApplicabilityWarnings({
     card: houseCard,
     selectedHouseIds: SELECTED_HOUSES,
     agents: [],
-    halls: [fallenHall],
-  }), [{ kind: "fallenHouseHall", houseId: "house_b" }]);
+    keep: keep({ hp: 100 }),
+    banners: [fallenBanner],
+  }), []);
+  assert.deepEqual(cardApplicabilityWarnings({
+    card: houseCard,
+    selectedHouseIds: SELECTED_HOUSES,
+    agents: [],
+    keep: keep({ hp: 0 }),
+    banners: [fallenBanner],
+  }), [{ kind: "fallenHouseStronghold", houseId: "house_b" }]);
 });
 
-test("Given unscoped cards, when army, hero, and hall state is poor, then applicability returns no warnings", () => {
+test("Given unscoped cards, when army, hero, and stronghold state is poor, then applicability returns no warnings", () => {
   assert.deepEqual(cardApplicabilityWarnings({
     card: card(),
     selectedHouseIds: SELECTED_HOUSES,
@@ -203,7 +223,8 @@ test("Given unscoped cards, when army, hero, and hall state is poor, then applic
         hp: 0,
       }),
     ],
-    halls: [hall({ hp: 0 })],
+    keep: keep({ hp: 0 }),
+    banners: [banner({ hp: 0 })],
   }), []);
 });
 
@@ -230,9 +251,9 @@ test("Given applicability warnings, when formatted through locale helpers, then 
   );
   assert.equal(
     formatCardApplicabilityWarning(english, {
-      kind: "fallenHouseHall",
+      kind: "fallenHouseStronghold",
       houseId: "house_b",
     }),
-    "Thornhold hall has fallen.",
+    "Thornhold keep/banner anchor has fallen.",
   );
 });

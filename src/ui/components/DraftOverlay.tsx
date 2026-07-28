@@ -168,7 +168,8 @@ export function DraftOverlay() {
             card,
             selectedHouseIds: state.selectedHouseIds,
             agents: state.agents,
-            halls: state.halls,
+            keep: state.keep,
+            banners: state.banners,
           });
           return (
             <button

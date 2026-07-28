@@ -48,13 +48,13 @@ test("Given rendered shop choices, when card markup is produced, then numeric ef
       field_medicine: 0,
       raise_tower: 0,
       recruit_squad: 0,
-      reinforce_hall: 0,
+      reinforce_keep: 0,
       revive_hero: 0,
       sharpen_arms: 0,
     },
     towerCount: 0,
     damagedAgentCount: 0,
-    damagedHallCount: 0,
+    damagedStructureCount: 0,
     deadHeroCount: 0,
     deadRegularAgentCount: 0,
   };
@@ -183,8 +183,8 @@ test("Given shop choices, when effects are projected, then values come from type
   assert.deepEqual(shopChoiceEffects("sharpen_arms", english), [
     "Run attack damage +8%",
   ]);
-  assert.deepEqual(shopChoiceEffects("reinforce_hall", english), [
-    `Hall repair +${SHOP_EFFECT_VALUES.hallRepair} HP`,
+  assert.deepEqual(shopChoiceEffects("reinforce_keep", english), [
+    `Keep/banner repair +${SHOP_EFFECT_VALUES.strongholdRepair} HP`,
   ]);
 
   const state = {
