@@ -13,11 +13,15 @@ export interface RunSummary {
   readonly agentsStarted: number;
   readonly survivingAgents: number;
   readonly agentsLost: number;
-  readonly hallsStarted: number;
-  readonly survivingHalls: number;
+  readonly keepHpRemaining: number;
+  readonly bannerHpRemaining: number;
+  readonly keepDamage: number;
+  readonly bannerDamage: number;
+  readonly bannersStarted: number;
+  readonly survivingBanners: number;
   readonly towersBuilt: number;
   readonly noTowers: boolean;
-  readonly allHallsStanding: boolean;
+  readonly allBannersStanding: boolean;
   readonly heroLessWave2Clear: boolean;
   readonly betrayal: BetrayalSummary | null;
   readonly daylightRaidWaveNumbers?: readonly number[];

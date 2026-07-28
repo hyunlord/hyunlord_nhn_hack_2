@@ -12,11 +12,17 @@ export function createRunSummary(state: GameState): RunSummary {
     throw new RangeError("Run summary requires a terminal game state.");
   }
   const survivingAgents = state.agents.filter(({ hp }) => hp > 0).length;
-  const survivingHalls = state.halls.filter(({ hp }) => hp > 0).length;
+  const survivingBanners = state.banners.filter(({ hp }) => hp > 0).length;
   const towersBuilt = state.shopPurchases.raise_tower;
   const hiddenSynergies = new Set<string>(
     HOUSE_SYNERGIES.filter(({ hidden }) => hidden).map(({ id }) => id),
   );
+  const bannerHpRemaining = state.banners.reduce(
+    (sum, { hp }) => sum + hp,
+    0,
+  );
+  const keepDamage = state.lastWaveSummary?.keepDamage ?? 0;
+  const bannerDamage = state.lastWaveSummary?.bannerDamage ?? 0;
 
   return {
     runId: `${state.runSeed}:${state.selectedHouseIds.join(",")}:${state.tick}`,
@@ -30,11 +36,15 @@ export function createRunSummary(state: GameState): RunSummary {
     agentsStarted: state.agents.length,
     survivingAgents,
     agentsLost: state.agents.length - survivingAgents,
-    hallsStarted: state.halls.length,
-    survivingHalls,
+    keepHpRemaining: state.keep.hp,
+    bannerHpRemaining,
+    keepDamage,
+    bannerDamage,
+    bannersStarted: state.banners.length,
+    survivingBanners,
     towersBuilt,
     noTowers: towersBuilt === 0,
-    allHallsStanding: survivingHalls === state.halls.length,
+    allBannersStanding: survivingBanners === state.banners.length,
     heroLessWave2Clear: state.heroLessWave2Clear,
     betrayal:
       state.betrayalHouseId === null

@@ -13,6 +13,10 @@ class BalanceTelemetryError extends Error {
   }
 }
 
+function totalBannerHp(state: GameState): number {
+  return state.banners.reduce((sum, { hp }) => sum + hp, 0);
+}
+
 export function createSimulationMetrics(): SimulationMetrics {
   return {
     reached: WAVE_DEFINITIONS.map(() => false),
@@ -22,7 +26,8 @@ export function createSimulationMetrics(): SimulationMetrics {
     creatureKills: WAVE_DEFINITIONS.map(() => 0),
     clearTicks: WAVE_DEFINITIONS.map(() => null),
     mageOnlyTicks: WAVE_DEFINITIONS.map(() => 0),
-    hallDamage: WAVE_DEFINITIONS.map(() => 0),
+    keepDamage: WAVE_DEFINITIONS.map(() => 0),
+    bannerDamage: WAVE_DEFINITIONS.map(() => 0),
     classDeaths: {
       melee: 0,
       spear: 0,
@@ -62,11 +67,12 @@ export function recordCombatMetrics(
   after: GameState,
 ): void {
   const waveIndex = before.waveIndex;
-  const beforeHallHp = before.halls.reduce((sum, { hp }) => sum + hp, 0);
-  const afterHallHp = after.halls.reduce((sum, { hp }) => sum + hp, 0);
-  metrics.hallDamage[waveIndex] =
-    (metrics.hallDamage[waveIndex] ?? 0) +
-    Math.max(0, beforeHallHp - afterHallHp);
+  metrics.keepDamage[waveIndex] =
+    (metrics.keepDamage[waveIndex] ?? 0) +
+    Math.max(0, before.keep.hp - after.keep.hp);
+  metrics.bannerDamage[waveIndex] =
+    (metrics.bannerDamage[waveIndex] ?? 0) +
+    Math.max(0, totalBannerHp(before) - totalBannerHp(after));
 
   const active = before.activeThreat;
   if (

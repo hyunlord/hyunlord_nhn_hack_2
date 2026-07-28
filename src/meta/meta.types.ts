@@ -20,6 +20,6 @@ export interface LegacyRewardBreakdown {
   readonly waves: number;
   readonly victory: number;
   readonly survivingAgents: number;
-  readonly survivingHalls: number;
+  readonly survivingBanners: number;
   readonly total: number;
 }

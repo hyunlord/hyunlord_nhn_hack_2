@@ -12,7 +12,7 @@ function achievementIsEarned(
     case "first_stand":
       return true;
     case "unbroken":
-      return summary.victory && summary.survivingHalls === 3;
+      return summary.victory && summary.survivingBanners === 3;
     case "pyrrhic":
       return summary.victory && summary.survivingAgents < 10;
     case "no_towers":

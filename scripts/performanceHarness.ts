@@ -18,7 +18,7 @@ type Timing = {
 function entityCount(state: GameState): number {
   return (
     state.agents.length +
-    state.halls.length +
+    1 + state.banners.length +
     state.towers.length +
     (state.activeThreat?.creatures.length ?? 0) +
     (state.activeThreat?.mage === null ||

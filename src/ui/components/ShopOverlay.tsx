@@ -5,14 +5,12 @@ import { shopAvailabilityForState } from "../../engine/shopEngine";
 import { useGameStore } from "../../state/gameStore";
 import { shopChoiceEffects } from "../choicePresentation/shopChoicePresentation";
 
-type InstantItem = Exclude<ShopItemId, "raise_tower">;
-
 type ShopCategory = "troops" | "defense" | "recovery" | "upgrade";
 
 type ShopPresentation = {
   readonly category: ShopCategory;
-  readonly nameKey: LocaleKey;
-  readonly descriptionKey: LocaleKey;
+  readonly nameKey: LocaleKey | null;
+  readonly descriptionKey: LocaleKey | null;
 };
 
 const SHOP_PRESENTATION: Readonly<Record<ShopItemId, ShopPresentation>> = {
@@ -31,10 +29,10 @@ const SHOP_PRESENTATION: Readonly<Record<ShopItemId, ShopPresentation>> = {
     descriptionKey: "shop.item.recruit_squad.description",
     nameKey: "shop.item.recruit_squad.name",
   },
-  reinforce_hall: {
+  reinforce_keep: {
     category: "defense",
-    descriptionKey: "shop.item.reinforce_hall.description",
-    nameKey: "shop.item.reinforce_hall.name",
+    descriptionKey: null,
+    nameKey: null,
   },
   revive_hero: {
     category: "recovery",
@@ -59,18 +57,21 @@ const SHOP_CATEGORY_KEYS: Readonly<Record<ShopCategory, LocaleKey>> = {
 
 const SHOP_REASON_KEYS: Readonly<Record<string, LocaleKey>> = {
   "no damaged living agents": "shop.reason.noDamagedAgents",
-  "no damaged surviving halls": "shop.reason.noDamagedHalls",
   "no dead hero": "shop.reason.noDeadHero",
   "no dead regular agents": "shop.reason.noDeadAgents",
   "not enough tribute": "shop.reason.notEnoughTribute",
   "tower limit reached": "shop.reason.towerLimit",
 };
 
-function reasonKey(reason: string | null): LocaleKey | null {
+function reasonMessage(
+  reason: string | null,
+  t: (key: LocaleKey) => string,
+): string | null {
   if (reason === null) {
     return null;
   }
-  return SHOP_REASON_KEYS[reason] ?? "shop.reason.unavailable";
+  const key = SHOP_REASON_KEYS[reason];
+  return key === undefined ? reason : t(key);
 }
 
 export function ShopOverlay() {
@@ -94,7 +95,7 @@ export function ShopOverlay() {
     } else {
       dispatch({
         type: "purchaseShopItem",
-        itemId: itemId as InstantItem,
+        itemId,
       });
     }
   }
@@ -114,11 +115,10 @@ export function ShopOverlay() {
           <p className="shop-overlay__summary">
             {summary === null
               ? t("shop.summary.empty")
-              : t("shop.summary.lastNight", {
-                  damage: summary.hallDamage,
-                  lost: summary.agentsLost,
-                  tribute: summary.tributeEarned,
-                })}
+              : `Last night ${summary.agentsLost} lost · ` +
+                `keep damage ${summary.keepDamage} · ` +
+                `banner damage ${summary.bannerDamage} · ` +
+                `${summary.tributeEarned} tribute earned`}
           </p>
           {"pendingDaylightRaid" in state &&
           state.pendingDaylightRaid === true ? (
@@ -198,12 +198,14 @@ export function ShopCard({
   const { t } = useLocale();
   const { available, cost, item, reason } = availability;
   const presentation = SHOP_PRESENTATION[item.id];
-  const localizedReason = reasonKey(reason);
+  const localizedReason = reasonMessage(reason, t);
   const effects = shopChoiceEffects(item.id, t);
   return (
     <article className="shop-card">
       <div className="shop-card__heading">
-        <h4>{t(presentation.nameKey)}</h4>
+        <h4>
+          {presentation.nameKey === null ? item.name : t(presentation.nameKey)}
+        </h4>
         <strong>{cost}</strong>
       </div>
       <ul className="shop-card__effects">
@@ -211,7 +213,11 @@ export function ShopCard({
           <li key={effect}>{effect}</li>
         ))}
       </ul>
-      <p>{t(presentation.descriptionKey)}</p>
+      <p>
+        {presentation.descriptionKey === null
+          ? item.description
+          : t(presentation.descriptionKey)}
+      </p>
       <p className="shop-card__count">
         {t("shop.purchased", { count: purchaseCount })}
       </p>
@@ -223,7 +229,7 @@ export function ShopCard({
         {item.needsPlacement ? t("shop.choosePosition") : t("shop.purchase")}
       </button>
       {localizedReason === null ? null : (
-        <small className="shop-card__reason">{t(localizedReason)}</small>
+        <small className="shop-card__reason">{localizedReason}</small>
       )}
     </article>
   );

@@ -12,7 +12,8 @@ export type WaveSample = {
   readonly creatureKills: number;
   readonly clearTicks: number | null;
   readonly mageOnlyTicks: number;
-  readonly hallDamage: number;
+  readonly keepDamage: number;
+  readonly bannerDamage: number;
 };
 
 export type RunOutcome =
@@ -25,7 +26,8 @@ export type RunSample = {
   readonly outcome: RunOutcome;
   readonly endTick: number;
   readonly survivingAgents: number;
-  readonly hallHpRemaining: number;
+  readonly keepHpRemaining: number;
+  readonly bannerHpRemaining: number;
   readonly waves: readonly WaveSample[];
   readonly draftCount: number;
   readonly finalLevels: readonly number[];
@@ -59,7 +61,8 @@ export type SimulationMetrics = {
   readonly creatureKills: number[];
   readonly clearTicks: (number | null)[];
   readonly mageOnlyTicks: number[];
-  readonly hallDamage: number[];
+  readonly keepDamage: number[];
+  readonly bannerDamage: number[];
   readonly classDeaths: Record<UnitClassId, number>;
   divinePowerSpent: number;
 };

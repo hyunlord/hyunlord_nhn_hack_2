@@ -22,7 +22,7 @@ const EMPTY_REWARD: LegacyRewardBreakdown = {
   waves: 0,
   victory: 0,
   survivingAgents: 0,
-  survivingHalls: 0,
+  survivingBanners: 0,
   total: 0,
 };
 
@@ -48,14 +48,14 @@ export function calculateLegacyReward(
   const waves = summary.wavesCleared * 25;
   const victory = summary.victory ? 60 : 0;
   const survivingAgents = summary.survivingAgents;
-  const survivingHalls = summary.survivingHalls * 15;
+  const survivingBanners = summary.survivingBanners * 15;
   return {
     base,
     waves,
     victory,
     survivingAgents,
-    survivingHalls,
-    total: base + waves + victory + survivingAgents + survivingHalls,
+    survivingBanners,
+    total: base + waves + victory + survivingAgents + survivingBanners,
   };
 }
 

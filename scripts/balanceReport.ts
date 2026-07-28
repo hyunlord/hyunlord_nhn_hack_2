@@ -61,8 +61,12 @@ function endStateTable(samples: readonly RunSample[]): string {
         displayMedian(median(samples.map(({ survivingAgents }) => survivingAgents))),
       ],
       [
-        `Hall HP remaining (sum; max ${BALANCE_CONFIG.HALL_HP * 3})`,
-        displayMedian(median(samples.map(({ hallHpRemaining }) => hallHpRemaining))),
+        `Keep HP remaining (max ${BALANCE_CONFIG.KEEP_HP})`,
+        displayMedian(median(samples.map(({ keepHpRemaining }) => keepHpRemaining))),
+      ],
+      [
+        `Banner HP remaining (total; max ${BALANCE_CONFIG.BANNER_HP * 3})`,
+        displayMedian(median(samples.map(({ bannerHpRemaining }) => bannerHpRemaining))),
       ],
       [
         "Terminal tick",

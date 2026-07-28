@@ -32,7 +32,7 @@ export function RunSummaryScreen() {
             <div><dt>{t("summary.waves")}</dt><dd>{summary.wavesCleared}</dd></div>
             <div><dt>{t("summary.survivors")}</dt><dd>{summary.survivingAgents}</dd></div>
             <div><dt>{t("summary.lost")}</dt><dd>{summary.agentsLost}</dd></div>
-            <div><dt>{t("summary.halls")}</dt><dd>{summary.survivingHalls}/3</dd></div>
+            <div><dt>Banners standing</dt><dd>{summary.survivingBanners}/3</dd></div>
             <div><dt>{t("summary.towers")}</dt><dd>{summary.towersBuilt}</dd></div>
             <div><dt>{t("summary.betrayal")}</dt><dd>{traitor === undefined ? t("common.none") : houseName(t, traitor.id)}</dd></div>
           </dl>
@@ -46,7 +46,7 @@ export function RunSummaryScreen() {
             <div><dt>{t("summary.legacy.waves")}</dt><dd>+{completion.runLegacy.waves}</dd></div>
             <div><dt>{t("summary.legacy.victory")}</dt><dd>+{completion.runLegacy.victory}</dd></div>
             <div><dt>{t("summary.legacy.survivingAgents")}</dt><dd>+{completion.runLegacy.survivingAgents}</dd></div>
-            <div><dt>{t("summary.legacy.survivingHalls")}</dt><dd>+{completion.runLegacy.survivingHalls}</dd></div>
+            <div><dt>Surviving banners</dt><dd>+{completion.runLegacy.survivingBanners}</dd></div>
             <div><dt>{t("summary.legacy.achievements")}</dt><dd>+{completion.achievementLegacyEarned}</dd></div>
           </dl>
         </section>

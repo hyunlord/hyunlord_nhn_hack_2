@@ -26,11 +26,15 @@ function summary(overrides: Partial<RunSummary> = {}): RunSummary {
     agentsStarted: 63,
     survivingAgents: 20,
     agentsLost: 43,
-    hallsStarted: 3,
-    survivingHalls: 2,
+    keepHpRemaining: 2_100,
+    bannerHpRemaining: 840,
+    keepDamage: 120,
+    bannerDamage: 420,
+    bannersStarted: 3,
+    survivingBanners: 2,
     towersBuilt: 1,
     noTowers: false,
-    allHallsStanding: false,
+    allBannersStanding: false,
     heroLessWave2Clear: false,
     betrayal: null,
     discoveredSynergyIds: [],
@@ -73,7 +77,7 @@ test("Given a run result, when legacy is calculated, then the exact itemized for
     wavesCleared: 3,
     victory: true,
     survivingAgents: 12,
-    survivingHalls: 2,
+    survivingBanners: 2,
   });
   const reward = calculateLegacyReward(run);
 
@@ -82,7 +86,7 @@ test("Given a run result, when legacy is calculated, then the exact itemized for
     waves: 75,
     victory: 60,
     survivingAgents: 12,
-    survivingHalls: 30,
+    survivingBanners: 30,
     total: 197,
   });
   assert.equal(legacyForRun(run), 197);
@@ -208,7 +212,7 @@ test("Given each achievement condition, when its run is processed, then the exac
     {
       id: "unbroken",
       reward: 75,
-      run: summary({ victory: true, survivingHalls: 3 }),
+      run: summary({ victory: true, survivingBanners: 3 }),
     },
     {
       id: "pyrrhic",
@@ -253,7 +257,7 @@ test("Given each conditional achievement is one fact short, when achievements ar
   const cases = [
     {
       id: "unbroken",
-      run: summary({ victory: false, survivingHalls: 3 }),
+      run: summary({ victory: false, survivingBanners: 3 }),
     },
     {
       id: "pyrrhic",
@@ -320,7 +324,7 @@ test("Given one run summary, when it is applied repeatedly, then counters, rewar
       waves: 0,
       victory: 0,
       survivingAgents: 0,
-      survivingHalls: 0,
+      survivingBanners: 0,
       total: 0,
     },
     newAchievementIds: [],

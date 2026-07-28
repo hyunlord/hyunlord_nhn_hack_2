@@ -18,15 +18,17 @@ const WAVE_EXERCISE_TICKS = 500;
 const MAX_ORGANIC_TICKS = 20_000;
 const EXPECTED_ORGANIC_BASELINE = {
   phase: "victory",
-  tick: 2585,
-  tribute: 543,
-  hallHp: "900/900/900",
+  tick: 2940,
+  tribute: 675,
+  keepHp: 2400,
+  bannerHp: 966,
 } as const;
 const EXPECTED_FULL_STATE_BASELINE = {
   phase: "victory",
-  tick: 1791,
-  tribute: 190,
-  hallHp: "900/900/900",
+  tick: 1792,
+  tribute: 279,
+  keepHp: 2400,
+  bannerHp: 1260,
 } as const;
 
 function chooseFirst(state: GameState): GameState {
@@ -63,7 +65,7 @@ function autoShop(state: GameState): GameState {
       }
     }
   }
-  return purchaseShopItem(towerPlaced, "reinforce_hall");
+  return purchaseShopItem(towerPlaced, "reinforce_keep");
 }
 
 function runOrganicRun(seed: number): GameState {
@@ -151,9 +153,10 @@ assert.ok(firstOrganic.tick < MAX_ORGANIC_TICKS);
 assert.equal(firstOrganic.phase, EXPECTED_ORGANIC_BASELINE.phase);
 assert.equal(firstOrganic.tick, EXPECTED_ORGANIC_BASELINE.tick);
 assert.equal(firstOrganic.tribute, EXPECTED_ORGANIC_BASELINE.tribute);
+assert.equal(firstOrganic.keep.hp, EXPECTED_ORGANIC_BASELINE.keepHp);
 assert.equal(
-  firstOrganic.halls.map(({ hp }) => hp).join("/"),
-  EXPECTED_ORGANIC_BASELINE.hallHp,
+  firstOrganic.banners.reduce((sum, { hp }) => sum + hp, 0),
+  EXPECTED_ORGANIC_BASELINE.bannerHp,
 );
 
 const firstState = runFullStateMachine(
@@ -170,9 +173,10 @@ assert.equal(firstState.activeThreat, null);
 assert.equal(firstState.phase, EXPECTED_FULL_STATE_BASELINE.phase);
 assert.equal(firstState.tick, EXPECTED_FULL_STATE_BASELINE.tick);
 assert.equal(firstState.tribute, EXPECTED_FULL_STATE_BASELINE.tribute);
+assert.equal(firstState.keep.hp, EXPECTED_FULL_STATE_BASELINE.keepHp);
 assert.equal(
-  firstState.halls.map(({ hp }) => hp).join("/"),
-  EXPECTED_FULL_STATE_BASELINE.hallHp,
+  firstState.banners.reduce((sum, { hp }) => sum + hp, 0),
+  EXPECTED_FULL_STATE_BASELINE.bannerHp,
 );
 assert.ok(
   firstState.agents.every(
@@ -189,11 +193,13 @@ console.log(
   `Organic determinism passed: seed ${BALANCE_CONFIG.DEFAULT_SEED}, ` +
     `phase ${firstOrganic.phase}, tick ${firstOrganic.tick}, ` +
     `tribute ${firstOrganic.tribute}, ` +
-    `halls ${firstOrganic.halls.map(({ hp }) => hp).join("/")}.`,
+    `keep ${firstOrganic.keep.hp}, banner total ${firstOrganic.banners.reduce((sum, { hp }) => sum + hp, 0)}, ` +
+    `banners ${firstOrganic.banners.map(({ hp }) => hp).join("/")}.`,
 );
 console.log(
   `Full-state-machine determinism passed: seed ${BALANCE_CONFIG.DEFAULT_SEED}, ` +
     `${WAVE_DEFINITIONS.length} waves, phase ${firstState.phase}, ` +
     `tick ${firstState.tick}, tribute ${firstState.tribute}, ` +
-    `halls ${firstState.halls.map(({ hp }) => hp).join("/")}.`,
+    `keep ${firstState.keep.hp}, banner total ${firstState.banners.reduce((sum, { hp }) => sum + hp, 0)}, ` +
+    `banners ${firstState.banners.map(({ hp }) => hp).join("/")}.`,
 );

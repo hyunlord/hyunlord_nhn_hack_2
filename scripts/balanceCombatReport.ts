@@ -20,8 +20,10 @@ export function waveTable(samples: readonly RunSample[]): string {
       "Median agents end",
       "Median kills / spawned",
       "Median clear ticks",
-      "Runs with hall damage",
-      "Median hall damage",
+      "Runs with keep damage",
+      "Median keep damage",
+      "Runs with banner damage",
+      "Median banner damage",
       "Median mage-only ticks",
     ],
     WAVE_DEFINITIONS.map((definition) => {
@@ -32,8 +34,11 @@ export function waveTable(samples: readonly RunSample[]): string {
         const clear = waves[definition.index]?.clearTicks;
         return clear === null || clear === undefined ? [] : [clear];
       });
-      const withHallDamage = reached.filter(
-        ({ waves }) => (waves[definition.index]?.hallDamage ?? 0) > 0,
+      const withKeepDamage = reached.filter(
+        ({ waves }) => (waves[definition.index]?.keepDamage ?? 0) > 0,
+      );
+      const withBannerDamage = reached.filter(
+        ({ waves }) => (waves[definition.index]?.bannerDamage ?? 0) > 0,
       );
       return [
         `${definition.index + 1}`,
@@ -71,10 +76,16 @@ export function waveTable(samples: readonly RunSample[]): string {
           ),
         )}`,
         displayMedian(median(cleared)),
-        rate(withHallDamage.length, reached.length),
+        rate(withKeepDamage.length, reached.length),
         displayMedian(
           median(
-            reached.map(({ waves }) => waves[definition.index]?.hallDamage ?? 0),
+            reached.map(({ waves }) => waves[definition.index]?.keepDamage ?? 0),
+          ),
+        ),
+        rate(withBannerDamage.length, reached.length),
+        displayMedian(
+          median(
+            reached.map(({ waves }) => waves[definition.index]?.bannerDamage ?? 0),
           ),
         ),
         displayMedian(

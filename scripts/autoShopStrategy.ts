@@ -39,7 +39,7 @@ const CATEGORY_CYCLE = [
   "field_medicine",
   "raise_tower",
   "sharpen_arms",
-  "reinforce_hall",
+  "reinforce_keep",
   "revive_hero",
 ] as const satisfies readonly ShopItemId[];
 
@@ -54,9 +54,14 @@ function emptyDiagnostic(): PurchaseDiagnostic {
 }
 
 export function createAutoShopDiagnostics(): AutoShopDiagnostics {
-  return Object.fromEntries(
-    SHOP_CATALOG.map(({ id }) => [id, emptyDiagnostic()]),
-  ) as AutoShopDiagnostics;
+  return {
+    field_medicine: emptyDiagnostic(),
+    raise_tower: emptyDiagnostic(),
+    recruit_squad: emptyDiagnostic(),
+    reinforce_keep: emptyDiagnostic(),
+    revive_hero: emptyDiagnostic(),
+    sharpen_arms: emptyDiagnostic(),
+  };
 }
 
 function incrementDiagnostic(
