@@ -172,14 +172,14 @@ test("Given every intent variant, when mapped and moved, then directed paths con
     moveSpeedMultiplier: 1,
     formation: {
       neighbours: [createAgent({ id: "house_a_01", x: 100, y: 100 })],
-      houseFormation: { lineSpacing: 20, cohesion: 0.5 },
+      houseFormation: { spacing: 20, cohesion: 0.5 },
     },
   });
   const returning = stepAgent(agent, keepReturnRng.rng, intents[3], {
     moveSpeedMultiplier: 1,
     formation: {
       neighbours: [createAgent({ id: "house_a_03", x: 100, y: 100 })],
-      houseFormation: { lineSpacing: 20, cohesion: 0.5 },
+      houseFormation: { spacing: 20, cohesion: 0.5 },
     },
   });
   const rankSeeking = stepAgent(agent, rankSeekRng.rng, intents[4]);
@@ -227,7 +227,7 @@ test("Given aligned formation pressure on directed movement, when stepped, then 
       moveSpeedMultiplier: 1,
       formation: {
         neighbours: [createAgent({ id: "house_a_01", x: 99, y: 100 })],
-        houseFormation: { lineSpacing: 20, cohesion: 0 },
+        houseFormation: { spacing: 20, cohesion: 0 },
       },
     },
   );
@@ -253,14 +253,14 @@ test("Given opposing or zero formation pressure, when directed movement steps, t
     moveSpeedMultiplier: 1,
     formation: {
       neighbours: [createAgent({ id: "house_a_03", x: 101, y: 100 })],
-      houseFormation: { lineSpacing: 20, cohesion: 0 },
+      houseFormation: { spacing: 20, cohesion: 0 },
     },
   });
   const zero = stepAgent(agent, createCountingRng().rng, intent, {
     moveSpeedMultiplier: 1,
     formation: {
       neighbours: [],
-      houseFormation: { lineSpacing: 20, cohesion: 0 },
+      houseFormation: { spacing: 20, cohesion: 0 },
     },
   });
 

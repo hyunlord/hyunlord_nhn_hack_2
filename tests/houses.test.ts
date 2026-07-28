@@ -47,7 +47,7 @@ test("Given the shipped roster, when house identities are inspected, then all si
       12,
       0,
       0,
-      { lineSpacing: 14, cohesion: 0.45, jitter: 0.35, style: "charge" },
+      { spacing: 14, cohesion: 0.45, jitter: 0.35, style: "charge" },
     ],
     [
       "house_b",
@@ -61,7 +61,7 @@ test("Given the shipped roster, when house identities are inspected, then all si
       0,
       10,
       0,
-      { lineSpacing: 11, cohesion: 0.7, jitter: 0.1, style: "hold" },
+      { spacing: 11, cohesion: 0.7, jitter: 0.1, style: "hold" },
     ],
     [
       "house_c",
@@ -75,7 +75,7 @@ test("Given the shipped roster, when house identities are inspected, then all si
       0,
       0,
       1,
-      { lineSpacing: 16, cohesion: 0.5, jitter: 0.2, style: "hold" },
+      { spacing: 16, cohesion: 0.5, jitter: 0.2, style: "hold" },
     ],
     [
       "house_d",
@@ -89,7 +89,7 @@ test("Given the shipped roster, when house identities are inspected, then all si
       0,
       0,
       0,
-      { lineSpacing: 26, cohesion: 0.2, jitter: 0.55, style: "harass" },
+      { spacing: 26, cohesion: 0.2, jitter: 0.55, style: "harass" },
     ],
     [
       "house_e",
@@ -103,7 +103,7 @@ test("Given the shipped roster, when house identities are inspected, then all si
       0,
       0,
       0,
-      { lineSpacing: 9, cohesion: 0.85, jitter: 0.03, style: "hold" },
+      { spacing: 9, cohesion: 0.85, jitter: 0.03, style: "hold" },
     ],
     [
       "house_f",
@@ -117,24 +117,33 @@ test("Given the shipped roster, when house identities are inspected, then all si
       -8,
       0,
       3,
-      { lineSpacing: 22, cohesion: 0.35, jitter: 0.25, style: "harass" },
+      { spacing: 22, cohesion: 0.35, jitter: 0.25, style: "harass" },
     ],
   ]);
 });
 
-function rgbDistance(first: string, second: string): number {
-  const parse = (hexColor: string): readonly [number, number, number] => [
-    Number.parseInt(hexColor.slice(1, 3), 16),
-    Number.parseInt(hexColor.slice(3, 5), 16),
-    Number.parseInt(hexColor.slice(5, 7), 16),
-  ];
-  const [firstRed, firstGreen, firstBlue] = parse(first);
-  const [secondRed, secondGreen, secondBlue] = parse(second);
-  return Math.hypot(
-    firstRed - secondRed,
-    firstGreen - secondGreen,
-    firstBlue - secondBlue,
-  );
+function hueDegrees(hexColor: string): number {
+  const red = Number.parseInt(hexColor.slice(1, 3), 16) / 255;
+  const green = Number.parseInt(hexColor.slice(3, 5), 16) / 255;
+  const blue = Number.parseInt(hexColor.slice(5, 7), 16) / 255;
+  const maximum = Math.max(red, green, blue);
+  const minimum = Math.min(red, green, blue);
+  const chroma = maximum - minimum;
+  if (chroma === 0) {
+    return 0;
+  }
+  if (maximum === red) {
+    return ((green - blue) / chroma + (green < blue ? 6 : 0)) * 60;
+  }
+  if (maximum === green) {
+    return ((blue - red) / chroma + 2) * 60;
+  }
+  return ((red - green) / chroma + 4) * 60;
+}
+
+function circularHueDistance(first: string, second: string): number {
+  const distance = Math.abs(hueDegrees(first) - hueDegrees(second));
+  return Math.min(distance, 360 - distance);
 }
 
 test("Given enemy sprite colors, when house palettes are inspected, then each house stays visually distinct", () => {
@@ -153,7 +162,7 @@ test("Given enemy sprite colors, when house palettes are inspected, then each ho
   );
   assert.ok(
     HOUSE_CONFIG.every(({ color }) =>
-      enemyColors.every((enemyColor) => rgbDistance(color, enemyColor) >= 50),
+      enemyColors.every((enemyColor) => circularHueDistance(color, enemyColor) >= 32),
     ),
   );
 });

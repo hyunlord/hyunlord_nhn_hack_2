@@ -1,3 +1,4 @@
+import { BALANCE_CONFIG } from "./balanceConfig";
 import type { UnitRoster } from "./unitClassConfig";
 
 // SIZE_OK: pure house configuration data; kept together so roster, trait, and slot values stay auditable.
@@ -31,7 +32,7 @@ export interface HouseSpawnSlot {
 export type HouseFormationStyle = "charge" | "hold" | "harass";
 
 export interface HouseFormation {
-  readonly lineSpacing: number;
+  readonly spacing: number;
   readonly cohesion: number;
   readonly jitter: number;
   readonly style: HouseFormationStyle;
@@ -82,7 +83,10 @@ export const DEFAULT_HOUSE_IDS = [
   "house_c",
 ] as const satisfies HouseSelection;
 
-export const STRONGHOLD_CENTER = { x: 480, y: 300 } as const;
+export const STRONGHOLD_CENTER = {
+  x: BALANCE_CONFIG.KEEP_X,
+  y: BALANCE_CONFIG.KEEP_Y,
+} as const;
 
 export const HOUSE_SPAWN_SLOTS = [
   { id: "north", x: 480, y: 185 },
@@ -109,7 +113,7 @@ export const HOUSE_CONFIG = [
     populationCapBase: 52,
     populationCapPerLevel: 6,
     formation: {
-      lineSpacing: 14,
+      spacing: 14,
       cohesion: 0.45,
       jitter: 0.35,
       style: "charge",
@@ -138,7 +142,7 @@ export const HOUSE_CONFIG = [
     populationCapBase: 44,
     populationCapPerLevel: 5,
     formation: {
-      lineSpacing: 11,
+      spacing: 11,
       cohesion: 0.7,
       jitter: 0.1,
       style: "hold",
@@ -167,7 +171,7 @@ export const HOUSE_CONFIG = [
     populationCapBase: 50,
     populationCapPerLevel: 6,
     formation: {
-      lineSpacing: 16,
+      spacing: 16,
       cohesion: 0.5,
       jitter: 0.2,
       style: "hold",
@@ -196,7 +200,7 @@ export const HOUSE_CONFIG = [
     populationCapBase: 72,
     populationCapPerLevel: 8,
     formation: {
-      lineSpacing: 26,
+      spacing: 26,
       cohesion: 0.2,
       jitter: 0.55,
       style: "harass",
@@ -225,7 +229,7 @@ export const HOUSE_CONFIG = [
     populationCapBase: 36,
     populationCapPerLevel: 4,
     formation: {
-      lineSpacing: 9,
+      spacing: 9,
       cohesion: 0.85,
       jitter: 0.03,
       style: "hold",
@@ -254,7 +258,7 @@ export const HOUSE_CONFIG = [
     populationCapBase: 48,
     populationCapPerLevel: 5,
     formation: {
-      lineSpacing: 22,
+      spacing: 22,
       cohesion: 0.35,
       jitter: 0.25,
       style: "harass",

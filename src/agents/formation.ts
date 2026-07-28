@@ -6,7 +6,7 @@ export type Point = {
   readonly y: number;
 };
 
-export type FormationShape = Pick<HouseFormation, "lineSpacing" | "cohesion">;
+export type FormationShape = Pick<HouseFormation, "spacing" | "cohesion">;
 
 export type FormationMovement = {
   readonly neighbours: readonly Agent[];
@@ -99,11 +99,11 @@ function cohesionVector(
   const deltaX = average.x - agent.x;
   const deltaY = average.y - agent.y;
   const distance = Math.hypot(deltaX, deltaY);
-  if (distance === 0 || formation.lineSpacing <= 0) {
+  if (distance === 0 || formation.spacing <= 0) {
     return ZERO_POINT;
   }
   const strength =
-    Math.min(1, distance / formation.lineSpacing) * formation.cohesion;
+    Math.min(1, distance / formation.spacing) * formation.cohesion;
   return {
     x: (deltaX / distance) * strength,
     y: (deltaY / distance) * strength,
@@ -114,7 +114,7 @@ export function formationAdjustment(request: FormationAdjustmentRequest): Point 
   if (
     request.neighbours.length === 0 ||
     request.maxMagnitude <= 0 ||
-    request.formation.lineSpacing <= 0
+    request.formation.spacing <= 0
   ) {
     return ZERO_POINT;
   }
@@ -122,7 +122,7 @@ export function formationAdjustment(request: FormationAdjustmentRequest): Point 
   const separation = separationVector({
     agent: request.agent,
     neighbours: request.neighbours,
-    spacing: request.formation.lineSpacing,
+    spacing: request.formation.spacing,
     target: request.target,
   });
   const cohesion = cohesionVector(

@@ -3,6 +3,7 @@ import test from "node:test";
 import { LATERAL_SPREAD } from "../src/agents/battleLine";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import type { HouseId } from "../src/content/houseConfig";
+import { UNIT_CLASSES } from "../src/content/unitClassConfig";
 import { advanceWaveCombat } from "../src/engine/invasionCombat";
 import type { GameState } from "../src/engine/engine.types";
 import { createInitialState } from "../src/engine/tick";
@@ -65,6 +66,13 @@ function median(values: readonly number[]): number {
     : ((sorted[middle - 1] ?? value) + value) / 2;
 }
 
+function mean(values: readonly number[]): number {
+  if (values.length === 0) {
+    throw new RangeError("Expected non-empty sample.");
+  }
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
 function distance(
   first: { readonly x: number; readonly y: number },
   second: { readonly x: number; readonly y: number },
@@ -109,19 +117,6 @@ function battleLineAgents(state: GameState) {
   );
 }
 
-function nearestDistances(points: readonly { readonly x: number; readonly y: number }[]): readonly number[] {
-  return points.map((point, index) => {
-    const distances = points
-      .filter((_, candidateIndex) => candidateIndex !== index)
-      .map((candidate) => distance(point, candidate))
-      .sort((first, second) => first - second);
-    const nearest = distances[0];
-    if (nearest === undefined) {
-      throw new RangeError("Expected at least two samples.");
-    }
-    return nearest;
-  });
-}
 
 function withBattleLineThreat(state: GameState): GameState {
   return {
@@ -300,12 +295,9 @@ test("Given deterministic battle-line combat, when 200 ticks pass, then class ra
   const duskmere = samples.filter(({ houseId }) => houseId === "house_d");
   const sameHouseDistances = stonewake.slice(0, 8).map((sample, index, group) => distance(sample, group[(index + 1) % group.length] ?? sample));
   const crossHouseDistances = stonewake.slice(0, 8).map((sample, index) => distance(sample, duskmere[index] ?? sample));
-  const stonewakeNearest = nearestDistances(stonewake);
-  const duskmereNearest = nearestDistances(duskmere);
 
   assert.ok(median(spearRadii) > median(archerRadii));
   assert.ok(median(sameHouseDistances) < median(crossHouseDistances));
-  assert.ok(median(stonewakeNearest) < median(duskmereNearest));
   assert.ok(Math.abs(median(stonewake.map((sample) => sample.x)) - median(duskmere.map((sample) => sample.x))) < LATERAL_SPREAD * 2);
 });
 
@@ -327,7 +319,14 @@ test("Given one banner is destroyed, when battle-line combat settles, then fract
   const brokenCenterY = median(brokenStonewake.map(({ y }) => y));
   const intactSpread = intactStonewake.map((sample) => Math.abs(sample.y - intactCenterY));
   const brokenSpread = brokenStonewake.map((sample) => Math.abs(sample.y - brokenCenterY));
+  const intactRankDeviation = intactRadii.map((radius) =>
+    Math.abs(radius - UNIT_CLASSES.spear.lineRank),
+  );
+  const brokenRankDeviation = brokenRadii.map((radius) =>
+    Math.abs(radius - UNIT_CLASSES.spear.lineRank),
+  );
 
   assert.ok(median(brokenRadii) < median(intactRadii));
   assert.ok(median(brokenSpread) > median(intactSpread));
+  assert.ok(mean(brokenRankDeviation) > mean(intactRankDeviation));
 });

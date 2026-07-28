@@ -145,7 +145,7 @@ test("Given close neighbours and a forward target, when formation adjusts, then 
       agent({ id: "house_a_03", x: 125, y: 100 }),
     ],
     target: { x: 140, y: 100 },
-    formation: { lineSpacing: 20, cohesion: 0.5 },
+    formation: { spacing: 20, cohesion: 0.5 },
     maxMagnitude: 10,
   });
 
@@ -158,14 +158,14 @@ test("Given zero-distance neighbours, when formation adjusts, then deterministic
     agent: agent({ id: "house_a_02", x: 100, y: 100 }),
     neighbours: [agent({ id: "house_a_01", x: 100, y: 100 })],
     target: { x: 140, y: 100 },
-    formation: { lineSpacing: 20, cohesion: 0.5 },
+    formation: { spacing: 20, cohesion: 0.5 },
     maxMagnitude: 10,
   });
   const higher = formationAdjustment({
     agent: agent({ id: "house_a_02", x: 100, y: 100 }),
     neighbours: [agent({ id: "house_a_03", x: 100, y: 100 })],
     target: { x: 140, y: 100 },
-    formation: { lineSpacing: 20, cohesion: 0.5 },
+    formation: { spacing: 20, cohesion: 0.5 },
     maxMagnitude: 10,
   });
 
@@ -184,7 +184,7 @@ test("Given a large formation vector, when capped by movement speed, then the nu
       agent({ id: "house_a_02", x: 101, y: 100 }),
     ],
     target: { x: 100, y: 150 },
-    formation: { lineSpacing: 60, cohesion: 1 },
+    formation: { spacing: 60, cohesion: 1 },
     maxMagnitude,
   });
 

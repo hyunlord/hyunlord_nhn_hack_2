@@ -1,11 +1,20 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
-import { HOUSE_CONFIG, type HouseFormation, type HouseId, type HouseSelection } from "../content/houseConfig";
+import {
+  HOUSE_CONFIG,
+  type HouseFormation,
+  type HouseId,
+  type HouseSelection,
+} from "../content/houseConfig";
 import { UNIT_CLASSES, UNIT_CLASS_IDS } from "../content/unitClassConfig";
 import type { Banner, Keep } from "../engine/engine.types";
 import { battleLineRoleForAgent } from "../engine/heroEngine";
 import type { Agent, ThreatPresence } from "./agentTypes";
 import type { FormationMovement, FormationShape, Point } from "./formation";
-import { buildSpatialGrid, queryFormationNeighbours, type SpatialGrid } from "./spatialGrid";
+import {
+  buildSpatialGrid,
+  queryFormationNeighbours,
+  type SpatialGrid,
+} from "./spatialGrid";
 
 export const LATERAL_SPREAD = 55;
 const NEARBY_THREAT_RADIUS_MULTIPLIER = 1.6;
@@ -14,20 +23,81 @@ const CHARGE_RANK_MULTIPLIER = 1.2;
 const HARASS_ADVANCE_RANK_MULTIPLIER = 1.1;
 const FRACTURED_RANK_MULTIPLIER = 0.7;
 const FRACTURED_COHESION = 0.1;
-const FRACTURED_JITTER = 0.6;
+const FRACTURED_SCATTER_MAGNITUDE = 0.6;
 const SELECTED_HOUSE_BIASES = [-28, 0, 28] as const;
 const ZERO_POINT = { x: 0, y: 0 } as const;
 const IVY_THREAT_STANDOFF = 40;
 
 export type BattleLinePosture = "engage" | "retreat";
-export type BattleLineThreatSource = { readonly kind: "nearby-centroid" } | { readonly kind: "nearest-fallback"; readonly id: string } | { readonly kind: "muster" };
-export type BattleLineTarget = { readonly target: Point; readonly direction: Point; readonly threatSource: BattleLineThreatSource; readonly targetId: string | null; readonly desiredRank: number; readonly lateralDisplacement: number; readonly jitterDisplacement: number; readonly jitter: number; readonly fractured: boolean; readonly posture: BattleLinePosture; readonly formation: FormationShape; };
-export type BattleLineMovementPlan = { readonly target: BattleLineTarget; readonly formation: FormationMovement };
+export type BattleLineThreatSource =
+  | { readonly kind: "nearby-centroid" }
+  | { readonly kind: "nearest-fallback"; readonly id: string }
+  | { readonly kind: "muster" };
+export type BattleLineScatter =
+  | { readonly kind: "none"; readonly displacement: 0; readonly magnitude: 0 }
+  | {
+      readonly kind: "idle-jitter";
+      readonly displacement: number;
+      readonly magnitude: number;
+    }
+  | {
+      readonly kind: "fracture-scatter";
+      readonly displacement: number;
+      readonly magnitude: number;
+    };
+export type BattleLineTarget = {
+  readonly target: Point;
+  readonly direction: Point;
+  readonly threatSource: BattleLineThreatSource;
+  readonly targetId: string | null;
+  readonly desiredRank: number;
+  readonly lateralDisplacement: number;
+  readonly idleJitterDisplacement: number;
+  readonly fractureScatterDisplacement: number;
+  readonly scatter: BattleLineScatter;
+  readonly fractured: boolean;
+  readonly posture: BattleLinePosture;
+  readonly formation: FormationShape;
+};
+export type BattleLineMovementPlan = {
+  readonly target: BattleLineTarget;
+  readonly formation: FormationMovement;
+};
 
 type BattleLineGrid = SpatialGrid | readonly Agent[];
 
-type ResolveBattleLineTargetRequest = { readonly agent: Agent; readonly keep: Keep; readonly banners: readonly Banner[]; readonly threats: readonly ThreatPresence[]; readonly selectedHouseIds: HouseSelection; readonly tick: number };
-type BattleLineMovementPlansRequest = { readonly agents: readonly Agent[]; readonly keep: Keep; readonly banners: readonly Banner[]; readonly threats: readonly ThreatPresence[]; readonly selectedHouseIds: HouseSelection; readonly tick: number; readonly buildGrid?: (agents: readonly Agent[]) => BattleLineGrid };
+type ResolveBattleLineTargetRequest = {
+  readonly agent: Agent;
+  readonly keep: Keep;
+  readonly banners: readonly Banner[];
+  readonly threats: readonly ThreatPresence[];
+  readonly selectedHouseIds: HouseSelection;
+  readonly tick: number;
+};
+type BattleLineMovementPlansRequest = {
+  readonly agents: readonly Agent[];
+  readonly keep: Keep;
+  readonly banners: readonly Banner[];
+  readonly threats: readonly ThreatPresence[];
+  readonly selectedHouseIds: HouseSelection;
+  readonly tick: number;
+  readonly buildGrid?: (agents: readonly Agent[]) => BattleLineGrid;
+};
+type ScatterRequest = {
+  readonly agent: Agent;
+  readonly formation: HouseFormation;
+  readonly fractured: boolean;
+  readonly threatSource: BattleLineThreatSource;
+};
+
+type ScatterDisplacements = {
+  readonly idleJitterDisplacement: number;
+  readonly fractureScatterDisplacement: number;
+};
+
+function assertNever(value: never): never {
+  throw new RangeError(`Unexpected battle-line variant ${String(value)}.`);
+}
 
 function distanceSquared(first: Point, second: Point): number {
   return (first.x - second.x) ** 2 + (first.y - second.y) ** 2;
@@ -56,8 +126,12 @@ function hostileThreats(threats: readonly ThreatPresence[]): readonly ThreatPres
   return threats.filter((threat) => threat.hostile);
 }
 
-function nearbyHostiles(keep: Keep, threats: readonly ThreatPresence[]): readonly ThreatPresence[] {
-  const radiusSquared = (BALANCE_CONFIG.KEEP_DEFENSE_RADIUS * NEARBY_THREAT_RADIUS_MULTIPLIER) ** 2;
+function nearbyHostiles(
+  keep: Keep,
+  threats: readonly ThreatPresence[],
+): readonly ThreatPresence[] {
+  const radiusSquared =
+    (BALANCE_CONFIG.KEEP_DEFENSE_RADIUS * NEARBY_THREAT_RADIUS_MULTIPLIER) ** 2;
   return hostileThreats(threats).filter(
     (threat) => distanceSquared(keep, threat) <= radiusSquared,
   );
@@ -71,7 +145,10 @@ function centroid(threats: readonly ThreatPresence[]): Point {
   return { x: sum.x / threats.length, y: sum.y / threats.length };
 }
 
-function nearestHostile(keep: Keep, threats: readonly ThreatPresence[]): ThreatPresence | null {
+function nearestHostile(
+  keep: Keep,
+  threats: readonly ThreatPresence[],
+): ThreatPresence | null {
   return [...hostileThreats(threats)].sort((first, second) => {
     const delta = distanceSquared(first, keep) - distanceSquared(second, keep);
     return delta === 0 ? first.id.localeCompare(second.id) : delta;
@@ -94,7 +171,9 @@ function threatDirection(request: ResolveBattleLineTargetRequest): {
   const nearby = nearbyHostiles(request.keep, request.threats);
   if (nearby.length > 0) {
     return {
-      direction: unitVector(request.keep, centroid(nearby)) ?? fallbackDirection(request.agent, request.keep),
+      direction:
+        unitVector(request.keep, centroid(nearby)) ??
+        fallbackDirection(request.agent, request.keep),
       source: { kind: "nearby-centroid" },
       targetId: nearby.length === 1 ? nearby[0]?.id ?? null : null,
     };
@@ -102,7 +181,9 @@ function threatDirection(request: ResolveBattleLineTargetRequest): {
   const nearest = nearestHostile(request.keep, request.threats);
   if (nearest !== null) {
     return {
-      direction: unitVector(request.keep, nearest) ?? fallbackDirection(request.agent, request.keep),
+      direction:
+        unitVector(request.keep, nearest) ??
+        fallbackDirection(request.agent, request.keep),
       source: { kind: "nearest-fallback", id: nearest.id },
       targetId: nearest.id,
     };
@@ -114,8 +195,13 @@ function threatDirection(request: ResolveBattleLineTargetRequest): {
   };
 }
 
-function selectedBiasDisplacement(houseId: HouseId, selectedHouseIds: HouseSelection): number {
-  const selectedIndex = selectedHouseIds.findIndex((selected) => selected === houseId);
+function selectedBiasDisplacement(
+  houseId: HouseId,
+  selectedHouseIds: HouseSelection,
+): number {
+  const selectedIndex = selectedHouseIds.findIndex(
+    (selected) => selected === houseId,
+  );
   const degrees = SELECTED_HOUSE_BIASES[selectedIndex];
   return degrees === undefined ? 0 : (degrees / 28) * LATERAL_SPREAD;
 }
@@ -128,7 +214,11 @@ function stableSignedUnit(id: string): number {
   return ((hash >>> 0) / 4_294_967_295) * 2 - 1;
 }
 
-function linePosture(agent: Agent, formation: HouseFormation, tick: number): BattleLinePosture {
+function linePosture(
+  agent: Agent,
+  formation: HouseFormation,
+  tick: number,
+): BattleLinePosture {
   return formation.style === "harass" &&
     agent.lastAttackTick >= 0 &&
     tick - agent.lastAttackTick < HARASS_RETREAT_TICKS
@@ -156,41 +246,107 @@ function rankFor(
   }
 }
 
-const OUTERMOST_FORWARD_RANK = Math.max(...UNIT_CLASS_IDS.map((unitClass) => UNIT_CLASSES[unitClass].lineRank)) + LATERAL_SPREAD / 2;
+const OUTERMOST_FORWARD_RANK =
+  Math.max(...UNIT_CLASS_IDS.map((unitClass) => UNIT_CLASSES[unitClass].lineRank)) +
+  LATERAL_SPREAD / 2;
 
 function heroDesiredRank(agent: Agent): number | null {
   const role = battleLineRoleForAgent(agent);
   switch (role) {
-    case "outer_forward": return OUTERMOST_FORWARD_RANK;
-    case "spear_guard": return UNIT_CLASSES.spear.lineRank;
-    case "archer_support": return UNIT_CLASSES.archer.lineRank;
-    case null: return null;
+    case "outer_forward":
+      return OUTERMOST_FORWARD_RANK;
+    case "spear_guard":
+      return UNIT_CLASSES.spear.lineRank;
+    case "archer_support":
+      return UNIT_CLASSES.archer.lineRank;
+    case null:
+      return null;
   }
 }
 
-function heroTarget(request: ResolveBattleLineTargetRequest, formation: HouseFormation, resolvedThreat: ReturnType<typeof threatDirection>): BattleLineTarget | null {
+function scatterDisplacements(scatter: BattleLineScatter): ScatterDisplacements {
+  switch (scatter.kind) {
+    case "none":
+      return { idleJitterDisplacement: 0, fractureScatterDisplacement: 0 };
+    case "idle-jitter":
+      return {
+        idleJitterDisplacement: scatter.displacement,
+        fractureScatterDisplacement: 0,
+      };
+    case "fracture-scatter":
+      return {
+        idleJitterDisplacement: 0,
+        fractureScatterDisplacement: scatter.displacement,
+      };
+    default:
+      return assertNever(scatter);
+  }
+}
+
+const NO_SCATTER = { kind: "none", displacement: 0, magnitude: 0 } as const;
+
+function scatterFor(request: ScatterRequest): BattleLineScatter {
+  if (request.fractured) {
+    return {
+      kind: "fracture-scatter",
+      displacement:
+        stableSignedUnit(request.agent.id) *
+        FRACTURED_SCATTER_MAGNITUDE *
+        LATERAL_SPREAD,
+      magnitude: FRACTURED_SCATTER_MAGNITUDE,
+    };
+  }
+  if (request.threatSource.kind !== "muster") {
+    return NO_SCATTER;
+  }
+  return {
+    kind: "idle-jitter",
+    displacement:
+      stableSignedUnit(request.agent.id) * request.formation.jitter * LATERAL_SPREAD,
+    magnitude: request.formation.jitter,
+  };
+}
+
+function heroTarget(
+  request: ResolveBattleLineTargetRequest,
+  formation: HouseFormation,
+  resolvedThreat: ReturnType<typeof threatDirection>,
+): BattleLineTarget | null {
   const desiredRank = heroDesiredRank(request.agent);
   if (desiredRank === null) {
     return null;
   }
   const role = battleLineRoleForAgent(request.agent);
-  const nearest = role === "archer_support" ? nearestHostile(request.keep, request.threats) : null;
-  const radialRank = nearest === null ? desiredRank : Math.max(0, Math.sqrt(distanceSquared(request.keep, nearest)) - IVY_THREAT_STANDOFF);
+  const nearest =
+    role === "archer_support" ? nearestHostile(request.keep, request.threats) : null;
+  const radialRank = nearest === null
+    ? desiredRank
+    : Math.max(0, Math.sqrt(distanceSquared(request.keep, nearest)) - IVY_THREAT_STANDOFF);
 
   return {
-    target: { x: request.keep.x + resolvedThreat.direction.x * radialRank, y: request.keep.y + resolvedThreat.direction.y * radialRank },
-    direction: resolvedThreat.direction, threatSource: resolvedThreat.source, targetId: resolvedThreat.targetId, desiredRank,
-    lateralDisplacement: 0, jitterDisplacement: 0, jitter: 0, fractured: false, posture: "engage",
+    target: {
+      x: request.keep.x + resolvedThreat.direction.x * radialRank,
+      y: request.keep.y + resolvedThreat.direction.y * radialRank,
+    },
+    direction: resolvedThreat.direction,
+    threatSource: resolvedThreat.source,
+    targetId: resolvedThreat.targetId,
+    desiredRank,
+    lateralDisplacement: 0,
+    idleJitterDisplacement: 0,
+    fractureScatterDisplacement: 0,
+    scatter: NO_SCATTER,
+    fractured: false,
+    posture: "engage",
     formation: formationShape(formation, false),
   };
 }
 
 function formationShape(formation: HouseFormation, fractured: boolean): FormationShape {
-  return { lineSpacing: formation.lineSpacing, cohesion: fractured ? FRACTURED_COHESION : formation.cohesion };
-}
-
-function jitterFor(formation: HouseFormation, fractured: boolean): number {
-  return fractured ? FRACTURED_JITTER : formation.jitter;
+  return {
+    spacing: formation.spacing,
+    cohesion: fractured ? FRACTURED_COHESION : formation.cohesion,
+  };
 }
 
 function isSpatialGrid(grid: BattleLineGrid): grid is SpatialGrid {
@@ -215,7 +371,9 @@ function queryNeighbours(subject: Agent, grid: BattleLineGrid): readonly Agent[]
     .slice(0, 8);
 }
 
-export function resolveBattleLineTarget(request: ResolveBattleLineTargetRequest): BattleLineTarget {
+export function resolveBattleLineTarget(
+  request: ResolveBattleLineTargetRequest,
+): BattleLineTarget {
   const formation = houseFormation(request.agent.houseId);
   const banner = ownBanner(request.agent, request.banners);
   const fractured = banner !== null && banner.hp <= 0;
@@ -230,30 +388,44 @@ export function resolveBattleLineTarget(request: ResolveBattleLineTargetRequest)
     request.agent.houseId,
     request.selectedHouseIds,
   );
-  const jitter = jitterFor(formation, fractured);
-  const jitterDisplacement = stableSignedUnit(request.agent.id) * jitter * LATERAL_SPREAD;
+  const scatter = scatterFor({
+    agent: request.agent,
+    formation,
+    fractured,
+    threatSource: resolvedThreat.source,
+  });
+  const scatterFields = scatterDisplacements(scatter);
   const tangent = { x: -resolvedThreat.direction.y, y: resolvedThreat.direction.x };
-  const totalLateral = lateralDisplacement + jitterDisplacement;
+  const totalLateral = lateralDisplacement + scatter.displacement;
 
   return {
     target: {
-      x: request.keep.x + resolvedThreat.direction.x * desiredRank + tangent.x * totalLateral,
-      y: request.keep.y + resolvedThreat.direction.y * desiredRank + tangent.y * totalLateral,
+      x:
+        request.keep.x +
+        resolvedThreat.direction.x * desiredRank +
+        tangent.x * totalLateral,
+      y:
+        request.keep.y +
+        resolvedThreat.direction.y * desiredRank +
+        tangent.y * totalLateral,
     },
     direction: resolvedThreat.direction,
     threatSource: resolvedThreat.source,
     targetId: posture === "retreat" ? null : resolvedThreat.targetId,
     desiredRank,
     lateralDisplacement,
-    jitterDisplacement,
-    jitter,
+    idleJitterDisplacement: scatterFields.idleJitterDisplacement,
+    fractureScatterDisplacement: scatterFields.fractureScatterDisplacement,
+    scatter,
     fractured,
     posture,
     formation: formationShape(formation, fractured),
   };
 }
 
-export function createBattleLineMovementPlans(request: BattleLineMovementPlansRequest): ReadonlyMap<string, BattleLineMovementPlan> {
+export function createBattleLineMovementPlans(
+  request: BattleLineMovementPlansRequest,
+): ReadonlyMap<string, BattleLineMovementPlan> {
   const grid = (request.buildGrid ?? buildSpatialGrid)(request.agents);
   const plans = new Map<string, BattleLineMovementPlan>();
   for (const agent of request.agents) {

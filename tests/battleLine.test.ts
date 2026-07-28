@@ -135,10 +135,32 @@ test("Given no hostiles, when a defender musters, then it uses its deterministic
     radius(target.target),
     Math.hypot(
       UNIT_CLASSES.spear.lineRank,
-      target.lateralDisplacement + target.jitterDisplacement,
+      target.lateralDisplacement + target.idleJitterDisplacement,
     ),
     0.01,
   );
+});
+
+
+test("Given an intact active-threat line, when the target resolves, then configured idle jitter is suppressed", () => {
+  const target = targetFor(agent({ id: "house_e_spear_00" }), [
+    hostile("east", KEEP.x + 170, KEEP.y),
+  ]);
+
+  assert.notEqual(target.threatSource.kind, "muster");
+  assert.equal(target.idleJitterDisplacement, 0);
+  assert.equal(target.fractureScatterDisplacement, 0);
+  assert.deepEqual(target.scatter, { kind: "none", displacement: 0, magnitude: 0 });
+});
+
+test("Given no active threat, when an intact line musters, then configured idle jitter is applied", () => {
+  const target = targetFor(agent({ id: "house_e_spear_00" }), []);
+
+  assert.equal(target.threatSource.kind, "muster");
+  assert.equal(target.scatter.kind, "idle-jitter");
+  assert.notEqual(target.idleJitterDisplacement, 0);
+  assert.equal(target.fractureScatterDisplacement, 0);
+  approx(target.scatter.magnitude, 0.03);
 });
 
 test("Given selected houses, when adjacent battle sections resolve, then angular pick order maps to exact tangent spread", () => {
@@ -192,8 +214,11 @@ test("Given a destroyed owning banner, when the target resolves, then fractured 
 
   assert.equal(first.fractured, true);
   approx(first.desiredRank, UNIT_CLASSES.spear.lineRank * 0.7);
-  assert.deepEqual(first.formation, { lineSpacing: 9, cohesion: 0.1 });
-  approx(first.jitter, 0.6);
+  assert.deepEqual(first.formation, { spacing: 9, cohesion: 0.1 });
+  assert.equal(first.scatter.kind, "fracture-scatter");
+  approx(first.scatter.magnitude, 0.6);
+  assert.equal(first.idleJitterDisplacement, 0);
+  assert.notEqual(first.fractureScatterDisplacement, 0);
   assert.deepEqual(later, first);
 });
 
