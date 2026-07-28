@@ -5,10 +5,8 @@ import {
 } from "react";
 import { useLocale } from "../../content/locale";
 import {
-  cardDescription,
-  cardKindLabel,
-  cardName,
-  cardRarityLabel,
+  formatCardEffect,
+  unitClassLabel,
   houseName,
 } from "../../content/locale/display";
 import {
@@ -44,6 +42,9 @@ export function DraftOverlay() {
   const progress = state.houseProgress.find(
     ({ houseId }) => houseId === offer?.houseId,
   );
+  const houseRoster = HOUSE_CONFIG.find(
+    ({ id }) => id === offer?.houseId,
+  )?.roster;
   const isDraft = state.phase === "draft" && offer !== undefined;
 
   useEffect(() => {
@@ -160,6 +161,10 @@ export function DraftOverlay() {
                   backgroundRepeat: "no-repeat, repeat",
                   backgroundSize: "100% 100%, auto",
                 };
+          const cardEffects = formatCardEffect(card.effect, t);
+          const hasMissingClass =
+            card.effect.unitClass !== undefined &&
+            (houseRoster?.[card.effect.unitClass] ?? 0) <= 0;
           return (
             <button
               className="draft-card"
@@ -184,14 +189,33 @@ export function DraftOverlay() {
               >
                 <span className="draft-card__meta">
                   <span>
-                    <b>{cardRarityLabel(t, card.rarity)}</b> · {cardKindLabel(t, card.kind)}
+                    <b>{card.rarity}</b> · {card.kind}
                   </span>
                   <kbd>{index + 1}</kbd>
                 </span>
-                <strong>{cardName(t, card.id)}</strong>
+                <strong>{card.name}</strong>
                 <span className="draft-card__description">
-                  {cardDescription(t, card.id)}
+                  {card.description}
                 </span>
+                {cardEffects.length > 0 ? (
+                  <span className="draft-card__effects">
+                    {cardEffects.map((line, effectIndex) => (
+                      <span
+                        className="draft-card__effect"
+                        key={`${card.id}-effect-${effectIndex}`}
+                      >
+                        {t("draft.effectLabel", { text: line })}
+                      </span>
+                    ))}
+                  </span>
+                ) : null}
+                {card.effect.unitClass !== undefined && hasMissingClass ? (
+                  <span className="draft-card__warning">
+                    {t("draft.warning.class", {
+                      text: `${unitClassLabel(t, card.effect.unitClass)} 계열은 이 가문 구성에 없습니다`,
+                    })}
+                  </span>
+                ) : null}
                 <span className="draft-card__stacks">
                   {t("draft.stacks", { current: stacks, max: card.maxStacks })}
                 </span>

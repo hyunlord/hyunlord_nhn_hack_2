@@ -1036,10 +1036,29 @@ button {
   line-height: 1.5;
 }
 
+.draft-card__effects {
+  display: grid;
+  gap: 2px;
+  color: #5f5a4f;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.draft-card__effect {
+  display: block;
+}
+
 .draft-card__stacks {
   margin-top: auto;
   color: var(--muted);
   font-size: 0.7rem;
+}
+
+.draft-card__warning {
+  margin-top: 6px;
+  color: #e59d8f;
+  font-size: 0.7rem;
+  line-height: 1.35;
 }
 
 .draft-overlay__queue {
