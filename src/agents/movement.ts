@@ -1,11 +1,21 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { Rng } from "../content/random";
 import { UNIT_CLASSES } from "../content/unitClassConfig";
+import {
+  formationAdjustment,
+  type FormationMovement,
+  type Point,
+} from "./formation";
 import type { AgentIntent } from "./dispositionEngine";
 import type { Agent, AgentModifiers } from "./agentTypes";
 
 const FULL_TURN = Math.PI * 2;
 const TURN_RANGE = 0.8;
+
+export interface MovementOptions
+  extends Pick<AgentModifiers, "moveSpeedMultiplier"> {
+  readonly formation?: FormationMovement;
+}
 
 function normalizeHeading(heading: number): number {
   return ((heading % FULL_TURN) + FULL_TURN) % FULL_TURN;
@@ -15,7 +25,7 @@ export function stepAgent(
   agent: Agent,
   rng: Rng,
   intent: AgentIntent = { kind: "idle" },
-  modifiers: Pick<AgentModifiers, "moveSpeedMultiplier"> = {
+  modifiers: MovementOptions = {
     moveSpeedMultiplier: 1,
   },
 ): Agent {
@@ -25,6 +35,7 @@ export function stepAgent(
 
   let heading: number;
   let speed: number;
+  let directedTarget: Point | null = null;
   const classSpeed = UNIT_CLASSES[agent.unitClass].moveSpeed;
   switch (intent.kind) {
     case "idle":
@@ -35,15 +46,15 @@ export function stepAgent(
       speed = classSpeed;
       break;
     case "flee":
+      directedTarget = { x: intent.towardX, y: intent.towardY };
       heading = Math.atan2(
         intent.towardY - agent.y,
         intent.towardX - agent.x,
       );
-      speed =
-        classSpeed *
-        BALANCE_CONFIG.AGENT_FLEE_SPEED_MULTIPLIER;
+      speed = classSpeed * BALANCE_CONFIG.AGENT_FLEE_SPEED_MULTIPLIER;
       break;
     case "engage": {
+      directedTarget = { x: intent.towardX, y: intent.towardY };
       const deltaX = intent.towardX - agent.x;
       const deltaY = intent.towardY - agent.y;
       const distance = Math.hypot(deltaX, deltaY);
@@ -52,12 +63,10 @@ export function stepAgent(
         agent.unitClass === "archer" || agent.unitClass === "spear";
       if (!usesStandoffMovement || intent.preferredRange <= 0) {
         heading = targetHeading;
-        speed =
-          classSpeed * BALANCE_CONFIG.AGENT_ENGAGE_SPEED_MULTIPLIER;
+        speed = classSpeed * BALANCE_CONFIG.AGENT_ENGAGE_SPEED_MULTIPLIER;
       } else if (distance > intent.preferredRange * 1.1) {
         heading = targetHeading;
-        speed =
-          classSpeed * BALANCE_CONFIG.AGENT_ENGAGE_SPEED_MULTIPLIER;
+        speed = classSpeed * BALANCE_CONFIG.AGENT_ENGAGE_SPEED_MULTIPLIER;
       } else if (distance < intent.preferredRange * 0.7) {
         heading = targetHeading + Math.PI;
         speed = classSpeed * 0.9;
@@ -73,8 +82,18 @@ export function stepAgent(
   const minimum = UNIT_CLASSES[agent.unitClass].drawRadius;
   const maximumX = BALANCE_CONFIG.WORLD_WIDTH - minimum;
   const maximumY = BALANCE_CONFIG.WORLD_HEIGHT - minimum;
-  let x = agent.x + Math.cos(heading) * speed;
-  let y = agent.y + Math.sin(heading) * speed;
+  const formationNudge =
+    directedTarget === null || modifiers.formation === undefined
+      ? { x: 0, y: 0 }
+      : formationAdjustment({
+          agent,
+          neighbours: modifiers.formation.neighbours,
+          target: directedTarget,
+          formation: modifiers.formation.houseFormation,
+          maxMagnitude: speed,
+        });
+  let x = agent.x + Math.cos(heading) * speed + formationNudge.x;
+  let y = agent.y + Math.sin(heading) * speed + formationNudge.y;
 
   if (x < minimum || x > maximumX) {
     x = Math.min(maximumX, Math.max(minimum, x));

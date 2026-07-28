@@ -114,7 +114,7 @@ test("Given a broken disloyal hero, when danger is sensed, then it never flees",
 });
 
 test("Given an agent beyond its home leash, when it moves for 50 ticks, then it gets closer to its hall", () => {
-  const home = { x: 100, y: 100, hp: BALANCE_CONFIG.HALL_HP };
+  const home = { x: 100, y: 100, hp: BALANCE_CONFIG.KEEP_HP };
   const intent = decideIntent(
     createAgent({ x: 700 }),
     context({ ownHall: home, rallyHall: home }),
@@ -131,7 +131,7 @@ test("Given an agent beyond its home leash, when it moves for 50 ticks, then it 
   assert.equal(rng.count(), 0);
 });
 
-test("Given every intent variant, when mapped and moved, then directed paths consume zero RNG draws", () => {
+test("Given every intent variant, when mapped and moved, then directed paths consume zero RNG draws while idle keeps jitter", () => {
   const intents: readonly AgentIntent[] = [
     { kind: "idle" },
     { kind: "flee", towardX: 0, towardY: 0 },
@@ -139,20 +139,69 @@ test("Given every intent variant, when mapped and moved, then directed paths con
       kind: "engage",
       towardX: 200,
       towardY: 100,
-      targetId: null,
+      targetId: "creature_a",
       preferredRange: 13,
     },
+    {
+      kind: "engage",
+      towardX: 100,
+      towardY: 100,
+      targetId: null,
+      preferredRange: 0,
+    },
+    {
+      kind: "engage",
+      towardX: 160,
+      towardY: 100,
+      targetId: "rank_seek_house_a_01",
+      preferredRange: 0,
+    },
   ];
+  const idleRng = createCountingRng();
   const fleeRng = createCountingRng();
   const engageRng = createCountingRng();
+  const keepReturnRng = createCountingRng();
+  const rankSeekRng = createCountingRng();
+  const deadRng = createCountingRng();
   const agent = createAgent();
 
+  const idle = stepAgent(agent, idleRng.rng, intents[0]);
   const fleeing = stepAgent(agent, fleeRng.rng, intents[1]);
-  const engaging = stepAgent(agent, engageRng.rng, intents[2]);
+  const engaging = stepAgent(agent, engageRng.rng, intents[2], {
+    moveSpeedMultiplier: 1,
+    formation: {
+      neighbours: [createAgent({ id: "house_a_01", x: 100, y: 100 })],
+      houseFormation: { lineSpacing: 20, cohesion: 0.5 },
+    },
+  });
+  const returning = stepAgent(agent, keepReturnRng.rng, intents[3], {
+    moveSpeedMultiplier: 1,
+    formation: {
+      neighbours: [createAgent({ id: "house_a_03", x: 100, y: 100 })],
+      houseFormation: { lineSpacing: 20, cohesion: 0.5 },
+    },
+  });
+  const rankSeeking = stepAgent(agent, rankSeekRng.rng, intents[4]);
+  const dead = createAgent({ state: "dead" });
 
-  assert.deepEqual(intents.map(intentToState), ["idle", "fleeing", "fighting"]);
+  assert.deepEqual(intents.map(intentToState), [
+    "idle",
+    "fleeing",
+    "fighting",
+    "fighting",
+    "fighting",
+  ]);
+  assert.equal(idleRng.count(), 1);
   assert.equal(fleeRng.count(), 0);
   assert.equal(engageRng.count(), 0);
+  assert.equal(keepReturnRng.count(), 0);
+  assert.equal(rankSeekRng.count(), 0);
+  assert.strictEqual(stepAgent(dead, deadRng.rng, intents[2]), dead);
+  assert.equal(deadRng.count(), 0);
+  assert.ok(idle.x > agent.x);
   assert.ok(fleeing.x < agent.x);
   assert.ok(engaging.x > agent.x);
+  assert.ok(returning.x > agent.x);
+  assert.ok(returning.y < agent.y);
+  assert.ok(rankSeeking.x > agent.x);
 });
