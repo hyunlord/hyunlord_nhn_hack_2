@@ -3,6 +3,7 @@ import {
   intentToState,
   type DefenseContext,
 } from "../agents/dispositionEngine";
+import { createBattleLineMovementPlans } from "../agents/battleLine";
 import { stepAgent } from "../agents/movement";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { HouseId } from "../content/houseConfig";
@@ -36,6 +37,7 @@ import { applyTowerAttacks } from "./towerCombat";
 import { TOWER_RADIUS } from "../build/structures";
 import type { TowerDestroyed } from "../build/build.types";
 import { modifiersForAgent } from "./progressionEngine";
+import type { MovementOptions } from "../agents/movement";
 
 type Point = { readonly x: number; readonly y: number };
 type DefensiveAnchor = Point & {
@@ -100,8 +102,9 @@ function createDefenseContext(
   keep: Keep,
   banners: readonly Banner[],
   threats: readonly ThreatPresence[],
-  hallDefenseRadiusBonus: number,
+  anchorDefenseRadiusBonus: number,
   tick: number,
+  battleLine: DefenseContext["battleLine"],
 ): DefenseContext {
   const livingBanners = banners.filter((banner) => banner.hp > 0);
   const livingKeep =
@@ -124,7 +127,7 @@ function createDefenseContext(
           ? first.houseId.localeCompare(second.houseId)
           : delta;
       })[0] ?? null;
-  const threatenedHalls = anchors
+  const threatenedAnchors = anchors
     .map((anchor) => ({
       houseId: anchor.houseId,
       x: anchor.x,
@@ -134,23 +137,35 @@ function createDefenseContext(
           threat.hostile &&
           distanceSquared(threat, anchor) <=
             (BALANCE_CONFIG.KEEP_DEFENSE_RADIUS +
-              hallDefenseRadiusBonus) ** 2,
+              anchorDefenseRadiusBonus) ** 2,
       ).length,
     }))
     .filter(({ hostileCount }) => hostileCount > 0);
-  return {
+  const baseContext = {
     tick,
-    ownHall:
+    ownAnchor:
       ownBanner === null
         ? null
         : { x: ownBanner.x, y: ownBanner.y, hp: ownBanner.hp },
-    rallyHall:
+    rallyAnchor:
       rallyAnchor === null
         ? null
         : { x: rallyAnchor.x, y: rallyAnchor.y },
-    threatenedHalls,
+    threatenedAnchors,
     threats,
   };
+  return battleLine === undefined
+    ? baseContext
+    : { ...baseContext, battleLine };
+}
+
+function movementOptions(
+  moveSpeedMultiplier: number,
+  plan: ReturnType<typeof createBattleLineMovementPlans> extends ReadonlyMap<string, infer Plan> ? Plan | undefined : never,
+): MovementOptions {
+  return plan === undefined
+    ? { moveSpeedMultiplier }
+    : { moveSpeedMultiplier, formation: plan.formation };
 }
 
 function moveAgents(
@@ -163,8 +178,17 @@ function moveAgents(
   tick: number,
 ): AgentDecision[] {
   const threats = toThreatPresences(threat);
+  const battleLinePlans = createBattleLineMovementPlans({
+    agents,
+    keep,
+    banners,
+    threats,
+    selectedHouseIds: state.selectedHouseIds,
+    tick,
+  });
   const decisions = agents.map((agent) => {
     const modifiers = modifiersForAgent(state, agent);
+    const battleLinePlan = battleLinePlans.get(agent.id);
     const context = createDefenseContext(
       agent,
       keep,
@@ -172,6 +196,7 @@ function moveAgents(
       threats,
       modifiers.hallDefenseRadiusBonus,
       tick,
+      battleLinePlan?.target,
     );
     const intent = decideIntent(
       agent,
@@ -184,12 +209,16 @@ function moveAgents(
           heroMaxHpMultiplierForAgent(agent),
       },
     );
+    const speedMultiplier =
+      modifiers.moveSpeedMultiplier *
+      movementMultiplierForAgent(agent);
     return {
-      agent: stepAgent(agent, rng, intent, {
-        moveSpeedMultiplier:
-          modifiers.moveSpeedMultiplier *
-          movementMultiplierForAgent(agent),
-      }),
+      agent: stepAgent(
+        agent,
+        rng,
+        intent,
+        movementOptions(speedMultiplier, battleLinePlan),
+      ),
       intent,
       context,
     };

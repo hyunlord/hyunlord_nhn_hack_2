@@ -1,24 +1,58 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import type { Agent, ThreatPresence } from "../src/agents/agentTypes";
 import {
   decideIntent,
   intentToState,
+  type DefenseContext,
 } from "../src/agents/dispositionEngine";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
-import {
-  context,
-  createAgent,
-  threat,
-} from "./dispositionFixtures";
 
-test("Given a destroyed own hall, when another hall is threatened, then the agent reinforces it", () => {
+function createAgent(overrides: Partial<Agent> = {}): Agent {
+  return {
+    id: "house_a_00",
+    houseId: "house_a",
+    unitClass: "melee",
+    disposition: { aggression: 80, loyalty: 40 },
+    x: 100,
+    y: 100,
+    heading: 0,
+    state: "idle",
+    hp: BALANCE_CONFIG.INITIAL_HP,
+    lastDamagedTick: -1,
+    lastAttackTick: -1,
+    isHero: false,
+    heroId: null,
+    heroLevel: 1,
+    heroLevelUpTick: -1,
+    respawnAtTick: null,
+    breakImmuneUntilTick: -1,
+    ...overrides,
+  };
+}
+
+function threat(id: string, x: number, y: number, hostile = true): ThreatPresence {
+  return { id, x, y, hostile };
+}
+
+function context(overrides: Partial<DefenseContext> = {}): DefenseContext {
+  return {
+    ownAnchor: { x: 100, y: 100, hp: BALANCE_CONFIG.BANNER_HP },
+    rallyAnchor: { x: 100, y: 100 },
+    threatenedAnchors: [],
+    threats: [],
+    ...overrides,
+  };
+}
+
+test("Given a destroyed own banner, when another anchor is threatened, then the agent reinforces it", () => {
   const nearbyRallyThreat = threat("creature_b", 710, 100);
   const intent = decideIntent(
     createAgent(),
     context({
-      ownHall: null,
-      rallyHall: { x: 700, y: 100 },
-      threatenedHalls: [{
+      ownAnchor: null,
+      rallyAnchor: { x: 700, y: 100 },
+      threatenedAnchors: [{
         houseId: "house_b",
         x: 700,
         y: 100,
@@ -39,14 +73,14 @@ test("Given a destroyed own hall, when another hall is threatened, then the agen
   });
 });
 
-test("Given another hall under heavier pressure, when reinforcement is considered, then only aggressive agents help it", () => {
+test("Given another anchor under heavier pressure, when reinforcement is considered, then only aggressive agents help it", () => {
   const threats = [
     threat("creature_b_far", 760, 100),
     threat("creature_b_near", 710, 100),
     threat("creature_c", 500, 500),
   ];
   const defense = context({
-    threatenedHalls: [
+    threatenedAnchors: [
       { houseId: "house_c", x: 500, y: 500, hostileCount: 1 },
       { houseId: "house_b", x: 700, y: 100, hostileCount: 2 },
     ],
@@ -86,11 +120,11 @@ test("Given another hall under heavier pressure, when reinforcement is considere
   assert.equal(intentToState(reinforcing), "helping");
 });
 
-test("Given equally threatened foreign halls, when reinforcement is chosen, then the lower house id wins", () => {
+test("Given equally threatened foreign anchors, when reinforcement is chosen, then the lower house id wins", () => {
   const intent = decideIntent(
     createAgent(),
     context({
-      threatenedHalls: [
+      threatenedAnchors: [
         { houseId: "house_c", x: 500, y: 500, hostileCount: 2 },
         { houseId: "house_b", x: 700, y: 100, hostileCount: 2 },
       ],
@@ -105,11 +139,11 @@ test("Given equally threatened foreign halls, when reinforcement is chosen, then
   assert.equal(intent.kind === "engage" ? intent.targetId : null, "creature_b");
 });
 
-test("Given a distant defender, when a threat nears its hall, then hall defense overrides personal distance", () => {
-  const hallThreat = threat("creature_a", 110, 100);
+test("Given a distant defender, when a threat nears its banner, then anchor defense overrides personal distance", () => {
+  const bannerThreat = threat("creature_a", 110, 100);
   const intent = decideIntent(
     createAgent({ x: 510 }),
-    context({ threats: [hallThreat] }),
+    context({ threats: [bannerThreat] }),
     false,
   );
 
@@ -117,7 +151,7 @@ test("Given a distant defender, when a threat nears its hall, then hall defense 
   assert.equal(intent.kind === "engage" ? intent.targetId : null, "creature_a");
 });
 
-test("Given multiple hall attackers, when defense is chosen, then agents focus the nearest attacker with id ties ascending", () => {
+test("Given multiple banner attackers, when defense is chosen, then agents focus the nearest attacker with id ties ascending", () => {
   const intent = decideIntent(
     createAgent({ x: 500 }),
     context({
