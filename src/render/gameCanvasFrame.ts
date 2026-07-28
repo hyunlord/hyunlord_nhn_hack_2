@@ -122,6 +122,7 @@ function drawWorld(
     currentState.houses,
     currentState.tick,
     lightingFactor,
+    heroProjection.brightenedAgentIds,
   );
   drawHeroes(
     context,

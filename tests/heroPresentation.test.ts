@@ -8,6 +8,7 @@ import { EMPTY_STARTING_MODIFIER_BUNDLE } from "../src/content/runConfiguration"
 import { maxHpForAgent } from "../src/engine/heroEngine";
 import { modifiersForAgent } from "../src/engine/progressionEngine";
 import { createInitialState } from "../src/engine/tick";
+import { drawHeroes } from "../src/render/drawHeroes";
 import { createHeroRenderTracker, projectHeroRenderState } from "../src/render/heroRenderProjection";
 import { GameStoreProvider } from "../src/state/gameStore";
 import { HUD } from "../src/ui/components/HUD";
@@ -113,4 +114,228 @@ test("Given living heroes in projection, when effective max HP is resolved, then
   for (const { agent, maxHp } of projection.livingHeroes) {
     assert.equal(maxHp, maxHpForAgent(agent, modifiersForAgent(state, agent)));
   }
+});
+
+
+type HeroDrawOperation =
+  | { readonly kind: "arc"; readonly x: number; readonly y: number; readonly radius: number; readonly startAngle: number; readonly endAngle: number }
+  | { readonly kind: "fillText"; readonly text: string; readonly x: number; readonly y: number }
+  | { readonly kind: "setFillStyle" | "setStrokeStyle"; readonly value: string }
+  | { readonly kind: "setAlpha" | "setLineWidth"; readonly value: number }
+  | { readonly kind: "beginPath" | "fill" | "lineTo" | "moveTo" | "restore" | "save" | "stroke" };
+
+class HeroRecordingContext {
+  private readonly recordedOperations: HeroDrawOperation[] = [];
+  public globalCompositeOperation: GlobalCompositeOperation = "source-over";
+  public imageSmoothingEnabled = false;
+
+  public set fillStyle(value: string | CanvasGradient | CanvasPattern) {
+    this.recordedOperations.push({ kind: "setFillStyle", value: String(value) });
+  }
+
+  public set strokeStyle(value: string | CanvasGradient | CanvasPattern) {
+    this.recordedOperations.push({ kind: "setStrokeStyle", value: String(value) });
+  }
+
+  public set globalAlpha(value: number) {
+    this.recordedOperations.push({ kind: "setAlpha", value });
+  }
+
+  public set lineWidth(value: number) {
+    this.recordedOperations.push({ kind: "setLineWidth", value });
+  }
+
+  public set font(_value: string) {}
+  public set textAlign(_value: CanvasTextAlign) {}
+  public set textBaseline(_value: CanvasTextBaseline) {}
+
+  public beginPath(): void {
+    this.recordedOperations.push({ kind: "beginPath" });
+  }
+
+  public fill(): void {
+    this.recordedOperations.push({ kind: "fill" });
+  }
+
+  public fillRect(_x: number, _y: number, _width: number, _height: number): void {}
+
+  public fillText(text: string, x: number, y: number): void {
+    this.recordedOperations.push({ kind: "fillText", text, x, y });
+  }
+
+  public lineTo(): void {
+    this.recordedOperations.push({ kind: "lineTo" });
+  }
+
+  public measureText(text: string): { readonly width: number } {
+    return { width: text.length * 6 };
+  }
+
+  public moveTo(): void {
+    this.recordedOperations.push({ kind: "moveTo" });
+  }
+
+  public restore(): void {
+    this.recordedOperations.push({ kind: "restore" });
+  }
+
+  public save(): void {
+    this.recordedOperations.push({ kind: "save" });
+  }
+
+  public scale(_x: number, _y: number): void {}
+  public setLineDash(_segments: readonly number[]): void {}
+  public translate(_x: number, _y: number): void {}
+
+  public stroke(): void {
+    this.recordedOperations.push({ kind: "stroke" });
+  }
+
+  public arc(x: number, y: number, radius: number, startAngle: number, endAngle: number): void {
+    this.recordedOperations.push({ kind: "arc", x, y, radius, startAngle, endAngle });
+  }
+
+  public operations(): readonly HeroDrawOperation[] {
+    return this.recordedOperations;
+  }
+}
+
+function heroFillTexts(context: HeroRecordingContext): readonly string[] {
+  return context.operations()
+    .filter((operation): operation is Extract<HeroDrawOperation, { readonly kind: "fillText" }> => operation.kind === "fillText")
+    .map(({ text }) => text);
+}
+
+test("Given Sera crosses the field, when render projection tracks her, then the trail caps at six ordered points and resets on death or run change", () => {
+  let projection = projectHeroRenderState(createInitialState(201).state, createHeroRenderTracker());
+  const base = createInitialState(201).state;
+  const sera = base.agents.find(({ heroId }) => heroId === "hero_ashvale");
+  if (sera === undefined) {
+    throw new RangeError("Expected Sera fixture.");
+  }
+  let movingState = base;
+
+  for (let index = 0; index < 8; index += 1) {
+    movingState = {
+      ...base,
+      tick: index + 1,
+      agents: base.agents.map((agent) => agent.id === sera.id ? { ...agent, x: 200 + index, y: 210 + index } : agent),
+    };
+    projection = projectHeroRenderState(movingState, projection.tracker);
+  }
+  const tracked = projection.livingHeroes.find(({ agent }) => agent.id === sera.id);
+  assert.deepEqual(tracked?.trail.map(({ x, y }) => ({ x, y })), [
+    { x: 202, y: 212 },
+    { x: 203, y: 213 },
+    { x: 204, y: 214 },
+    { x: 205, y: 215 },
+    { x: 206, y: 216 },
+    { x: 207, y: 217 },
+  ]);
+
+  const repeated = projectHeroRenderState(movingState, projection.tracker);
+  const repeatedSera = repeated.livingHeroes.find(({ agent }) => agent.id === sera.id);
+  assert.deepEqual(repeatedSera?.trail, tracked?.trail);
+
+  const dead = projectHeroRenderState({
+    ...base,
+    tick: 20,
+    agents: base.agents.map((agent) => agent.id === sera.id ? { ...agent, hp: 0, state: "dead" as const, respawnAtTick: 620 } : agent),
+  }, projection.tracker);
+  assert.equal(dead.tracker.trailsByHeroId.get("hero_ashvale")?.length ?? 0, 0);
+
+  const nextRun = createInitialState(202).state;
+  const reset = projectHeroRenderState(nextRun, projection.tracker);
+  const resetSera = reset.livingHeroes.find(({ agent }) => agent.heroId === "hero_ashvale");
+  if (resetSera === undefined) {
+    throw new RangeError("Expected reset Sera projection.");
+  }
+  assert.deepEqual(resetSera.trail, [{ x: resetSera.agent.x, y: resetSera.agent.y }]);
+});
+
+test("Given living and fallen heroes, when hero rendering draws labels, then living labels produce no text while fall countdown remains text", () => {
+  const state = createInitialState(203).state;
+  const livingProjection = projectHeroRenderState(state, createHeroRenderTracker());
+  const livingContext = new HeroRecordingContext();
+
+  drawHeroes(livingContext, livingProjection, state.tick, () => "LIVING LABEL");
+
+  assert.deepEqual(heroFillTexts(livingContext), []);
+
+  const hero = state.agents.find(({ heroId }) => heroId === "hero_ashvale");
+  if (hero === undefined) {
+    throw new RangeError("Expected Ashvale hero.");
+  }
+  const primed = projectHeroRenderState({
+    ...state,
+    tick: 1,
+    agents: state.agents.map((agent) => agent.id === hero.id ? { ...agent, x: 321, y: 222 } : agent),
+  }, createHeroRenderTracker());
+  const fallen = projectHeroRenderState({
+    ...state,
+    tick: 2,
+    agents: state.agents.map((agent) => agent.id === hero.id ? { ...agent, hp: 0, state: "dead" as const, respawnAtTick: 122 } : agent),
+  }, primed.tracker);
+  const fallenContext = new HeroRecordingContext();
+
+  drawHeroes(fallenContext, fallen, state.tick, () => "LIVING LABEL", (ticks) => `${ticks} ticks`);
+
+  assert.deepEqual(heroFillTexts(fallenContext), ["120 ticks"]);
+});
+
+test("Given hero projection reads threats and allies, when it resolves render-only presentation state, then Bren arc, Ivy pulse, ally brightness, and Sera trail are deterministic", () => {
+  const state = createInitialState(204).state;
+  const ivy = state.agents.find(({ heroId }) => heroId === "hero_greymoor");
+  const bren = state.agents.find(({ heroId }) => heroId === "hero_thornhold");
+  const ally = state.agents.find((agent) => !agent.isHero && agent.houseId === "house_c");
+  if (ivy === undefined || bren === undefined || ally === undefined) {
+    throw new RangeError("Expected Ivy, Bren, and a Greymoor ally.");
+  }
+  const projectedState = {
+    ...state,
+    tick: 37,
+    activeThreat: {
+      type: "monster_horde" as const,
+      waveIndex: 0,
+      startTick: 0,
+      creatures: [{
+        id: "creature_front",
+        x: bren.x + 100,
+        y: bren.y,
+        hp: 100,
+        agentDamage: 1,
+        structureDamage: 1,
+        lastAttackTick: -1,
+        haltedUntilTick: -1,
+      }],
+      mage: null,
+      traitorHouseId: null,
+    },
+    agents: state.agents.map((agent) => {
+      if (agent.id === ivy.id) {
+        return { ...agent, x: 300, y: 300 };
+      }
+      if (agent.id === ally.id) {
+        return { ...agent, x: 350, y: 300 };
+      }
+      return agent;
+    }),
+  };
+
+  const first = projectHeroRenderState(projectedState, createHeroRenderTracker());
+  const second = projectHeroRenderState(projectedState, createHeroRenderTracker());
+  const brenProjection = first.livingHeroes.find(({ agent }) => agent.heroId === "hero_thornhold");
+  const ivyProjection = first.livingHeroes.find(({ agent }) => agent.heroId === "hero_greymoor");
+  const seraProjection = first.livingHeroes.find(({ agent }) => agent.heroId === "hero_ashvale");
+
+  assert.equal(brenProjection?.frontArc?.targetId, "creature_front");
+  assert.ok((brenProjection?.frontArc?.direction.x ?? 0) > 0.99);
+  const secondIvy = second.livingHeroes.find(({ agent }) => agent.heroId === "hero_greymoor");
+  if (ivyProjection?.auraPulse === null || ivyProjection?.auraPulse === undefined || secondIvy?.auraPulse === null || secondIvy?.auraPulse === undefined) {
+    throw new RangeError("Expected Ivy aura pulse projection.");
+  }
+  assert.equal(ivyProjection.auraPulse.radius, secondIvy.auraPulse.radius);
+  assert.ok(ivyProjection.auraPulse.radius > ivyProjection.auraRadius);
+  assert.ok(first.brightenedAgentIds.includes(ally.id));
+  assert.deepEqual(seraProjection?.trail, second.livingHeroes.find(({ agent }) => agent.heroId === "hero_ashvale")?.trail);
 });

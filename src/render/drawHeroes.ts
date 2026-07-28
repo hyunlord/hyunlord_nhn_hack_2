@@ -1,14 +1,43 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
-import { HERO_DEFINITIONS } from "../content/heroConfig";
 import type { SpriteId } from "../content/assetManifest";
-import { drawSprite } from "./assets/drawSprite";
-import type { HeroRenderProjection } from "./heroRenderProjection";
+import { drawSprite, type BrowserSpriteDrawContext } from "./assets/drawSprite";
+import type { HeroFrontArc, HeroRenderProjection } from "./heroRenderProjection";
+
+
+type HeroDrawStyle = string | CanvasGradient | CanvasPattern;
+export interface HeroDrawContext {
+  globalAlpha: number;
+  fillStyle: HeroDrawStyle;
+  font: string;
+  lineWidth: number;
+  strokeStyle: HeroDrawStyle;
+  textAlign: CanvasTextAlign;
+  textBaseline: CanvasTextBaseline;
+  arc(x: number, y: number, radius: number, startAngle: number, endAngle: number): void;
+  beginPath(): void;
+  fill(): void;
+  fillRect(x: number, y: number, width: number, height: number): void;
+  fillText(text: string, x: number, y: number): void;
+  lineTo(x: number, y: number): void;
+  measureText(text: string): { readonly width: number };
+  moveTo(x: number, y: number): void;
+  restore(): void;
+  save(): void;
+  setLineDash(segments: readonly number[]): void;
+  stroke(): void;
+  translate(x: number, y: number): void;
+}
+
+function canDrawSprites(context: HeroDrawContext): context is HeroDrawContext & BrowserSpriteDrawContext {
+  return "drawImage" in context && "imageSmoothingEnabled" in context && "scale" in context && "translate" in context;
+}
 
 const HERO_RADIUS = 8;
 const HP_BAR_WIDTH = 34;
 const HP_BAR_HEIGHT = 4;
 const LABEL_HEIGHT = 12;
 const LABEL_PADDING_X = 3;
+const FRONT_ARC_RADIUS = HERO_RADIUS + 11;
 
 export type HeroLabelFormatter = (heroId: string, level: number) => string;
 export type HeroFallLabelFormatter = (ticksRemaining: number) => string;
@@ -33,7 +62,7 @@ function spriteIdForHero(heroId: string | null): SpriteId | null {
 }
 
 function drawHeroPrimitiveBody(
-  context: CanvasRenderingContext2D,
+  context: HeroDrawContext,
   x: number,
   y: number,
   color: string,
@@ -48,10 +77,11 @@ function drawHeroPrimitiveBody(
 }
 
 function drawAura(
-  context: CanvasRenderingContext2D,
+  context: HeroDrawContext,
   x: number,
   y: number,
   radius: number,
+  pulse: HeroRenderProjection["livingHeroes"][number]["auraPulse"],
 ): void {
   if (radius <= 0) {
     return;
@@ -59,17 +89,68 @@ function drawAura(
   context.save();
   context.beginPath();
   context.arc(x, y, radius, 0, Math.PI * 2);
-  context.fillStyle = "rgba(123, 176, 106, 0.18)";
-  context.strokeStyle = "rgba(190, 238, 151, 0.64)";
+  context.fillStyle = "rgba(123, 176, 106, 0.15)";
+  context.strokeStyle = "rgba(160, 214, 139, 0.40)";
   context.lineWidth = 2;
   context.setLineDash([7, 5]);
   context.fill();
+  context.stroke();
+  if (pulse !== null) {
+    context.beginPath();
+    context.arc(x, y, pulse.radius, 0, Math.PI * 2);
+    context.globalAlpha = pulse.alpha;
+    context.strokeStyle = "rgba(190, 238, 151, 0.64)";
+    context.lineWidth = 1.5;
+    context.stroke();
+    context.globalAlpha = 1;
+  }
+  context.restore();
+}
+
+function drawTrail(
+  context: HeroDrawContext,
+  trail: HeroRenderProjection["livingHeroes"][number]["trail"],
+  color: string,
+): void {
+  const first = trail[0];
+  if (first === undefined || trail.length < 2) {
+    return;
+  }
+  context.save();
+  context.beginPath();
+  context.moveTo(first.x, first.y);
+  for (const point of trail.slice(1)) {
+    context.lineTo(point.x, point.y);
+  }
+  context.strokeStyle = color;
+  context.globalAlpha = 0.38;
+  context.lineWidth = 1.5;
+  context.stroke();
+  context.globalAlpha = 1;
+  context.restore();
+}
+
+function drawFrontArc(
+  context: HeroDrawContext,
+  x: number,
+  y: number,
+  arc: HeroFrontArc | null,
+): void {
+  if (arc === null) {
+    return;
+  }
+  const angle = Math.atan2(arc.direction.y, arc.direction.x);
+  context.save();
+  context.beginPath();
+  context.arc(x, y, FRONT_ARC_RADIUS, angle - 0.72, angle + 0.72);
+  context.strokeStyle = "rgba(255, 248, 214, 0.86)";
+  context.lineWidth = 3;
   context.stroke();
   context.restore();
 }
 
 function drawHpBar(
-  context: CanvasRenderingContext2D,
+  context: HeroDrawContext,
   x: number,
   y: number,
   hp: number,
@@ -89,7 +170,7 @@ function drawHpBar(
 }
 
 function drawHeroLabel(
-  context: CanvasRenderingContext2D,
+  context: HeroDrawContext,
   x: number,
   y: number,
   label: string,
@@ -111,7 +192,7 @@ function drawHeroLabel(
 }
 
 function drawLevelFlourish(
-  context: CanvasRenderingContext2D,
+  context: HeroDrawContext,
   x: number,
   y: number,
   levelUpTick: number,
@@ -131,7 +212,7 @@ function drawLevelFlourish(
 }
 
 function drawFallSite(
-  context: CanvasRenderingContext2D,
+  context: HeroDrawContext,
   marker: HeroRenderProjection["fallenHeroes"][number],
   formatLabel: HeroFallLabelFormatter,
 ): void {
@@ -155,7 +236,7 @@ function drawFallSite(
 }
 
 export function drawHeroes(
-  context: CanvasRenderingContext2D,
+  context: HeroDrawContext,
   projection: HeroRenderProjection,
   currentTick: number,
   formatLabel?: HeroLabelFormatter,
@@ -166,21 +247,16 @@ export function drawHeroes(
     drawFallSite(context, marker, formatFallLabel);
   }
 
-  for (const { agent: hero, auraRadius, houseColor, maxHp } of projection.livingHeroes) {
-    const definition = HERO_DEFINITIONS.find(({ id }) => id === hero.heroId);
-    if (definition === undefined) {
-      continue;
-    }
-    drawAura(context, hero.x, hero.y, auraRadius);
+  void formatLabel;
+  for (const { agent: hero, auraPulse, auraRadius, frontArc, houseColor, maxHp, trail } of projection.livingHeroes) {
+    drawTrail(context, trail, houseColor);
+    drawAura(context, hero.x, hero.y, auraRadius, auraPulse);
     const spriteId = spriteIdForHero(hero.heroId);
-    if (spriteId === null || !drawSprite(context, spriteId, hero.x, hero.y, { tint: houseColor })) {
+    if (spriteId === null || (!canDrawSprites(context) || !drawSprite(context, spriteId, hero.x, hero.y, { tint: houseColor }))) {
       drawHeroPrimitiveBody(context, hero.x, hero.y, houseColor);
     }
+    drawFrontArc(context, hero.x, hero.y, frontArc);
     drawLevelFlourish(context, hero.x, hero.y, hero.heroLevelUpTick, currentTick);
     drawHpBar(context, hero.x, hero.y, hero.hp, maxHp);
-    const label = formatLabel?.(definition.id, hero.heroLevel);
-    if (label !== undefined) {
-      drawHeroLabel(context, hero.x, hero.y, label);
-    }
   }
 }

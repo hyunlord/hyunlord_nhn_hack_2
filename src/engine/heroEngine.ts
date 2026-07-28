@@ -14,6 +14,20 @@ type ModifierEntry = {
   readonly modifiers: ResolvedModifiers;
 };
 
+export type HeroBattleLineRole = "outer_forward" | "spear_guard" | "archer_support";
+
+export function battleLineRoleForAgent(agent: Agent): HeroBattleLineRole | null {
+  if (!agent.isHero) {
+    return null;
+  }
+  switch (agent.heroId) {
+    case "hero_ashvale": return "outer_forward";
+    case "hero_thornhold": return "spear_guard";
+    case "hero_greymoor": return "archer_support";
+    case null: default: return null;
+  }
+}
+
 export interface AgentCombatBonus {
   readonly damageMultiplier: number;
   readonly attackIntervalMultiplier: number;

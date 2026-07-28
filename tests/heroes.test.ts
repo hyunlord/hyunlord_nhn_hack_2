@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import { HERO_DEFINITIONS } from "../src/content/heroConfig";
+import type { HouseSelection } from "../src/content/houseConfig";
 import { UNIT_CLASSES } from "../src/content/unitClassConfig";
+import type { Agent, ThreatPresence } from "../src/agents/agentTypes";
+import { createBattleLineMovementPlans, resolveBattleLineTarget } from "../src/agents/battleLine";
+import { stepAgent } from "../src/agents/movement";
 import {
   combatBonusesForAgents,
   maxHpForAgent,
@@ -14,7 +18,61 @@ import {
   advanceTick,
   createInitialState,
 } from "../src/engine/tick";
+import type { Banner, Keep } from "../src/engine/engine.types";
 import { createRng } from "../src/engine/prng";
+
+const SELECTED_HOUSES: HouseSelection = ["house_a", "house_b", "house_c"];
+
+function distance(
+  first: { readonly x: number; readonly y: number },
+  second: { readonly x: number; readonly y: number },
+): number {
+  return Math.hypot(first.x - second.x, first.y - second.y);
+}
+
+function averageDistance(
+  agents: readonly Agent[],
+  point: { readonly x: number; readonly y: number },
+): number {
+  return agents.reduce((sum, agent) => sum + distance(agent, point), 0) / agents.length;
+}
+
+function hostile(id: string, x: number, y: number): ThreatPresence {
+  return { id, x, y, hostile: true };
+}
+
+function heroFixture(heroId: string): Agent {
+  const state = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
+  const hero = state.agents.find((agent) => agent.heroId === heroId);
+  if (hero === undefined) {
+    throw new RangeError(`Expected hero ${heroId}.`);
+  }
+  return hero;
+}
+
+function battleTarget(
+  agent: Agent,
+  threats: readonly ThreatPresence[],
+  keep: Keep,
+  banners: readonly Banner[],
+  tick = 100,
+) {
+  return resolveBattleLineTarget({
+    agent,
+    keep,
+    banners,
+    threats,
+    selectedHouseIds: SELECTED_HOUSES,
+    tick,
+  });
+}
+
+function approximate(actual: number, expected: number, tolerance: number): void {
+  assert.ok(
+    Math.abs(actual - expected) <= tolerance,
+    `expected ${actual} to be within ${tolerance} of ${expected}`,
+  );
+}
 
 test("Given a new run, when agents are created, then one configured hero per house is appended without replacing regulars", () => {
   const state = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
@@ -289,4 +347,109 @@ test("Given Ivy has Green Mercy, when she kills inside her aura, then nearby liv
 
   assert.equal(result.threat.creatures.length, 0);
   assert.equal(result.agents[1]?.hp, 62);
+});
+
+
+test("Given Sera faces an outer threat, when deterministic battle-line ticks advance, then she stands closer than same-house regulars", () => {
+  const state = createInitialState(102).state;
+  const threat = hostile("outer_creature", state.keep.x + 300, state.keep.y);
+  let agents = state.agents.filter(
+    (agent) => agent.houseId === "house_a" && (agent.isHero || !agent.isHero),
+  );
+
+  for (let tick = 0; tick < 80; tick += 1) {
+    const plans = createBattleLineMovementPlans({
+      agents,
+      keep: state.keep,
+      banners: state.banners,
+      threats: [threat],
+      selectedHouseIds: state.selectedHouseIds,
+      tick,
+    });
+    agents = agents.map((agent) => {
+      const plan = plans.get(agent.id);
+      if (plan === undefined) {
+        return agent;
+      }
+      return stepAgent(
+        agent,
+        createRng(10_000 + tick),
+        {
+          kind: "engage",
+          towardX: plan.target.target.x,
+          towardY: plan.target.target.y,
+          targetId: plan.target.targetId,
+          preferredRange: 0,
+        },
+        { moveSpeedMultiplier: 1, formation: plan.formation },
+      );
+    });
+  }
+
+  const sera = agents.find((agent) => agent.heroId === "hero_ashvale");
+  const regulars = agents.filter((agent) => !agent.isHero && agent.hp > 0);
+  if (sera === undefined || regulars.length === 0) {
+    throw new RangeError("Expected Sera and regular Ashvale agents.");
+  }
+
+  assert.ok(distance(sera, threat) < averageDistance(regulars, threat));
+});
+
+test("Given Sera resolves a battle-line target, when Ashvale charge style and fracture apply to regulars, then her hero override still seeks the outer rank", () => {
+  const state = createInitialState(103).state;
+  const sera = heroFixture("hero_ashvale");
+  const regular = {
+    ...sera,
+    id: "house_a_regular_compare",
+    isHero: false,
+    heroId: null,
+  };
+  const threat = hostile("east", state.keep.x + 280, state.keep.y);
+  const threats = [threat];
+  const destroyed = state.banners.map((banner) =>
+    banner.houseId === sera.houseId ? { ...banner, hp: 0 } : banner,
+  );
+
+  const heroTarget = battleTarget(sera, threats, state.keep, destroyed);
+  const regularTarget = battleTarget(regular, threats, state.keep, destroyed);
+
+  assert.equal(heroTarget.fractured, false);
+  assert.equal(heroTarget.posture, "engage");
+  assert.ok(heroTarget.desiredRank > regularTarget.desiredRank);
+  assert.ok(distance(heroTarget.target, threat) < distance(regularTarget.target, threat));
+});
+
+test("Given Bren resolves a battle-line target, when his banner is fractured, then he holds exact spear rank and never retreats", () => {
+  const state = createInitialState(104).state;
+  const bren = { ...heroFixture("hero_thornhold"), lastAttackTick: 100 };
+  const threats = [hostile("east", state.keep.x + 260, state.keep.y)];
+  const destroyed = state.banners.map((banner) =>
+    banner.houseId === bren.houseId ? { ...banner, hp: 0 } : banner,
+  );
+
+  const target = battleTarget(bren, threats, state.keep, destroyed, 110);
+
+  assert.equal(target.desiredRank, UNIT_CLASSES.spear.lineRank);
+  assert.equal(target.posture, "engage");
+  assert.equal(target.fractured, false);
+  approximate(distance(target.target, state.keep), UNIT_CLASSES.spear.lineRank, 60);
+});
+
+test("Given Ivy resolves a battle-line target, when the nearest threat is ahead, then she keeps archer rank and remains forty units behind it", () => {
+  const state = createInitialState(105).state;
+  const ivy = heroFixture("hero_greymoor");
+  const nearest = hostile("east", state.keep.x + UNIT_CLASSES.archer.lineRank + 40, state.keep.y);
+  const regulars = state.agents.filter(
+    (agent) => !agent.isHero && agent.houseId === ivy.houseId && agent.hp > 0,
+  );
+  const target = battleTarget(ivy, [nearest], state.keep, state.banners);
+  const regularRankAverage = regulars.reduce(
+    (sum, regular) => sum + UNIT_CLASSES[regular.unitClass].lineRank,
+    0,
+  ) / regulars.length;
+  const regularThreatDistance = distance(state.keep, nearest) - regularRankAverage;
+
+  assert.equal(target.desiredRank, UNIT_CLASSES.archer.lineRank);
+  approximate(distance(target.target, nearest), 40, 0.000_001);
+  assert.ok(distance(target.target, nearest) > regularThreatDistance);
 });

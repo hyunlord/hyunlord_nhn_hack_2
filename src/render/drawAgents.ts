@@ -76,10 +76,12 @@ export function drawAgents(
   houses: readonly House[],
   currentTick: number,
   dayNightFactor = 0,
+  brightenedAgentIds: readonly string[] = [],
 ): void {
   const colorsByHouse = new Map(
     houses.map((house) => [house.id, house.color] as const),
   );
+  const brightened = new Set(brightenedAgentIds);
 
   context.lineWidth = 1;
   const ambientOutline = mixRgba(
@@ -135,6 +137,12 @@ export function drawAgents(
     );
     if (!spriteDrawn) {
       drawAgentPrimitiveBody(context, agent, color, definition);
+    }
+    if (brightened.has(agent.id) && agent.state !== "fleeing") {
+      traceAgentBody(context, agent, definition);
+      context.lineWidth = 3;
+      context.strokeStyle = "rgba(255, 250, 230, 0.88)";
+      context.stroke();
     }
     const recentlyDamaged =
       agent.lastDamagedTick >= 0 &&

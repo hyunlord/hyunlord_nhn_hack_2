@@ -1,7 +1,8 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import { HOUSE_CONFIG, type HouseFormation, type HouseId, type HouseSelection } from "../content/houseConfig";
-import { UNIT_CLASSES } from "../content/unitClassConfig";
+import { UNIT_CLASSES, UNIT_CLASS_IDS } from "../content/unitClassConfig";
 import type { Banner, Keep } from "../engine/engine.types";
+import { battleLineRoleForAgent } from "../engine/heroEngine";
 import type { Agent, ThreatPresence } from "./agentTypes";
 import type { FormationMovement, FormationShape, Point } from "./formation";
 import { buildSpatialGrid, queryFormationNeighbours, type SpatialGrid } from "./spatialGrid";
@@ -16,6 +17,7 @@ const FRACTURED_COHESION = 0.1;
 const FRACTURED_JITTER = 0.6;
 const SELECTED_HOUSE_BIASES = [-28, 0, 28] as const;
 const ZERO_POINT = { x: 0, y: 0 } as const;
+const IVY_THREAT_STANDOFF = 40;
 
 export type BattleLinePosture = "engage" | "retreat";
 export type BattleLineThreatSource = { readonly kind: "nearby-centroid" } | { readonly kind: "nearest-fallback"; readonly id: string } | { readonly kind: "muster" };
@@ -154,6 +156,35 @@ function rankFor(
   }
 }
 
+const OUTERMOST_FORWARD_RANK = Math.max(...UNIT_CLASS_IDS.map((unitClass) => UNIT_CLASSES[unitClass].lineRank)) + LATERAL_SPREAD / 2;
+
+function heroDesiredRank(agent: Agent): number | null {
+  const role = battleLineRoleForAgent(agent);
+  switch (role) {
+    case "outer_forward": return OUTERMOST_FORWARD_RANK;
+    case "spear_guard": return UNIT_CLASSES.spear.lineRank;
+    case "archer_support": return UNIT_CLASSES.archer.lineRank;
+    case null: return null;
+  }
+}
+
+function heroTarget(request: ResolveBattleLineTargetRequest, formation: HouseFormation, resolvedThreat: ReturnType<typeof threatDirection>): BattleLineTarget | null {
+  const desiredRank = heroDesiredRank(request.agent);
+  if (desiredRank === null) {
+    return null;
+  }
+  const role = battleLineRoleForAgent(request.agent);
+  const nearest = role === "archer_support" ? nearestHostile(request.keep, request.threats) : null;
+  const radialRank = nearest === null ? desiredRank : Math.max(0, Math.sqrt(distanceSquared(request.keep, nearest)) - IVY_THREAT_STANDOFF);
+
+  return {
+    target: { x: request.keep.x + resolvedThreat.direction.x * radialRank, y: request.keep.y + resolvedThreat.direction.y * radialRank },
+    direction: resolvedThreat.direction, threatSource: resolvedThreat.source, targetId: resolvedThreat.targetId, desiredRank,
+    lateralDisplacement: 0, jitterDisplacement: 0, jitter: 0, fractured: false, posture: "engage",
+    formation: formationShape(formation, false),
+  };
+}
+
 function formationShape(formation: HouseFormation, fractured: boolean): FormationShape {
   return { lineSpacing: formation.lineSpacing, cohesion: fractured ? FRACTURED_COHESION : formation.cohesion };
 }
@@ -191,6 +222,10 @@ export function resolveBattleLineTarget(request: ResolveBattleLineTargetRequest)
   const posture = linePosture(request.agent, formation, request.tick);
   const desiredRank = rankFor(request.agent, formation, fractured, posture);
   const resolvedThreat = threatDirection(request);
+  const heroOverride = heroTarget(request, formation, resolvedThreat);
+  if (heroOverride !== null) {
+    return heroOverride;
+  }
   const lateralDisplacement = selectedBiasDisplacement(
     request.agent.houseId,
     request.selectedHouseIds,
