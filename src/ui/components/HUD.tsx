@@ -1,201 +1,72 @@
+import { useLocale, type LocaleKey } from "../../content/locale";
 import { useGameStore } from "../../state/gameStore";
+import { houseName } from "../../content/locale/display";
 import { BALANCE_CONFIG } from "../../content/balanceConfig";
 import { WAVE_DEFINITIONS } from "../../content/waveConfig";
 import { LEVEL_THRESHOLDS } from "../../progression/xp";
-import { HERO_LEVEL_THRESHOLDS } from "../../progression/xp";
-import { HERO_DEFINITIONS } from "../../content/heroConfig";
-import type { LegacyRiteGroup } from "../investmentSummary";
-import {
-  livingRegularCount,
-  populationCapForHouse,
-} from "../../engine/population";
+import { livingRegularCount, populationCapForHouse } from "../../engine/population";
+import type { GameState } from "../../engine/engine.types";
 
-const EMPTY_LEGACY_RITES: readonly LegacyRiteGroup[] = [];
+type PhaseKey = Extract<GameState["phase"], string>;
+const PHASE_LABEL_KEYS: Readonly<Record<PhaseKey, LocaleKey>> = {
+  defeat: "run.phase.defeat",
+  draft: "run.phase.draft",
+  intermission: "run.phase.intermission",
+  preparation: "run.phase.preparation",
+  victory: "run.phase.victory",
+  wave: "run.phase.wave",
+};
+
+function formatElapsed(tick: number): string {
+  const totalSeconds = Math.floor(tick / BALANCE_CONFIG.TICKS_PER_SECOND);
+  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, "0")}`;
+}
 
 export function HUD({
-  legacyRites = EMPTY_LEGACY_RITES,
+  onOpenSettings,
 }: {
-  readonly legacyRites?: readonly LegacyRiteGroup[];
+  readonly onOpenSettings?: () => void;
 }) {
   const { state } = useGameStore();
+  const { t } = useLocale();
+  const activeRaid = state.activeThreat !== null && "daylightRaid" in state.activeThreat && state.activeThreat.daylightRaid === true;
+  const pendingRaid = "pendingDaylightRaid" in state && state.pendingDaylightRaid === true;
+  const isDay =
+    state.phase === "intermission" ||
+    activeRaid ||
+    (state.phase === "draft" && state.phaseBeforeDraft === "intermission");
 
   return (
-    <section className="hud-panel" aria-label="World status">
-      <div className="hud-heading">
-        <h2>Run status</h2>
-        <span className="tick-counter">Tick {state.tick}</span>
-      </div>
-      <div className="phase-status">
-        <span>
-          Wave {state.waveIndex + 1}/{WAVE_DEFINITIONS.length} ·{" "}
-          {WAVE_DEFINITIONS[state.waveIndex]?.label ?? "Unknown"}
-        </span>
-        <strong>{state.phase}</strong>
-      </div>
-      <div className="run-economy">
-        <span>Tribute</span>
-        <strong>{state.tribute}</strong>
-      </div>
-      {legacyRites.length === 0 ? null : (
-        <section className="legacy-rites" aria-labelledby="legacy-rites-heading">
-          <h3 id="legacy-rites-heading">Legacy rites</h3>
-          <div className="legacy-rites__groups">
-            {legacyRites.map((group) => (
-              <section
-                aria-label={`${group.heading} Legacy rites`}
-                className="legacy-rites__group"
-                key={group.heading}
-              >
-                <h4>{group.heading}</h4>
-                <ul>
-                  {group.items.map((item) => (
-                    <li key={`${group.heading}:${item.name}`}>
-                      <strong>{item.name}</strong>
-                      <span>
-                        {item.rank} · {item.effect}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
-        </section>
-      )}
-      {state.activeThreat === null ? null : (
-        <div className="invasion-status" aria-label="Invasion status">
-          <span>
-            {state.activeThreat.creatures.length} creatures remaining
-          </span>
-          {state.activeThreat.mage === null ? null : (
-            <strong>
-              Mage {state.activeThreat.mage.hp}/
-              {BALANCE_CONFIG.DARK_MAGE_HP} HP
-            </strong>
-          )}
+    <section className="run-hud" aria-label={t("hud.worldStatus")}>
+      <div className="run-hud-top-left hud-panel hud-panel--compact">
+        <div className="phase-status phase-status--stacked">
+          <span aria-hidden="true" className="day-night-icon">{isDay ? "☀" : "☾"}</span>
+          <span>{t("hud.wave", { current: state.waveIndex + 1, total: WAVE_DEFINITIONS.length })}</span>
+          <strong>{t(PHASE_LABEL_KEYS[state.phase])}</strong>
         </div>
-      )}
-      <div className="divine-power">
-        <div className="divine-power-label">
-          <span>Divine power</span>
-          <strong>
-            {state.divinePower.toFixed(1)}/{BALANCE_CONFIG.DIVINE_POWER_MAX}
-          </strong>
-        </div>
-        <div
-          className="divine-power__gauge"
-          data-frame-sprite="gauge_frame"
-        >
-          <progress
-            aria-label="Divine power"
-            max={BALANCE_CONFIG.DIVINE_POWER_MAX}
-            value={state.divinePower}
-          />
-        </div>
+        <div className="hud-metric-row"><span>{t("hud.elapsed")}</span><strong>{formatElapsed(state.tick)}</strong></div>
+        {activeRaid ? <p className="raid-label" aria-live="polite">{t("run.daylightRaid.active", { wave: state.waveIndex + 1 })}</p> : null}
+        {pendingRaid ? <p className="raid-label raid-label--warning" aria-live="polite">{t("run.daylightRaid.pending")}</p> : null}
       </div>
-      <ul className="house-status-list">
-        {state.houses.map((house) => {
-          const livingCount = state.agents.filter(
-            (agent) =>
-              agent.houseId === house.id && agent.state !== "dead",
-          ).length;
-          const hall = state.halls.find(
-            ({ houseId }) => houseId === house.id,
-          );
-          const progress = state.houseProgress.find(
-            ({ houseId }) => houseId === house.id,
-          );
-          const level = progress?.level ?? 1;
-          const populationEntries = state.populationHistory.filter(
-            ({ houseId }) => houseId === house.id,
-          );
-          const currentPopulation = populationEntries.at(-1);
-          const previousPopulation = populationEntries.at(-2);
-          const populationDelta =
-            currentPopulation === undefined ||
-            previousPopulation === undefined
-              ? 0
-              : currentPopulation.count - previousPopulation.count;
-          const levelStart = LEVEL_THRESHOLDS[level - 1] ?? 0;
-          const nextThreshold = LEVEL_THRESHOLDS[level];
-          const xpWithinLevel = Math.max(
-            0,
-            (progress?.xp ?? 0) - levelStart,
-          );
-          const xpSpan =
-            nextThreshold === undefined
-              ? 1
-              : nextThreshold - levelStart;
-
-          return (
-            <li key={house.id}>
-              <span
-                aria-hidden="true"
-                className="house-swatch"
-                style={{ backgroundColor: house.color }}
-              />
-              <span className="house-status__name">{house.name}</span>
-              <span className="house-status__details">
-                <strong>
-                  Level {level} · {Math.round(progress?.xp ?? 0)} XP
-                </strong>
-                <span>
-                  Hall {hall?.hp ?? 0}/
-                  {hall?.maxHp ?? BALANCE_CONFIG.HALL_HP} · {livingCount} living
-                </span>
-                <span>
-                  Population {livingRegularCount(state, house.id)}/
-                  {populationCapForHouse(house.id, level)} · Δ{" "}
-                  {populationDelta >= 0 ? "+" : ""}
-                  {populationDelta}
-                </span>
-                <progress
-                  aria-label={`${house.name} XP to next level`}
-                  max={xpSpan}
-                  value={
-                    nextThreshold === undefined ? xpSpan : xpWithinLevel
-                  }
-                />
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-      <div className="hero-progress-list" aria-label="Hero progression">
-        <h3>Heroes</h3>
-        {state.heroProgress.map((progress) => {
-          const definition = HERO_DEFINITIONS.find(
-            ({ id }) => id === progress.heroId,
-          );
-          const currentThreshold =
-            HERO_LEVEL_THRESHOLDS[progress.level - 1] ?? 0;
-          const nextThreshold =
-            HERO_LEVEL_THRESHOLDS[progress.level];
-          const span =
-            nextThreshold === undefined
-              ? 1
-              : nextThreshold - currentThreshold;
-          return (
-            <div className="hero-progress-row" key={progress.heroId}>
-              <span>
-                <strong>{definition?.name ?? progress.heroId}</strong>
-                <small>
-                  Level {progress.level} · {Math.round(progress.xp)} XP
-                </small>
-              </span>
-              <progress
-                aria-label={`${definition?.name ?? progress.heroId} XP`}
-                max={span}
-                value={
-                  nextThreshold === undefined
-                    ? span
-                    : progress.xp - currentThreshold
-                }
-              />
-            </div>
-          );
-        })}
+      <div className="run-hud-top-right hud-panel hud-panel--compact divine-power">
+        <div className="divine-power-label"><span>{t("hud.divinePower")}</span><strong>{state.divinePower.toFixed(1)}/{BALANCE_CONFIG.DIVINE_POWER_MAX}</strong></div>
+        <div className="divine-power__gauge" data-frame-sprite="gauge_frame"><progress aria-label={t("hud.divinePower")} max={BALANCE_CONFIG.DIVINE_POWER_MAX} value={state.divinePower} /></div>
+        {state.activeThreat === null ? null : <div className="invasion-status" aria-label={t("hud.invasionStatus")}><span>{t("hud.creatures", { count: state.activeThreat.creatures.length })}</span>{state.activeThreat.mage === null ? null : <strong>{t("hud.mageHp", { current: state.activeThreat.mage.hp, max: BALANCE_CONFIG.DARK_MAGE_HP })}</strong>}</div>}
       </div>
+      <div className="run-hud-bottom-left hud-panel hud-panel--compact">
+        <ul className="house-status-list" aria-label={t("hud.houses")}>
+          {state.houses.map((house) => {
+            const progress = state.houseProgress.find(({ houseId }) => houseId === house.id);
+            const level = progress?.level ?? 1;
+            const levelStart = LEVEL_THRESHOLDS[level - 1] ?? 0;
+            const nextThreshold = LEVEL_THRESHOLDS[level];
+            const xpSpan = nextThreshold === undefined ? 1 : nextThreshold - levelStart;
+            const livingCount = state.agents.filter((agent) => agent.houseId === house.id && agent.state !== "dead").length;
+            return <li key={house.id}><span aria-hidden="true" className="house-swatch" style={{ backgroundColor: house.color }} /><span className="house-status__name">{houseName(t, house.id)}</span><span className="house-status__details"><strong>{t("hud.levelXp", { level, xp: Math.round(progress?.xp ?? 0) })}</strong><span>{t("hud.livingCap", { cap: populationCapForHouse(house.id, level), count: livingRegularCount(state, house.id), living: livingCount })}</span><progress aria-label={t("hud.houseXp", { house: houseName(t, house.id) })} max={xpSpan} value={nextThreshold === undefined ? xpSpan : Math.max(0, (progress?.xp ?? 0) - levelStart)} /></span></li>;
+          })}
+        </ul>
+      </div>
+      <div className="run-hud-bottom-right hud-panel hud-panel--compact"><div className="run-economy"><span>{t("hud.tribute")}</span><strong>{state.tribute}</strong></div>{onOpenSettings === undefined ? null : <button className="text-action run-settings-button" onClick={onOpenSettings} type="button">{t("title.settings")}</button>}</div>
     </section>
   );
 }

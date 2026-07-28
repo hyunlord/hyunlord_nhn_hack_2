@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { SPRITE_IDS } from "../../content/assetManifest";
+import { useLocale } from "../../content/locale";
 import {
   getStatus,
   loadedCount,
@@ -32,6 +33,7 @@ function isToggleShortcut(event: KeyboardEvent): boolean {
 }
 
 export function SpriteDebugOverlay() {
+  const { t } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [snapshot, setSnapshot] = useState<SpriteSnapshot>(() =>
     readSpriteSnapshot(),
@@ -63,8 +65,8 @@ export function SpriteDebugOverlay() {
 
   const statusLabel = useMemo(() => {
     const { missing, ready, total } = snapshot.count;
-    return `${ready} ready / ${missing} missing / ${total} total`;
-  }, [snapshot.count]);
+    return t("debug.sprites.status", { missing, ready, total });
+  }, [snapshot.count, t]);
 
   if (!isOpen) {
     return null;
@@ -72,11 +74,11 @@ export function SpriteDebugOverlay() {
 
   return (
     <aside
-      aria-label="Sprite preload diagnostics"
+      aria-label={t("debug.sprites.label")}
       className="sprite-debug-overlay"
     >
       <div className="sprite-debug-overlay__header">
-        <p>Sprite diagnostics</p>
+        <p>{t("debug.sprites.heading")}</p>
         <kbd>Shift+D</kbd>
       </div>
       <p
@@ -88,9 +90,9 @@ export function SpriteDebugOverlay() {
         {statusLabel}
       </p>
       <div className="sprite-debug-overlay__missing">
-        <p>Missing sprite IDs</p>
+        <p>{t("debug.sprites.missing")}</p>
         {snapshot.missingIds.length === 0 ? (
-          <p className="sprite-debug-overlay__empty">None</p>
+          <p className="sprite-debug-overlay__empty">{t("debug.sprites.none")}</p>
         ) : (
           <ul>
             {snapshot.missingIds.map((id) => (

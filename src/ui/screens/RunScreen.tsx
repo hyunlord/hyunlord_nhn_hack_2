@@ -1,9 +1,12 @@
 import { useEffect } from "react";
 import { GameCanvas } from "../../render/GameCanvas";
+import { useLocale } from "../../content/locale";
+import { useSettings } from "../../settings/SettingsContext";
 import { useAppFlow } from "../../state/appFlowContext";
 import {
   GameStoreProvider,
   gameStoreRunIdentity,
+  gameTickIntervalMsForSpeed,
   useGameStore,
 } from "../../state/gameStore";
 import { validateHouseSelection } from "../../content/houseConfig";
@@ -13,52 +16,37 @@ import { HUD } from "../components/HUD";
 import { MiracleButtons } from "../components/MiracleButtons";
 import { DraftOverlay } from "../components/DraftOverlay";
 import { ShopOverlay } from "../components/ShopOverlay";
-import {
-  legacyRiteGroups,
-  type LegacyRiteGroup,
-} from "../investmentSummary";
 
-function RunWorld({
-  legacyRites,
-}: {
-  readonly legacyRites: readonly LegacyRiteGroup[];
-}) {
+function RunWorld({ onOpenSettings }: { readonly onOpenSettings: () => void }) {
   const { state } = useGameStore();
+  const { t } = useLocale();
   return (
-    <main className="app-shell">
-      <header className="app-header">
-        <h1>Fantasy God-Sim</h1>
-        <p>Guide the chosen alliance through three escalating invasions.</p>
-      </header>
+    <main className="run-viewport" aria-label={t("run.screenLabel")}>
       {state.betrayalHouseId === null ? null : (
-        <aside className="betrayal-notice" aria-live="assertive">
-          <strong>Betrayal within the alliance</strong>
-          <span>One house has broken faith and fled the defense.</span>
+        <aside className="betrayal-notice run-betrayal" aria-live="assertive">
+          <strong>{t("run.betrayal.title")}</strong>
+          <span>{t("run.betrayal.body")}</span>
         </aside>
       )}
-      <div className="scaffold-grid">
-        <div className="canvas-panel">
-          <GameCanvas />
-          <ShopOverlay />
-          <DraftOverlay />
-        </div>
-        <HUD legacyRites={legacyRites} />
+      <section className="run-stage" aria-label={t("run.stageLabel")}>
+        <GameCanvas />
+        <HUD onOpenSettings={onOpenSettings} />
         <MiracleButtons />
         <HighlightFeed />
-      </div>
+        <ShopOverlay />
+        <DraftOverlay />
+      </section>
     </main>
   );
 }
 
 export function RunScreen() {
   const { dispatch, state } = useAppFlow();
+  const { settings } = useSettings();
   const validation = validateHouseSelection(state.selectedHouseIds);
 
   useEffect(() => {
-    if (
-      state.appPhase === "run" &&
-      (state.runSeed === null || !validation.valid)
-    ) {
+    if (state.appPhase === "run" && (state.runSeed === null || !validation.valid)) {
       dispatch({ type: "returnToMeta" });
     }
   }, [dispatch, state.appPhase, state.runSeed, validation.valid]);
@@ -66,18 +54,8 @@ export function RunScreen() {
   if (state.runSeed === null || !validation.valid) {
     return null;
   }
-  const startingModifiers = deriveStartingModifierBundle(
-    state.meta.investmentRanks,
-  );
-  const runIdentity = gameStoreRunIdentity({
-    seed: state.runSeed,
-    houseIds: validation.houseIds,
-    startingModifiers,
-  });
-  const legacyRites = legacyRiteGroups(
-    state.meta.investmentRanks,
-    validation.houseIds,
-  );
+  const startingModifiers = deriveStartingModifierBundle(state.meta.investmentRanks);
+  const runIdentity = gameStoreRunIdentity({ seed: state.runSeed, houseIds: validation.houseIds, startingModifiers });
 
   return (
     <GameStoreProvider
@@ -86,8 +64,9 @@ export function RunScreen() {
       onTerminal={(summary) => dispatch({ type: "completeRun", summary })}
       seed={state.runSeed}
       startingModifiers={startingModifiers}
+      tickIntervalMs={gameTickIntervalMsForSpeed(settings.simulationSpeed)}
     >
-      <RunWorld legacyRites={legacyRites} />
+      <RunWorld onOpenSettings={() => dispatch({ type: "openSettings" })} />
     </GameStoreProvider>
   );
 }

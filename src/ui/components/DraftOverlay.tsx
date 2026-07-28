@@ -3,6 +3,14 @@ import {
   useRef,
   type CSSProperties,
 } from "react";
+import { useLocale } from "../../content/locale";
+import {
+  cardDescription,
+  cardKindLabel,
+  cardName,
+  cardRarityLabel,
+  houseName,
+} from "../../content/locale/display";
 import {
   CARD_DEFINITIONS,
 } from "../../content/cardConfig";
@@ -28,6 +36,7 @@ const FRAME_CONTENT_STYLE = {
 
 export function DraftOverlay() {
   const { dispatch, state } = useGameStore();
+  const { t } = useLocale();
   const buttonReferences = useRef<(HTMLButtonElement | null)[]>([]);
   const returnFocusReference = useRef<HTMLElement | null>(null);
   const offer = state.pendingDrafts[0];
@@ -113,16 +122,16 @@ export function DraftOverlay() {
 
   return (
     <section
-      aria-label={`${house.name} level ${offer.level} card draft`}
+      aria-label={t("draft.label", { house: houseName(t, house.id), level: offer.level })}
       aria-modal="true"
       className="draft-overlay"
       role="dialog"
       style={{ "--draft-house": house.color } as CSSProperties}
     >
       <div className="draft-overlay__header">
-        <p>House ascendant</p>
-        <h2>{house.name} · Level {offer.level}</h2>
-        <span>Choose one lasting boon</span>
+        <p>{t("draft.eyebrow")}</p>
+        <h2>{t("draft.heading", { house: houseName(t, house.id), level: offer.level })}</h2>
+        <span>{t("draft.choose")}</span>
       </div>
       <div className="draft-card-list">
         {offer.cardIds.map((cardId, index) => {
@@ -175,16 +184,16 @@ export function DraftOverlay() {
               >
                 <span className="draft-card__meta">
                   <span>
-                    <b>{card.rarity}</b> · {card.kind}
+                    <b>{cardRarityLabel(t, card.rarity)}</b> · {cardKindLabel(t, card.kind)}
                   </span>
                   <kbd>{index + 1}</kbd>
                 </span>
-                <strong>{card.name}</strong>
+                <strong>{cardName(t, card.id)}</strong>
                 <span className="draft-card__description">
-                  {card.description}
+                  {cardDescription(t, card.id)}
                 </span>
                 <span className="draft-card__stacks">
-                  Current stacks {stacks}/{card.maxStacks}
+                  {t("draft.stacks", { current: stacks, max: card.maxStacks })}
                 </span>
               </span>
             </button>
@@ -193,8 +202,8 @@ export function DraftOverlay() {
       </div>
       <p className="draft-overlay__queue" aria-live="polite">
         {state.pendingDrafts.length > 1
-          ? `${state.pendingDrafts.length - 1} more queued`
-          : "Final choice in queue"}
+          ? t("draft.queue.more", { count: state.pendingDrafts.length - 1 })
+          : t("draft.queue.final")}
       </p>
     </section>
   );

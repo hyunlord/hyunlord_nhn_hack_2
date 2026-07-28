@@ -42,6 +42,7 @@ export interface Hall {
 export interface WaveSummary {
   agentsLost: number;
   hallDamage: number;
+  tributeEarned: number;
 }
 
 export interface PopulationHistoryEntry {
@@ -69,6 +70,8 @@ export interface GameState {
   phaseBeforeDraft: Exclude<RunPhase, "draft"> | null;
   waveIndex: number;
   tribute: number;
+  pendingDaylightRaid: boolean;
+  daylightRaidWaveNumbers: number[];
   houses: House[];
   halls: Hall[];
   agents: Agent[];

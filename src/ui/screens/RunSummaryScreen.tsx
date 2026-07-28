@@ -1,9 +1,15 @@
 import { ACHIEVEMENT_DEFINITIONS } from "../../content/metaConfig";
 import { HOUSE_CONFIG } from "../../content/houseConfig";
+import { useLocale } from "../../content/locale";
+import {
+  achievementName,
+  houseName,
+} from "../../content/locale/display";
 import { useAppFlow } from "../../state/appFlowContext";
 
 export function RunSummaryScreen() {
   const { dispatch, state } = useAppFlow();
+  const { t } = useLocale();
   const { summary, completion } = state;
   if (summary === null || completion === null) {
     return null;
@@ -11,66 +17,82 @@ export function RunSummaryScreen() {
   const traitor = HOUSE_CONFIG.find(
     ({ id }) => id === summary.betrayal?.traitorHouseId,
   );
+  const betrayal =
+    summary.betrayal === null
+      ? t("common.none")
+      : traitor === undefined
+        ? t("common.unknown")
+        : houseName(t, traitor.id);
   const alliance = summary.selectedHouseIds
-    .map((id) => HOUSE_CONFIG.find((house) => house.id === id)?.name ?? id)
+    .map((id) => houseName(t, id))
     .join(" / ");
+  const daylightRaidWaveNumbers = summary.daylightRaidWaveNumbers ?? [];
+  const daylightRaids =
+    daylightRaidWaveNumbers.length === 0
+      ? t("summary.daylightRaids.none")
+      : daylightRaidWaveNumbers
+          .map((wave) => t("summary.daylightRaids.wave", { wave }))
+          .join(" / ");
 
   return (
     <main className="app-shell screen-shell" data-screen="summary">
       <header className="summary-hero">
-        <p className="eyebrow">Run complete</p>
-        <h1>{summary.victory ? "The halls endure" : "The covenant is broken"}</h1>
+        <p className="eyebrow">{t("summary.eyebrow")}</p>
+        <h1>{summary.victory ? t("summary.victory") : t("summary.defeat")}</h1>
         <p>{alliance}</p>
       </header>
 
       <div className="summary-layout">
         <section className="ledger-section" aria-labelledby="run-record-heading">
           <div className="section-heading">
-            <p className="eyebrow">Field record</p>
-            <h2 id="run-record-heading">Run summary</h2>
+            <p className="eyebrow">{t("summary.record.eyebrow")}</p>
+            <h2 id="run-record-heading">{t("summary.record.heading")}</h2>
           </div>
           <dl className="summary-facts">
-            <div><dt>Waves cleared</dt><dd>{summary.wavesCleared}</dd></div>
-            <div><dt>Agents surviving</dt><dd>{summary.survivingAgents}</dd></div>
-            <div><dt>Agents lost</dt><dd>{summary.agentsLost}</dd></div>
-            <div><dt>Halls standing</dt><dd>{summary.survivingHalls}/3</dd></div>
-            <div><dt>Towers built</dt><dd>{summary.towersBuilt}</dd></div>
-            <div><dt>Betrayal</dt><dd>{traitor?.name ?? "None"}</dd></div>
+            <div><dt>{t("summary.waves")}</dt><dd>{summary.wavesCleared}</dd></div>
+            <div><dt>{t("summary.survivors")}</dt><dd>{summary.survivingAgents}</dd></div>
+            <div><dt>{t("summary.lost")}</dt><dd>{summary.agentsLost}</dd></div>
+            <div><dt>{t("summary.halls")}</dt><dd>{summary.survivingHalls}/3</dd></div>
+            <div><dt>{t("summary.towers")}</dt><dd>{summary.towersBuilt}</dd></div>
+            <div><dt>{t("summary.betrayal")}</dt><dd>{betrayal}</dd></div>
+            <div><dt>{t("summary.daylightRaids")}</dt><dd>{daylightRaids}</dd></div>
           </dl>
         </section>
 
         <section className="legacy-award" aria-labelledby="legacy-award-heading">
-          <p className="eyebrow">Legacy awarded</p>
+          <p className="eyebrow">{t("summary.legacy.eyebrow")}</p>
           <h2 id="legacy-award-heading">
             +{completion.runLegacy.total + completion.achievementLegacyEarned}
           </h2>
           <dl>
-            <div><dt>Base</dt><dd>+{completion.runLegacy.base}</dd></div>
-            <div><dt>Waves</dt><dd>+{completion.runLegacy.waves}</dd></div>
-            <div><dt>Victory</dt><dd>+{completion.runLegacy.victory}</dd></div>
-            <div><dt>Surviving agents</dt><dd>+{completion.runLegacy.survivingAgents}</dd></div>
-            <div><dt>Surviving halls</dt><dd>+{completion.runLegacy.survivingHalls}</dd></div>
-            <div><dt>Achievements</dt><dd>+{completion.achievementLegacyEarned}</dd></div>
+            <div><dt>{t("summary.legacy.base")}</dt><dd>+{completion.runLegacy.base}</dd></div>
+            <div><dt>{t("summary.legacy.waves")}</dt><dd>+{completion.runLegacy.waves}</dd></div>
+            <div><dt>{t("summary.legacy.victory")}</dt><dd>+{completion.runLegacy.victory}</dd></div>
+            <div><dt>{t("summary.legacy.survivingAgents")}</dt><dd>+{completion.runLegacy.survivingAgents}</dd></div>
+            <div><dt>{t("summary.legacy.survivingHalls")}</dt><dd>+{completion.runLegacy.survivingHalls}</dd></div>
+            <div><dt>{t("summary.legacy.achievements")}</dt><dd>+{completion.achievementLegacyEarned}</dd></div>
           </dl>
         </section>
       </div>
 
       <section className="ledger-section" aria-labelledby="population-arc-heading">
         <div className="section-heading">
-          <p className="eyebrow">Population record</p>
-          <h2 id="population-arc-heading">Army arc</h2>
+          <p className="eyebrow">{t("summary.population.eyebrow")}</p>
+          <h2 id="population-arc-heading">{t("summary.population.heading")}</h2>
         </div>
         <ul className="population-arc">
           {summary.selectedHouseIds.map((houseId) => {
             const house = HOUSE_CONFIG.find(({ id }) => id === houseId);
             const arc = summary.populationHistory
               .filter((entry) => entry.houseId === houseId)
-              .map(({ wave, count }) => `W${wave} ${count}`)
+              .map(({ wave, count }) =>
+                t("summary.population.entry", { wave, count }),
+              )
               .join(" → ");
             return (
               <li key={houseId}>
-                <strong>{house?.name ?? houseId}</strong>
-                <span>{arc || "No wave reached"}</span>
+                <strong>{house === undefined ? t("common.unknown") : houseName(t, house.id)}</strong>
+                <span>{arc || t("summary.population.empty")}</span>
               </li>
             );
           })}
@@ -79,13 +101,17 @@ export function RunSummaryScreen() {
 
       {completion.newAchievementIds.length > 0 ? (
         <section className="new-achievements" aria-live="polite">
-          <p className="eyebrow">New achievements</p>
+          <p className="eyebrow">{t("summary.newAchievements")}</p>
           <ul>
             {completion.newAchievementIds.map((id) => {
               const achievement = ACHIEVEMENT_DEFINITIONS.find(
                 (candidate) => candidate.id === id,
               );
-              return <li key={id}>{achievement?.name ?? id}</li>;
+              return (
+                <li key={id}>
+                  {achievement === undefined ? t("common.unknown") : achievementName(t, id)}
+                </li>
+              );
             })}
           </ul>
         </section>
@@ -97,14 +123,14 @@ export function RunSummaryScreen() {
           onClick={() => dispatch({ type: "returnToMeta" })}
           type="button"
         >
-          Return to Legacy
+          {t("summary.return")}
         </button>
         <button
           className="primary-action"
           onClick={() => dispatch({ type: "retryRun" })}
           type="button"
         >
-          Retry same alliance
+          {t("summary.retry")}
         </button>
       </footer>
     </main>

@@ -469,3 +469,40 @@
   times. `abe` was below 10%; thirteen trios were above 75%. These extremes
   are recorded for the later full balance pass and were not tuned in this
   narrow restore.
+
+## 2026-07-28 — Phase 4A game framing
+
+- Named the game **영광의 밤 / Night of Glory**, made the title screen the
+  initial app phase, and moved the empty-save investment ledger behind the
+  explicit 유산 action.
+- Reframed preparation, combat, intermission, draft, and terminal phases as
+  여명, 밤 — 습격, 낮 — 내정, 계시, and 승리/함락. A render-only 30-tick
+  day/night tween now produces cold night and warm day palettes without adding
+  presentation state to `GameState`.
+- Rebuilt the run as a fixed 8:5 viewport with the canvas dominant and HUD,
+  abilities, draft, and settlement shop overlaid. The day shop groups 병력,
+  방어, 회복, and 강화, shows loss/damage/tribute context, keeps disabled
+  shortfall reasons visible, and separates 밤이 온다 from purchases.
+- Added a Korean-default, English-optional locale contract covering screens,
+  HUD, content data, summaries, errors, and developer overlays. Dictionary
+  parity and warn-once missing-key behavior are tested.
+- Added versioned settings for language, 0.5×/1×/2× dispatch rate, screen
+  shake intent, disabled audio volume marked 준비 중, and confirmed progress
+  reset. Settings and language remain outside simulation state.
+- Added the seeded daylight raid with the exact 15% probability, first-wave
+  exclusion, 70% count, 1.4× damage, 1.5× tribute, day lighting, warning
+  banner, and run-summary record.
+- Chrome QA exercised Korean and English, title/settings/run/shop flows,
+  normal night and flagged daylight combat, and 375/768/1280 widths. All three
+  sizes retained an 8:5 stage, 44px controls, and no page scrollbar. A 375px
+  regression that hid the shop and next-wave button was found and fixed.
+  Final warning/error console output was empty.
+- DGX Spark `aitopatom-d6bb` ran all implementation and heavy verification.
+  Typecheck passed in 0.33s; 283/283 tests passed in 27.80s; production build
+  passed in 0.47s; both determinism lanes passed in 27.36s; asset inspection
+  passed in 0.22s with six UI assets ready and 17 documented primitive
+  fallbacks; the 200-seed balance run took 233.34s.
+- The balance harness reported `abc` at 52.5% victory, up 8.0 percentage
+  points from the Phase 3J baseline and outside the requested 35–45% band.
+  No prohibited compensating balance change was made; the specified daylight
+  raid is left for the next balance pass to evaluate.

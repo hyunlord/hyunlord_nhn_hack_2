@@ -11,6 +11,8 @@ const HP_BAR_HEIGHT = 4;
 const LABEL_HEIGHT = 12;
 const LABEL_PADDING_X = 3;
 
+export type HeroLabelFormatter = (heroId: string, level: number) => string;
+
 type ModifierEntry = {
   readonly houseId: string;
   readonly agentId?: string;
@@ -56,6 +58,7 @@ export function drawHeroes(
   houses: readonly House[],
   modifiersByHouse: readonly ModifierEntry[],
   currentTick: number,
+  formatLabel?: HeroLabelFormatter,
 ): void {
   const colorsByHouse = new Map(
     houses.map((house) => [house.id, house.color] as const),
@@ -135,20 +138,22 @@ export function drawHeroes(
       HP_BAR_HEIGHT,
     );
 
-    context.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
-    context.textAlign = "center";
-    context.textBaseline = "top";
-    const labelY = hero.y + HERO_RADIUS + 12;
-    const label = `${definition.name} · Lv ${hero.heroLevel}`;
-    const labelWidth = context.measureText(label).width;
-    context.fillStyle = "rgba(26, 22, 19, 0.88)";
-    context.fillRect(
-      hero.x - labelWidth / 2 - LABEL_PADDING_X,
-      labelY - 1,
-      labelWidth + LABEL_PADDING_X * 2,
-      LABEL_HEIGHT,
-    );
-    context.fillStyle = "rgba(255, 253, 246, 0.96)";
-    context.fillText(label, hero.x, labelY);
+    const label = formatLabel?.(definition.id, hero.heroLevel);
+    if (label !== undefined) {
+      context.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
+      context.textAlign = "center";
+      context.textBaseline = "top";
+      const labelY = hero.y + HERO_RADIUS + 12;
+      const labelWidth = context.measureText(label).width;
+      context.fillStyle = "rgba(26, 22, 19, 0.88)";
+      context.fillRect(
+        hero.x - labelWidth / 2 - LABEL_PADDING_X,
+        labelY - 1,
+        labelWidth + LABEL_PADDING_X * 2,
+        LABEL_HEIGHT,
+      );
+      context.fillStyle = "rgba(255, 253, 246, 0.96)";
+      context.fillText(label, hero.x, labelY);
+    }
   }
 }

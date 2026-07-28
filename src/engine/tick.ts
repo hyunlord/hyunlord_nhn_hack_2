@@ -44,6 +44,11 @@ import { recruitForWaveStart } from "./population";
 export { castMiracle } from "./miracleApplication";
 export { castSkill } from "./skillApplication";
 
+export const DAYLIGHT_RAID_CHANCE = 0.15;
+export const DAYLIGHT_RAID_CREATURE_FACTOR = 0.7;
+export const DAYLIGHT_RAID_DAMAGE_FACTOR = 1.4;
+export const DAYLIGHT_RAID_REWARD_FACTOR = 1.5;
+
 function getWaveDefinition(index: number): WaveDefinition {
   const definition = WAVE_DEFINITIONS[index];
   if (definition === undefined) {
@@ -72,13 +77,33 @@ function spawnConfiguredWave(
     betrayalEligible && rng.next() < 0.25
       ? assignTraitor(["house_a", "house_f"] as const, rng)
       : null;
-  const threat = spawnWave(
+  const spawnedThreat = spawnWave(
     getWaveDefinition(waveIndex),
     BALANCE_CONFIG.WORLD_WIDTH,
     BALANCE_CONFIG.WORLD_HEIGHT,
     state.tick,
     rng,
   );
+  const daylightRaid = waveIndex > 0 && state.pendingDaylightRaid;
+  const threat = daylightRaid
+    ? {
+        ...spawnedThreat,
+        daylightRaid: true,
+        creatures: spawnedThreat.creatures
+          .slice(
+            0,
+            Math.floor(
+              getWaveDefinition(waveIndex).creatureCount *
+                DAYLIGHT_RAID_CREATURE_FACTOR,
+            ),
+          )
+          .map((creature) => ({
+            ...creature,
+            agentDamage: Math.round(creature.agentDamage * DAYLIGHT_RAID_DAMAGE_FACTOR),
+            hallDamage: Math.round(creature.hallDamage * DAYLIGHT_RAID_DAMAGE_FACTOR),
+          })),
+      }
+    : spawnedThreat;
   state = recruitForWaveStart(state, waveIndex, rng);
   return {
     ...state,
@@ -89,6 +114,10 @@ function spawnConfiguredWave(
       hallHp: state.halls.reduce((sum, { hp }) => sum + hp, 0),
     },
     activeThreat: { ...threat, traitorHouseId },
+    pendingDaylightRaid: false,
+    daylightRaidWaveNumbers: daylightRaid
+      ? [...state.daylightRaidWaveNumbers, waveIndex + 1]
+      : state.daylightRaidWaveNumbers,
     betrayalHouseId: traitorHouseId ?? state.betrayalHouseId,
   };
 }
@@ -258,6 +287,11 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
           (state.waveIndex === 1 &&
             selectedHeroes.length > 0 &&
             selectedHeroes.every(({ hp }) => hp <= 0));
+        const daylightRaid = combat.activeThreat?.daylightRaid === true;
+        const reward = Math.round(
+          getWaveDefinition(state.waveIndex).tributeReward *
+            (daylightRaid ? DAYLIGHT_RAID_REWARD_FACTOR : 1),
+        );
         const lastWaveSummary =
           state.waveStartSnapshot === null
             ? null
@@ -272,8 +306,8 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
                   state.waveStartSnapshot.hallHp -
                     maintained.halls.reduce((sum, { hp }) => sum + hp, 0),
                 ),
+                tributeEarned: reward,
               };
-        const reward = getWaveDefinition(state.waveIndex).tributeReward;
         if (isFinalWave(state.waveIndex)) {
           resolved = {
             ...maintained,
@@ -292,6 +326,7 @@ export function advanceTick(state: GameState, rng: Rng): GameState {
             activeThreat: null,
             heroLessWave2Clear,
             lastWaveSummary,
+            pendingDaylightRaid: rng.next() < DAYLIGHT_RAID_CHANCE,
             waveStartSnapshot: null,
             agents: maintained.agents.map((agent) => {
             if (agent.hp <= 0) {
@@ -393,6 +428,8 @@ export function createInitialState(
       phaseBeforeDraft: null,
       waveIndex: 0,
       tribute: 0,
+      pendingDaylightRaid: false,
+      daylightRaidWaveNumbers: [],
       houses,
       halls: placements.map(({ houseId, slot }) => ({
         houseId,

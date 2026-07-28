@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { preloadAll } from "./render/assets/spriteLoader";
 import { AppFlowProvider } from "./state/appFlowContext";
+import { SettingsLocaleProvider, SettingsProvider } from "./settings/SettingsContext";
 import "./index.css";
 
 class RootElementMissingError extends Error {
@@ -22,8 +23,12 @@ void preloadAll();
 
 createRoot(rootElement).render(
   <StrictMode>
-    <AppFlowProvider>
-      <App />
-    </AppFlowProvider>
+    <SettingsProvider>
+      <SettingsLocaleProvider>
+        <AppFlowProvider>
+          <App />
+        </AppFlowProvider>
+      </SettingsLocaleProvider>
+    </SettingsProvider>
   </StrictMode>,
 );

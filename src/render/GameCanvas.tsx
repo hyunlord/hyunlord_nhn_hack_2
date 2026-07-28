@@ -1,8 +1,11 @@
 import { useEffect, useRef } from "react";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
+import { useLocale } from "../content/locale";
+import { heroName } from "../content/locale/display";
 import { useGameStore } from "../state/gameStore";
 import { drawAgents } from "./drawAgents";
 import { drawBackground } from "./drawBackground";
+import { dayNightFactor, type DayNightTracker } from "./dayNight";
 import {
   drawEffects,
   drawRangedAttackEffects,
@@ -18,6 +21,8 @@ import {
 import { modifiersForAgent } from "../engine/progressionEngine";
 
 export function GameCanvas() {
+  const { t } = useLocale();
+  const localeRef = useRef(t);
   const {
     dispatch,
     selectedMiracle,
@@ -28,6 +33,11 @@ export function GameCanvas() {
   } = useGameStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef(state);
+  const dayNightTrackerRef = useRef<DayNightTracker | undefined>(undefined);
+
+  useEffect(() => {
+    localeRef.current = t;
+  }, [t]);
 
   useEffect(() => {
     stateRef.current = state;
@@ -67,10 +77,22 @@ export function GameCanvas() {
         BALANCE_CONFIG.WORLD_WIDTH,
         BALANCE_CONFIG.WORLD_HEIGHT,
       );
+      const currentState = stateRef.current;
+      const lighting = dayNightFactor(
+        {
+          phase: currentState.phase,
+          phaseBeforeDraft: currentState.phaseBeforeDraft,
+          tick: currentState.tick,
+        },
+        dayNightTrackerRef.current,
+        { daylightRaidActive: currentState.activeThreat?.daylightRaid === true },
+      );
+      dayNightTrackerRef.current = lighting.tracker;
       drawBackground(
         context,
         BALANCE_CONFIG.WORLD_WIDTH,
         BALANCE_CONFIG.WORLD_HEIGHT,
+        lighting.factor,
       );
       drawHalls(
         context,
@@ -88,6 +110,7 @@ export function GameCanvas() {
         stateRef.current.agents,
         stateRef.current.houses,
         stateRef.current.tick,
+        lighting.factor,
       );
       drawHeroes(
         context,
@@ -99,6 +122,11 @@ export function GameCanvas() {
           modifiers: modifiersForAgent(stateRef.current, agent),
         })),
         stateRef.current.tick,
+        (heroId, level) =>
+          localeRef.current("canvas.heroLabel", {
+            hero: heroName(localeRef.current, heroId),
+            level,
+          }),
       );
       drawThreats(
         context,
@@ -173,6 +201,8 @@ export function GameCanvas() {
     }
     const cancelOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
         dispatch({ type: "cancelTowerPlacement" });
       }
     };
@@ -182,7 +212,7 @@ export function GameCanvas() {
 
   return (
     <canvas
-      aria-label="Living world with house agents and named heroes"
+      aria-label={t("run.canvasLabel")}
       className={
         selectedMiracle === null &&
         selectedSkill === null &&

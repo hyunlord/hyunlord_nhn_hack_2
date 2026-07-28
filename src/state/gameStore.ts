@@ -38,9 +38,14 @@ import type {
 } from "./gameStore.types";
 import type { HouseSelection } from "../content/houseConfig";
 import type { RunSummary } from "../content/runSummary";
+import type { SimulationSpeed } from "../settings/settings";
 
-const TICK_INTERVAL_MS = 1_000 / BALANCE_CONFIG.TICKS_PER_SECOND;
+const BASE_TICK_INTERVAL_MS = 1_000 / BALANCE_CONFIG.TICKS_PER_SECOND;
 const MAX_CATCH_UP_TICKS = 5;
+
+export function gameTickIntervalMsForSpeed(speed: SimulationSpeed): number {
+  return BASE_TICK_INTERVAL_MS / speed;
+}
 
 class GameStoreUnavailableError extends Error {
   public constructor() {
@@ -70,6 +75,7 @@ interface GameStoreProviderProps extends PropsWithChildren {
   readonly houseIds: HouseSelection;
   readonly startingModifiers?: StartingModifierBundle;
   readonly onTerminal: (summary: RunSummary) => void;
+  readonly tickIntervalMs?: number;
 }
 
 interface GameStoreRunIdentityInput {
@@ -92,6 +98,7 @@ export function GameStoreProvider({
   houseIds,
   startingModifiers = EMPTY_STARTING_MODIFIER_BUNDLE,
   onTerminal,
+  tickIntervalMs = BASE_TICK_INTERVAL_MS,
 }: GameStoreProviderProps) {
   const initialWorldReference = useRef<ReturnType<
     typeof createInitialState
@@ -233,7 +240,7 @@ export function GameStoreProvider({
       default:
         throw new UnexpectedGameActionError(action);
     }
-  }, [commitState]);
+  }, [commitState, tickIntervalMs]);
 
   useEffect(() => {
     if (state.phase !== "victory" && state.phase !== "defeat") {
@@ -256,18 +263,18 @@ export function GameStoreProvider({
       if (previousTime !== null) {
         accumulatedTime = Math.min(
           accumulatedTime + currentTime - previousTime,
-          TICK_INTERVAL_MS * MAX_CATCH_UP_TICKS,
+          tickIntervalMs * MAX_CATCH_UP_TICKS,
         );
 
         let ticksThisFrame = 0;
         while (
-          accumulatedTime >= TICK_INTERVAL_MS &&
+          accumulatedTime >= tickIntervalMs &&
           ticksThisFrame < MAX_CATCH_UP_TICKS
         ) {
           commitState(
             advanceTick(stateReference.current, rngReference.current),
           );
-          accumulatedTime -= TICK_INTERVAL_MS;
+          accumulatedTime -= tickIntervalMs;
           ticksThisFrame += 1;
         }
       }
@@ -278,7 +285,7 @@ export function GameStoreProvider({
 
     frameId = requestAnimationFrame(runFrame);
     return () => cancelAnimationFrame(frameId);
-  }, [commitState]);
+  }, [commitState, tickIntervalMs]);
 
   const store = useMemo<GameStoreValue>(
     () => ({

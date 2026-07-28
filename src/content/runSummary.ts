@@ -20,6 +20,7 @@ export interface RunSummary {
   readonly allHallsStanding: boolean;
   readonly heroLessWave2Clear: boolean;
   readonly betrayal: BetrayalSummary | null;
+  readonly daylightRaidWaveNumbers?: readonly number[];
   readonly discoveredSynergyIds: readonly string[];
   readonly populationHistory: readonly {
     readonly wave: number;

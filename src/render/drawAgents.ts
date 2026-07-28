@@ -7,6 +7,7 @@ import {
 import type { SpriteId } from "../content/assetManifest";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import { drawSprite } from "./assets/drawSprite";
+import { mixRgba } from "./dayNight";
 
 const AGENT_SPRITE_IDS = {
   melee: "agent_melee",
@@ -74,13 +75,19 @@ export function drawAgents(
   agents: readonly Agent[],
   houses: readonly House[],
   currentTick: number,
+  dayNightFactor = 0,
 ): void {
   const colorsByHouse = new Map(
     houses.map((house) => [house.id, house.color] as const),
   );
 
   context.lineWidth = 1;
-  context.strokeStyle = "rgba(0, 0, 0, 0.72)";
+  const ambientOutline = mixRgba(
+    { red: 0, green: 0, blue: 0, alpha: 0.72 },
+    { red: 255, green: 235, blue: 184, alpha: 0.82 },
+    dayNightFactor,
+  );
+  context.strokeStyle = ambientOutline;
 
   for (const agent of agents) {
     if (agent.isHero) {
@@ -144,7 +151,7 @@ export function drawAgents(
           ? "rgba(255, 250, 230, 0.90)"
           : agent.state === "fighting"
             ? color
-            : "rgba(0, 0, 0, 0.72)";
+            : ambientOutline;
       context.stroke();
     }
   }

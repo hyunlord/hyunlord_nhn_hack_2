@@ -6,16 +6,19 @@ import { validateHouseSelection } from "../content/houseConfig";
 import type { RunSummary } from "../content/runSummary";
 import {
   applyRunSummaryToMeta,
+  createDefaultMetaState,
   purchaseHouseUnlock,
   type ApplyRunSummaryResult,
 } from "../meta/legacy";
 import { purchaseInvestment } from "../meta/investments";
 import type { MetaState } from "../meta/meta.types";
 
-export type AppPhase = "meta" | "select" | "run" | "summary";
+export type AppPhase = "title" | "meta" | "select" | "run" | "summary" | "settings";
+export type RestorableAppPhase = Exclude<AppPhase, "settings">;
 
 export interface AppState {
   readonly appPhase: AppPhase;
+  readonly previousAppPhase: RestorableAppPhase | null;
   readonly meta: MetaState;
   readonly selectedHouseIds: readonly HouseId[];
   readonly runSeed: number | null;
@@ -26,6 +29,10 @@ export interface AppState {
 
 export type AppAction =
   | { readonly type: "beginSelection" }
+  | { readonly type: "openMeta" }
+  | { readonly type: "openSettings" }
+  | { readonly type: "closeSettings" }
+  | { readonly type: "resetProgress" }
   | { readonly type: "toggleHouse"; readonly houseId: HouseId }
   | { readonly type: "confirmSelection" }
   | { readonly type: "completeRun"; readonly summary: RunSummary }
@@ -39,7 +46,8 @@ export function createInitialAppState(
   firstSeed: number,
 ): AppState {
   return {
-    appPhase: "meta",
+    appPhase: "title",
+    previousAppPhase: null,
     meta,
     selectedHouseIds: [],
     runSeed: null,
@@ -65,10 +73,41 @@ export function appReducer(
       return {
         ...state,
         appPhase: "select",
+        previousAppPhase: null,
         selectedHouseIds: [],
         runSeed: null,
         summary: null,
         completion: null,
+      };
+    case "openMeta":
+      return {
+        ...state,
+        appPhase: "meta",
+        previousAppPhase: null,
+        selectedHouseIds: [],
+        runSeed: null,
+        summary: null,
+        completion: null,
+      };
+    case "openSettings":
+      if (state.appPhase === "settings") {
+        return state;
+      }
+      return {
+        ...state,
+        appPhase: "settings",
+        previousAppPhase: state.appPhase,
+      };
+    case "closeSettings":
+      return {
+        ...state,
+        appPhase: state.previousAppPhase ?? "title",
+        previousAppPhase: null,
+      };
+    case "resetProgress":
+      return {
+        ...createInitialAppState(createDefaultMetaState(), state.nextSeed),
+        nextSeed: state.nextSeed,
       };
     case "toggleHouse": {
       if (!state.meta.unlockedHouses.includes(action.houseId)) {
@@ -98,6 +137,7 @@ export function appReducer(
       return {
         ...state,
         appPhase: "run",
+        previousAppPhase: null,
         selectedHouseIds: selection,
         runSeed: state.nextSeed,
         nextSeed: state.nextSeed + 1,
@@ -113,6 +153,7 @@ export function appReducer(
       return {
         ...state,
         appPhase: "summary",
+        previousAppPhase: null,
         meta: completion.state,
         selectedHouseIds: action.summary.selectedHouseIds,
         summary: action.summary,
@@ -126,6 +167,7 @@ export function appReducer(
       return {
         ...state,
         appPhase: "run",
+        previousAppPhase: null,
         runSeed: state.nextSeed,
         nextSeed: state.nextSeed + 1,
         summary: null,
@@ -136,6 +178,7 @@ export function appReducer(
       return {
         ...state,
         appPhase: "meta",
+        previousAppPhase: null,
         selectedHouseIds: [],
         runSeed: null,
         summary: null,

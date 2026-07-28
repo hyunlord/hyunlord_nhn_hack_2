@@ -623,3 +623,51 @@ runs. `abe` was below the review floor at 9%. Thirteen trios exceeded 75%:
 `abd`, `acd`, `acf`, `ade`, `adf`, `bcd`, `bcf`, `bde`, `bdf`, `cde`,
 `cdf`, `cef`, and `def`. These are observations for the full balance pass,
 not reasons to add trio-specific tuning here.
+
+## 2026-07-28 — Phase 4A game framing
+
+### Day and night remain a render concern
+
+`dayNightFactor` is computed by `render/dayNight.ts` from the simulation phase,
+the previous render target, and a render-owned tick tracker. A target change
+interpolates over 30 simulation ticks, approximately 1.5 seconds at the normal
+20 Hz rate. The factor tints the background and agent outlines but never enters
+`GameState`, so presentation cannot alter reducer purity or replay identity.
+A flagged daylight raid supplies a render option that keeps combat daylit
+without changing this boundary.
+
+### Locale dictionaries are the player-facing string contract
+
+Korean and English dictionaries export the same typed key set. React receives
+the active translator through `LocaleContext`; display helpers translate
+data-owned houses, heroes, cards, classes, achievements, investments, and
+effects without replacing their stable simulation identifiers. Missing keys
+fall back to the key and warn once per language/key pair so a partial
+translation remains usable and diagnosable.
+
+Language is stored with the other versioned settings under
+`hyunlord.settings.v1`, separate from both meta progress and `GameState`.
+Corrupt or version-mismatched settings fail closed to Korean, 1× speed, and
+screen shake enabled.
+
+### The run is a fixed game viewport
+
+Only the run screen is fixed to `100dvw × 100dvh`. A contained 8:5 stage
+letterboxes the 960×600 world, with all status, ability, economy, draft, and
+shop surfaces positioned over the battlefield. Menu screens keep document
+layout and scrolling. Run-specific root overflow locking prevents fractional
+device-pixel rounding from creating a page scrollbar, while mobile shop rules
+keep the battlefield and the next-wave action reachable at 375 pixels.
+
+### Daylight raids use the specified content constants
+
+The engine-owned RNG rolls once when a non-final intermission begins. Values
+below 0.15 flag the next assault; the first assault is ineligible. Flagged
+waves use floor-normalized 70% creature counts, 1.4× rounded agent and hall
+damage, day lighting, and 1.5× rounded tribute. Run summaries retain the
+one-based wave numbers.
+
+The final 200-seed `abc` observation rose from the Phase 3J baseline of 44.5%
+to 52.5% victory. This exceeds the requested 35–45% review band. The specified
+daylight-raid event is the only balance-affecting addition in this slice, so no
+compensating tuning was made; the result is recorded for the next balance pass.

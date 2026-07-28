@@ -26,6 +26,7 @@ test("Given a terminal configured run, when its summary is produced, then it con
     },
     betrayalHouseId: "house_a" as const,
     heroLessWave2Clear: true,
+    daylightRaidWaveNumbers: [2],
   };
 
   const summary = createRunSummary(state);
@@ -46,6 +47,7 @@ test("Given a terminal configured run, when its summary is produced, then it con
     allHallsStanding: false,
     heroLessWave2Clear: true,
     betrayal: { traitorHouseId: "house_a" },
+    daylightRaidWaveNumbers: [2],
     discoveredSynergyIds: ["ash_and_iron"],
     populationHistory: [],
   });

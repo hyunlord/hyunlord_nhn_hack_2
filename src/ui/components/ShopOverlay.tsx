@@ -1,9 +1,76 @@
 import type { ShopItemId } from "../../build/build.types";
+import { useLocale, type LocaleKey } from "../../content/locale";
 import { WAVE_DEFINITIONS } from "../../content/waveConfig";
 import { shopAvailabilityForState } from "../../engine/shopEngine";
 import { useGameStore } from "../../state/gameStore";
 
 type InstantItem = Exclude<ShopItemId, "raise_tower">;
+
+type ShopCategory = "troops" | "defense" | "recovery" | "upgrade";
+
+type ShopPresentation = {
+  readonly category: ShopCategory;
+  readonly nameKey: LocaleKey;
+  readonly descriptionKey: LocaleKey;
+};
+
+const SHOP_PRESENTATION: Readonly<Record<ShopItemId, ShopPresentation>> = {
+  field_medicine: {
+    category: "recovery",
+    descriptionKey: "shop.item.field_medicine.description",
+    nameKey: "shop.item.field_medicine.name",
+  },
+  raise_tower: {
+    category: "defense",
+    descriptionKey: "shop.item.raise_tower.description",
+    nameKey: "shop.item.raise_tower.name",
+  },
+  recruit_squad: {
+    category: "troops",
+    descriptionKey: "shop.item.recruit_squad.description",
+    nameKey: "shop.item.recruit_squad.name",
+  },
+  reinforce_hall: {
+    category: "defense",
+    descriptionKey: "shop.item.reinforce_hall.description",
+    nameKey: "shop.item.reinforce_hall.name",
+  },
+  revive_hero: {
+    category: "recovery",
+    descriptionKey: "shop.item.revive_hero.description",
+    nameKey: "shop.item.revive_hero.name",
+  },
+  sharpen_arms: {
+    category: "upgrade",
+    descriptionKey: "shop.item.sharpen_arms.description",
+    nameKey: "shop.item.sharpen_arms.name",
+  },
+};
+
+const SHOP_CATEGORY_ORDER = ["troops", "defense", "recovery", "upgrade"] as const;
+
+const SHOP_CATEGORY_KEYS: Readonly<Record<ShopCategory, LocaleKey>> = {
+  defense: "shop.category.defense",
+  recovery: "shop.category.recovery",
+  troops: "shop.category.troops",
+  upgrade: "shop.category.upgrade",
+};
+
+const SHOP_REASON_KEYS: Readonly<Record<string, LocaleKey>> = {
+  "no damaged living agents": "shop.reason.noDamagedAgents",
+  "no damaged surviving halls": "shop.reason.noDamagedHalls",
+  "no dead hero": "shop.reason.noDeadHero",
+  "no dead regular agents": "shop.reason.noDeadAgents",
+  "not enough tribute": "shop.reason.notEnoughTribute",
+  "tower limit reached": "shop.reason.towerLimit",
+};
+
+function reasonKey(reason: string | null): LocaleKey | null {
+  if (reason === null) {
+    return null;
+  }
+  return SHOP_REASON_KEYS[reason] ?? "shop.reason.unavailable";
+}
 
 export function ShopOverlay() {
   const {
@@ -11,6 +78,7 @@ export function ShopOverlay() {
     state,
     towerPlacementActive,
   } = useGameStore();
+  const { t } = useLocale();
   if (state.phase !== "intermission") {
     return null;
   }
@@ -32,74 +100,106 @@ export function ShopOverlay() {
 
   return (
     <section
-      aria-label="Intermission tribute shop"
+      aria-label={t("shop.label")}
       aria-live="polite"
       className={`shop-overlay${towerPlacementActive ? " shop-overlay--placing" : ""}`}
     >
       <header className="shop-overlay__header">
         <div>
           <p className="shop-overlay__eyebrow">
-            {clearedWave?.label ?? "Wave"} secured
+            {t("shop.waveSecured", { wave: clearedWave?.label ?? state.waveIndex + 1 })}
           </p>
-          <h2>Prepare the defense</h2>
+          <h2>{t("shop.heading")}</h2>
           <p className="shop-overlay__summary">
             {summary === null
-              ? "Review the line before the next assault."
-              : `${summary.agentsLost} agents lost · ${summary.hallDamage} hall damage`}
+              ? t("shop.summary.empty")
+              : t("shop.summary.lastNight", {
+                  damage: summary.hallDamage,
+                  lost: summary.agentsLost,
+                  tribute: summary.tributeEarned,
+                })}
           </p>
+          {"pendingDaylightRaid" in state &&
+          state.pendingDaylightRaid === true ? (
+            <p className="shop-overlay__raid-warning">
+              {t("run.daylightRaid.pending")}
+            </p>
+          ) : null}
         </div>
         <p className="shop-overlay__tribute">
-          <span>Tribute</span>
+          <span>{t("hud.tribute")}</span>
           <strong>{state.tribute}</strong>
         </p>
       </header>
 
       <div className="shop-grid">
-        {availability.map(({ item, cost, available, reason }) => (
-          <article className="shop-card" key={item.id}>
-            <div className="shop-card__heading">
-              <h3>{item.name}</h3>
-              <strong>{cost}</strong>
-            </div>
-            <p>{item.description}</p>
-            <p className="shop-card__count">
-              Purchased {state.shopPurchases[item.id]}
-            </p>
-            <button
-              disabled={!available || towerPlacementActive}
-              onClick={() => buy(item.id)}
-              type="button"
-            >
-              {item.needsPlacement ? "Choose position" : "Purchase"}
-            </button>
-            {!available && (
-              <small className="shop-card__reason">{reason}</small>
-            )}
-          </article>
-        ))}
+        {SHOP_CATEGORY_ORDER.map((category) => {
+          const entries = availability.filter(
+            ({ item }) => SHOP_PRESENTATION[item.id].category === category,
+          );
+          return (
+            <section className="shop-category" key={category}>
+              <h3>{t(SHOP_CATEGORY_KEYS[category])}</h3>
+              <div className="shop-category__items">
+                {entries.map(({ item, cost, available, reason }) => {
+                  const presentation = SHOP_PRESENTATION[item.id];
+                  const localizedReason = reasonKey(reason);
+                  return (
+                    <article className="shop-card" key={item.id}>
+                      <div className="shop-card__heading">
+                        <h4>{t(presentation.nameKey)}</h4>
+                        <strong>{cost}</strong>
+                      </div>
+                      <p>{t(presentation.descriptionKey)}</p>
+                      <p className="shop-card__count">
+                        {t("shop.purchased", {
+                          count: state.shopPurchases[item.id],
+                        })}
+                      </p>
+                      <button
+                        disabled={!available || towerPlacementActive}
+                        onClick={() => buy(item.id)}
+                        type="button"
+                      >
+                        {item.needsPlacement
+                          ? t("shop.choosePosition")
+                          : t("shop.purchase")}
+                      </button>
+                      {localizedReason === null ? null : (
+                        <small className="shop-card__reason">
+                          {t(localizedReason)}
+                        </small>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
       </div>
 
       {towerPlacementActive && (
         <div className="placement-instruction" role="status">
-          <strong>Place tower on the map</strong>
-          <span>Click to build · Escape or right-click to cancel</span>
+          <strong>{t("shop.placement.title")}</strong>
+          <span>{t("shop.placement.body")}</span>
           <button
             onClick={() => dispatch({ type: "cancelTowerPlacement" })}
             type="button"
           >
-            Cancel placement
+            {t("shop.placement.cancel")}
           </button>
         </div>
       )}
 
       <footer className="shop-overlay__footer">
-        <span>Purchases are final when committed.</span>
+        <span>{t("shop.footer")}</span>
         <button
           disabled={towerPlacementActive}
           onClick={() => dispatch({ type: "beginNextWave" })}
           type="button"
         >
-          Begin wave {state.waveIndex + 2}
+          {t("shop.beginNight", { wave: state.waveIndex + 2 })}
         </button>
       </footer>
     </section>

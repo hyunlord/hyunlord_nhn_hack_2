@@ -8,22 +8,32 @@ import {
 } from "../../content/investmentConfig";
 import {
   HOUSE_CONFIG,
-  houseTraitSummary,
   type HouseId,
 } from "../../content/houseConfig";
 import { HOUSE_SYNERGIES } from "../../content/houseSynergies";
+import { useLocale } from "../../content/locale";
+import {
+  achievementDescription,
+  achievementName,
+  houseIdentity,
+  houseName,
+  houseTrait,
+  investmentDescription,
+  investmentName,
+  localizedActiveBonusGroups,
+  localizedInvestmentEffectLabel,
+  synergyDescription,
+  synergyName,
+  type Translate,
+} from "../../content/locale/display";
 import {
   canPurchase,
   investmentCost,
 } from "../../meta/investments";
 import { useAppFlow } from "../../state/appFlowContext";
-import {
-  activeBonusGroups,
-  investmentEffectLabel,
-  purchaseInvestmentLabel,
-} from "../investmentSummary";
 
 function unlockRequirement(
+  t: Translate,
   houseId: HouseId,
   bestWaveReached: number,
   victories: number,
@@ -38,36 +48,40 @@ function unlockRequirement(
     definition.minimumWaveReached !== undefined &&
     bestWaveReached < definition.minimumWaveReached
   ) {
-    return `Reach wave ${definition.minimumWaveReached}`;
+    return t("meta.unlock.wave", { wave: definition.minimumWaveReached });
   }
   if (
     definition.minimumVictories !== undefined &&
     victories < definition.minimumVictories
   ) {
-    return `Win ${definition.minimumVictories} run`;
+    return t("meta.unlock.victory", { count: definition.minimumVictories });
   }
   return null;
 }
 
 function trackDisabledReason(
+  t: Translate,
   track: InvestmentTrack,
   currentRank: number,
   legacyPoints: number,
   unlockedHouses: readonly HouseId[],
 ): string | null {
   if (currentRank >= track.maxRank) {
-    return "Max rank reached";
+    return t("meta.investment.reason.max");
   }
   if (
     track.scope === "house" &&
     (track.houseId === undefined || !unlockedHouses.includes(track.houseId))
   ) {
-    const house = HOUSE_CONFIG.find((candidate) => candidate.id === track.houseId);
-    return `Unlock ${house?.name ?? "this house"} first`;
+    const house =
+      track.houseId === undefined
+        ? t("common.unknown")
+        : houseName(t, track.houseId);
+    return t("meta.investment.reason.unlock", { house });
   }
   const cost = investmentCost(track, currentRank);
   if (legacyPoints < cost) {
-    return `Need ${cost - legacyPoints} more Legacy`;
+    return t("meta.investment.reason.legacy", { amount: cost - legacyPoints });
   }
   return null;
 }
@@ -89,7 +103,9 @@ function InvestmentTrackCard({
   readonly track: InvestmentTrack;
   readonly unlockedHouses: readonly HouseId[];
 }) {
+  const { t } = useLocale();
   const reason = trackDisabledReason(
+    t,
     track,
     currentRank,
     legacyPoints,
@@ -108,11 +124,14 @@ function InvestmentTrackCard({
     <article className="investment-track">
       <div className="investment-track__header">
         <div>
-          <h4>{track.name}</h4>
-          <p>{track.description}</p>
+          <h4>{investmentName(t, track.id)}</h4>
+          <p>{investmentDescription(t, track.id)}</p>
         </div>
         <span
-          aria-label={`Rank ${currentRank} of ${track.maxRank}`}
+          aria-label={t("meta.investment.rank", {
+            current: currentRank,
+            max: track.maxRank,
+          })}
           className="rank-pips"
           role="img"
         >
@@ -120,18 +139,24 @@ function InvestmentTrackCard({
         </span>
       </div>
       <p className="investment-track__effect">
-        {investmentEffectLabel(track.effectPerRank)}
+        {localizedInvestmentEffectLabel(t, track.effectPerRank)}
       </p>
       <div className="investment-track__purchase">
-        <span>{nextCost === null ? "Max rank" : `Next cost ${nextCost}`}</span>
+        <span>
+          {nextCost === null
+            ? t("meta.investment.max")
+            : t("meta.investment.nextCost", { cost: nextCost })}
+        </span>
         <button
           aria-describedby={reason === null ? undefined : `${track.id}-reason`}
-          aria-label={purchaseInvestmentLabel(track.name)}
+          aria-label={t("meta.investment.purchaseLabel", {
+            track: investmentName(t, track.id),
+          })}
           disabled={!purchasable}
           onClick={() => onPurchase(track.id)}
           type="button"
         >
-          Purchase
+          {t("meta.investment.purchase")}
         </button>
       </div>
       {reason === null ? null : (
@@ -145,8 +170,9 @@ function InvestmentTrackCard({
 
 export function MetaScreen() {
   const { dispatch, state } = useAppFlow();
+  const { t } = useLocale();
   const { meta } = state;
-  const activeBonuses = activeBonusGroups(meta.investmentRanks);
+  const activeBonuses = localizedActiveBonusGroups(t, meta.investmentRanks);
   const globalTracks = INVESTMENT_TRACKS.filter(
     (track) => track.scope === "global",
   );
@@ -155,24 +181,22 @@ export function MetaScreen() {
     <main className="app-shell screen-shell" data-screen="meta">
       <header className="screen-header">
         <div>
-          <p className="eyebrow">Persistent covenant</p>
-          <h1>The Legacy Ledger</h1>
-          <p>
-            Carry hard-won influence between deterministic defense runs.
-          </p>
+          <p className="eyebrow">{t("meta.eyebrow")}</p>
+          <h1>{t("meta.heading")}</h1>
+          <p>{t("meta.description")}</p>
         </div>
-        <dl className="meta-stats" aria-label="Legacy statistics">
-          <div><dt>Legacy</dt><dd>{meta.legacyPoints}</dd></div>
-          <div><dt>Runs</dt><dd>{meta.runsPlayed}</dd></div>
-          <div><dt>Victories</dt><dd>{meta.victories}</dd></div>
-          <div><dt>Best wave</dt><dd>{meta.bestWaveReached}</dd></div>
+        <dl className="meta-stats" aria-label={t("meta.stats.label")}>
+          <div><dt>{t("meta.stats.legacy")}</dt><dd>{meta.legacyPoints}</dd></div>
+          <div><dt>{t("meta.stats.runs")}</dt><dd>{meta.runsPlayed}</dd></div>
+          <div><dt>{t("meta.stats.victories")}</dt><dd>{meta.victories}</dd></div>
+          <div><dt>{t("meta.stats.bestWave")}</dt><dd>{meta.bestWaveReached}</dd></div>
         </dl>
       </header>
 
       <section className="ledger-section" aria-labelledby="investments-heading">
         <div className="section-heading">
-          <p className="eyebrow">Permanent rites</p>
-          <h2 id="investments-heading">Investments</h2>
+          <p className="eyebrow">{t("meta.investments.eyebrow")}</p>
+          <h2 id="investments-heading">{t("meta.investments.heading")}</h2>
         </div>
         <div className="investment-layout">
           <section
@@ -180,8 +204,8 @@ export function MetaScreen() {
             className="investment-group"
           >
             <div className="investment-group__heading">
-              <h3 id="global-investments-heading">Global tracks</h3>
-              <p>Apply to every selected house at the start of each run.</p>
+              <h3 id="global-investments-heading">{t("meta.global.heading")}</h3>
+              <p>{t("meta.global.description")}</p>
             </div>
             <div className="investment-track-list">
               {globalTracks.map((track) => (
@@ -203,15 +227,15 @@ export function MetaScreen() {
             aria-labelledby="bonus-summary-heading"
             className="investment-summary"
           >
-            <p className="eyebrow">Running total</p>
-            <h3 id="bonus-summary-heading">Active bonuses</h3>
+            <p className="eyebrow">{t("meta.bonus.eyebrow")}</p>
+            <h3 id="bonus-summary-heading">{t("meta.bonus.heading")}</h3>
             {activeBonuses.length === 0 ? (
-              <p>No permanent bonuses active yet.</p>
+              <p>{t("meta.bonus.empty")}</p>
             ) : (
               <div className="investment-summary__groups">
                 {activeBonuses.map((group) => (
                   <section
-                    aria-label={`${group.heading} active bonuses`}
+                    aria-label={t("hud.legacyRitesGroup", { group: group.heading })}
                     className="investment-summary__group"
                     key={group.heading}
                   >
@@ -231,8 +255,8 @@ export function MetaScreen() {
 
       <section className="ledger-section" aria-labelledby="house-investments-heading">
         <div className="section-heading">
-          <p className="eyebrow">House rites</p>
-          <h2 id="house-investments-heading">Per-house tracks</h2>
+          <p className="eyebrow">{t("meta.houseRites.eyebrow")}</p>
+          <h2 id="house-investments-heading">{t("meta.houseRites.heading")}</h2>
         </div>
         <div className="house-investment-grid">
           {HOUSE_CONFIG.map((house) => {
@@ -254,9 +278,9 @@ export function MetaScreen() {
                   />
                   <div>
                     <h3 id={`${house.id}-investments-heading`}>
-                      {house.name}
+                      {houseName(t, house.id)}
                     </h3>
-                    <p>{unlocked ? "Unlocked" : "Locked house"}</p>
+                    <p>{unlocked ? t("common.unlocked") : t("common.locked")}</p>
                   </div>
                 </div>
                 <div className="investment-track-list">
@@ -281,8 +305,8 @@ export function MetaScreen() {
 
       <section className="ledger-section" aria-labelledby="houses-heading">
         <div className="section-heading">
-          <p className="eyebrow">Alliance roster</p>
-          <h2 id="houses-heading">Houses</h2>
+          <p className="eyebrow">{t("meta.houses.eyebrow")}</p>
+          <h2 id="houses-heading">{t("meta.houses.heading")}</h2>
         </div>
         <div className="house-roster">
           {HOUSE_CONFIG.map((house) => {
@@ -291,11 +315,12 @@ export function MetaScreen() {
               (candidate) => candidate.houseId === house.id,
             );
             const prerequisite = unlockRequirement(
+              t,
               house.id,
               meta.bestWaveReached,
               meta.victories,
             );
-            const canPurchase =
+            const canPurchaseUnlock =
               definition !== undefined &&
               prerequisite === null &&
               meta.legacyPoints >= definition.legacyCost;
@@ -311,21 +336,22 @@ export function MetaScreen() {
                     style={{ backgroundColor: house.color }}
                   />
                   <div>
-                    <h3>{house.name}</h3>
-                    <p>{house.identity}</p>
+                    <h3>{houseName(t, house.id)}</h3>
+                    <p>{houseIdentity(t, house.id)}</p>
                   </div>
                   <span className="status-label">
-                    {unlocked ? "Available" : "Locked"}
+                    {unlocked ? t("common.available") : t("common.locked")}
                   </span>
                 </div>
-                <p className="trait-line">{houseTraitSummary(house.id)}</p>
+                <p className="trait-line">{houseTrait(t, house.id)}</p>
                 {!unlocked && definition !== undefined ? (
                   <div className="unlock-row">
                     <span>
-                      {prerequisite ?? `${definition.legacyCost} Legacy`}
+                      {prerequisite ??
+                        t("meta.unlock.cost", { cost: definition.legacyCost })}
                     </span>
                     <button
-                      disabled={!canPurchase}
+                      disabled={!canPurchaseUnlock}
                       onClick={() =>
                         dispatch({
                           type: "purchaseUnlock",
@@ -334,7 +360,7 @@ export function MetaScreen() {
                       }
                       type="button"
                     >
-                      Unlock for {definition.legacyCost}
+                      {t("meta.unlock.button", { cost: definition.legacyCost })}
                     </button>
                   </div>
                 ) : null}
@@ -347,19 +373,19 @@ export function MetaScreen() {
       <div className="ledger-columns">
         <section className="ledger-section" aria-labelledby="achievements-heading">
           <div className="section-heading">
-            <p className="eyebrow">Recorded deeds</p>
-            <h2 id="achievements-heading">Achievements</h2>
+            <p className="eyebrow">{t("meta.achievements.eyebrow")}</p>
+            <h2 id="achievements-heading">{t("meta.achievements.heading")}</h2>
           </div>
           <ul className="ledger-list">
             {ACHIEVEMENT_DEFINITIONS.map((achievement) => (
               <li key={achievement.id}>
                 <span>
-                  <strong>{achievement.name}</strong>
-                  <small>{achievement.description}</small>
+                  <strong>{achievementName(t, achievement.id)}</strong>
+                  <small>{achievementDescription(t, achievement.id)}</small>
                 </span>
                 <span>
                   {meta.unlockedAchievements.includes(achievement.id)
-                    ? "Earned"
+                    ? t("common.earned")
                     : `+${achievement.legacyReward}`}
                 </span>
               </li>
@@ -369,8 +395,8 @@ export function MetaScreen() {
 
         <section className="ledger-section" aria-labelledby="synergies-heading">
           <div className="section-heading">
-            <p className="eyebrow">Recovered knowledge</p>
-            <h2 id="synergies-heading">Hidden synergies</h2>
+            <p className="eyebrow">{t("meta.synergies.eyebrow")}</p>
+            <h2 id="synergies-heading">{t("meta.synergies.heading")}</h2>
           </div>
           <ul className="ledger-list">
             {HOUSE_SYNERGIES.filter(({ hidden }) => hidden).map((synergy) => {
@@ -378,14 +404,18 @@ export function MetaScreen() {
               return (
                 <li key={synergy.id}>
                   <span>
-                    <strong>{discovered ? synergy.name : "Undiscovered"}</strong>
+                    <strong>
+                      {discovered
+                        ? synergyName(t, synergy.id)
+                        : t("meta.synergies.undiscovered")}
+                    </strong>
                     <small>
                       {discovered
-                        ? synergy.description
-                        : "Complete a run with the right alliance."}
+                        ? synergyDescription(t, synergy.id)
+                        : t("meta.synergies.clue")}
                     </small>
                   </span>
-                  <span>{discovered ? "Known" : "Hidden"}</span>
+                  <span>{discovered ? t("common.known") : t("common.hidden")}</span>
                 </li>
               );
             })}
@@ -394,13 +424,13 @@ export function MetaScreen() {
       </div>
 
       <footer className="screen-actions">
-        <p>Choose three houses. Selection order sets their deployment slots.</p>
+        <p>{t("meta.footer.note")}</p>
         <button
           className="primary-action"
           onClick={() => dispatch({ type: "beginSelection" })}
           type="button"
         >
-          Begin run
+          {t("meta.beginRun")}
         </button>
       </footer>
     </main>

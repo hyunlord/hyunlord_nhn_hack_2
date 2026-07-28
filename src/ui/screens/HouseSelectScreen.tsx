@@ -2,7 +2,6 @@ import type { CSSProperties } from "react";
 import {
   HOUSE_CONFIG,
   HOUSE_SPAWN_SLOTS,
-  houseTraitSummary,
 } from "../../content/houseConfig";
 import {
   frameBackgroundImage,
@@ -10,6 +9,14 @@ import {
   HOUSE_SELECTION_FRAME,
 } from "../../content/framePresentation";
 import { previewHouseSynergies } from "../../content/houseSynergies";
+import { useLocale, type LocaleKey } from "../../content/locale";
+import {
+  houseIdentity,
+  houseName,
+  houseTrait,
+  synergyDescription,
+  synergyName,
+} from "../../content/locale/display";
 import { useAppFlow } from "../../state/appFlowContext";
 
 const FRAME_CONTENT_STYLE = {
@@ -19,8 +26,13 @@ const FRAME_CONTENT_STYLE = {
   width: `${HOUSE_FRAME_CONTENT_PERCENT.width}%`,
 } as const satisfies CSSProperties;
 
+function slotLabelKey(slotId: string): LocaleKey {
+  return `selection.slot.${slotId}` as LocaleKey;
+}
+
 export function HouseSelectScreen() {
   const { dispatch, state } = useAppFlow();
+  const { t } = useLocale();
   const synergies = previewHouseSynergies(
     state.selectedHouseIds,
     state.meta.discoveredSynergies,
@@ -30,20 +42,20 @@ export function HouseSelectScreen() {
     <main className="app-shell screen-shell" data-screen="selection">
       <header className="screen-header screen-header--compact">
         <div>
-          <p className="eyebrow">Alliance assembly</p>
-          <h1>Choose the Three</h1>
-          <p>Order determines left, right, and bottom-center deployment.</p>
+          <p className="eyebrow">{t("selection.eyebrow")}</p>
+          <h1>{t("selection.heading")}</h1>
+          <p>{t("selection.description")}</p>
         </div>
         <button
           className="text-action"
           onClick={() => dispatch({ type: "returnToMeta" })}
           type="button"
         >
-          Return to Legacy
+          {t("selection.back")}
         </button>
       </header>
 
-      <ol className="selection-slots" aria-label="Deployment order">
+      <ol className="selection-slots" aria-label={t("selection.orderLabel")}>
         {HOUSE_SPAWN_SLOTS.map((slot, index) => {
           const houseId = state.selectedHouseIds[index];
           const house = HOUSE_CONFIG.find(({ id }) => id === houseId);
@@ -51,8 +63,10 @@ export function HouseSelectScreen() {
             <li key={slot.id}>
               <span>{index + 1}</span>
               <div>
-                <strong>{house?.name ?? "Open slot"}</strong>
-                <small>{slot.id.replace("_", " ")}</small>
+                <strong>
+                  {house === undefined ? t("selection.openSlot") : houseName(t, house.id)}
+                </strong>
+                <small>{t(slotLabelKey(slot.id))}</small>
               </div>
             </li>
           );
@@ -62,8 +76,8 @@ export function HouseSelectScreen() {
       <div className="selection-layout">
         <section className="ledger-section" aria-labelledby="choose-heading">
           <div className="section-heading">
-            <p className="eyebrow">Available houses</p>
-            <h2 id="choose-heading">Roster</h2>
+            <p className="eyebrow">{t("selection.available.eyebrow")}</p>
+            <h2 id="choose-heading">{t("selection.roster")}</h2>
           </div>
           <div className="selection-roster">
             {HOUSE_CONFIG.map((house) => {
@@ -107,14 +121,18 @@ export function HouseSelectScreen() {
                       style={{ backgroundColor: house.color }}
                     />
                     <span>
-                      <strong>{house.name}</strong>
-                      <small>{house.identity}</small>
+                      <strong>{houseName(t, house.id)}</strong>
+                      <small>{houseIdentity(t, house.id)}</small>
                       <small className="trait-line">
-                        {houseTraitSummary(house.id)}
+                        {houseTrait(t, house.id)}
                       </small>
                     </span>
                     <span className="status-label">
-                      {selected ? `Pick ${order + 1}` : unlocked ? "Choose" : "Locked"}
+                      {selected
+                        ? t("selection.pick", { order: order + 1 })
+                        : unlocked
+                          ? t("selection.choose")
+                          : t("common.locked")}
                     </span>
                   </span>
                 </button>
@@ -124,35 +142,35 @@ export function HouseSelectScreen() {
         </section>
 
         <aside className="intelligence-panel" aria-labelledby="synergy-preview-heading">
-          <p className="eyebrow">Alliance intelligence</p>
-          <h2 id="synergy-preview-heading">Synergy preview</h2>
+          <p className="eyebrow">{t("selection.intel.eyebrow")}</p>
+          <h2 id="synergy-preview-heading">{t("selection.intel.heading")}</h2>
           {synergies.length === 0 ? (
-            <p>No known synergy is active in this selection.</p>
+            <p>{t("selection.intel.empty")}</p>
           ) : (
             <ul>
               {synergies.map((synergy) => (
                 <li key={synergy.id}>
-                  <strong>{synergy.name}</strong>
-                  <span>{synergy.description}</span>
+                  <strong>{synergyName(t, synergy.id)}</strong>
+                  <span>{synergyDescription(t, synergy.id)}</span>
                 </li>
               ))}
             </ul>
           )}
           <p className="intelligence-panel__note">
-            Hidden combinations appear only after surviving a run with them.
+            {t("selection.intel.note")}
           </p>
         </aside>
       </div>
 
       <footer className="screen-actions">
-        <p>{state.selectedHouseIds.length}/3 houses selected</p>
+        <p>{t("selection.count", { count: state.selectedHouseIds.length })}</p>
         <button
           className="primary-action"
           disabled={state.selectedHouseIds.length !== 3}
           onClick={() => dispatch({ type: "confirmSelection" })}
           type="button"
         >
-          Confirm alliance
+          {t("selection.confirm")}
         </button>
       </footer>
     </main>

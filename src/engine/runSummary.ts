@@ -40,6 +40,7 @@ export function createRunSummary(state: GameState): RunSummary {
       state.betrayalHouseId === null
         ? null
         : { traitorHouseId: state.betrayalHouseId },
+    daylightRaidWaveNumbers: state.daylightRaidWaveNumbers,
     discoveredSynergyIds: state.activeSynergyIds.filter((id) =>
       hiddenSynergies.has(id),
     ),

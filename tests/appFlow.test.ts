@@ -1,16 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { translate } from "../src/content/locale";
+import {
+  investmentName,
+  localizedActiveBonusGroups,
+  localizedInvestmentEffectLabel,
+  type Translate,
+} from "../src/content/locale/display";
 import type { RunSummary } from "../src/content/runSummary";
 import {
   appReducer,
   createInitialAppState,
 } from "../src/state/appFlow";
 import { createDefaultMetaState } from "../src/meta/legacy";
-import {
-  activeBonusGroups,
-  legacyRiteGroups,
-  purchaseInvestmentLabel,
-} from "../src/ui/investmentSummary";
+
+const english: Translate = (key, params) => translate("en", key, params);
 
 function summary(runId = "run-1"): RunSummary {
   return {
@@ -29,18 +33,30 @@ function summary(runId = "run-1"): RunSummary {
     allHallsStanding: false,
     heroLessWave2Clear: false,
     betrayal: null,
+    daylightRaidWaveNumbers: [],
     discoveredSynergyIds: [],
     populationHistory: [],
   };
 }
 
-test("Given a fresh app, when it starts, then meta is the entry phase and no run state is configured", () => {
+test("Given a fresh app, when it starts, then title is the entry phase and no run state is configured", () => {
   const state = createInitialAppState(createDefaultMetaState(), 100);
 
-  assert.equal(state.appPhase, "meta");
+  assert.equal(state.appPhase, "title");
   assert.deepEqual(state.selectedHouseIds, []);
   assert.equal(state.runSeed, null);
   assert.equal(state.summary, null);
+});
+
+
+test("Given the title screen, when legacy is requested, then the meta ledger opens without becoming the entry state", () => {
+  const state = appReducer(
+    createInitialAppState(createDefaultMetaState(), 100),
+    { type: "openMeta" },
+  );
+
+  assert.equal(state.appPhase, "meta");
+  assert.equal(state.previousAppPhase, null);
 });
 
 test("Given only default unlocks, when selection changes, then locked houses and a fourth pick are rejected while order is retained", () => {
@@ -192,7 +208,7 @@ test("Given a locked house investment, when purchase is requested, then the exac
 });
 
 test("Given global and house investments, when bonus summary groups are built, then house effects stay scoped by house name", () => {
-  const groups = activeBonusGroups({
+  const groups = localizedActiveBonusGroups(english, {
     global_vigor: 1,
     house_a_ashvale_fury: 1,
     house_b_thornhold_bulwark: 1,
@@ -205,43 +221,22 @@ test("Given global and house investments, when bonus summary groups are built, t
   ]);
 });
 
-test("Given a run with global and unselected house investments, when legacy rite groups are built, then only global and selected-house tracks are visible", () => {
-  const groups = legacyRiteGroups(
-    {
-      global_vigor: 1,
-      house_a_ashvale_fury: 1,
-      house_d_duskmere_stride: 1,
-    },
-    ["house_a", "house_b", "house_c"],
+test("Given an investment effect and id, when display helpers resolve them, then the selected language owns every label", () => {
+  assert.equal(
+    localizedInvestmentEffectLabel(english, { maxHpBonus: 10 }),
+    "+10 max HP per rank",
   );
-
-  assert.deepEqual(groups, [
-    {
-      heading: "Global",
-      items: [
-        {
-          effect: "+10 max HP per rank",
-          name: "Vigor of the Faithful",
-          rank: "Rank 1",
-        },
-      ],
-    },
-    {
-      heading: "Ashvale",
-      items: [
-        {
-          effect: "+4% attack damage per rank",
-          name: "Ashvale Fury",
-          rank: "Rank 1",
-        },
-      ],
-    },
-  ]);
+  assert.equal(
+    investmentName(english, "global_vigor"),
+    "Vigor of the Faithful",
+  );
 });
 
-test("Given an investment track name, when a purchase label is requested, then the accessible action names the track", () => {
+test("Given an investment track name, when a localized purchase label is requested, then the accessible action names the track", () => {
   assert.equal(
-    purchaseInvestmentLabel("Vigor of the Faithful"),
+    translate("en", "meta.investment.purchaseLabel", {
+      track: "Vigor of the Faithful",
+    }),
     "Purchase Vigor of the Faithful",
   );
 });

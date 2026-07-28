@@ -150,6 +150,7 @@ export function spawnWave(
     waveIndex: definition.index,
     startTick: tick,
     traitorHouseId: null,
+    daylightRaid: false,
     mage,
     creatures,
   };

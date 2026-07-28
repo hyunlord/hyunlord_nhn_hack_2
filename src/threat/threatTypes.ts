@@ -52,6 +52,7 @@ export interface ThreatEvent {
   waveIndex: number;
   startTick: number;
   traitorHouseId: string | null;
+  readonly daylightRaid?: boolean;
   mage: DarkMage | null;
   creatures: Creature[];
 }
