@@ -187,3 +187,33 @@ test("Given domain config ids, when localized display keys are resolved, then Ko
     assert.notEqual(translate("en", key as never), key);
   }
 });
+
+
+const PRODUCT_COPY_FORBIDDEN_DEFENSE_MODEL = /\b[hH]alls?\b|회관/u;
+
+function playerFacingContentStrings(): readonly { readonly label: string; readonly text: string }[] {
+  return [
+    ...Object.entries(en).map(([key, text]) => ({ label: `en.${key}`, text })),
+    ...Object.entries(ko).map(([key, text]) => ({ label: `ko.${key}`, text })),
+    ...CARD_DEFINITIONS.flatMap(({ id, name, description }) => [
+      { label: `card.${id}.name`, text: name },
+      { label: `card.${id}.description`, text: description },
+    ]),
+    ...Object.entries(DIVINE_SKILL_DEFINITIONS).flatMap(([id, definition]) => [
+      { label: `skill.${id}.name`, text: definition.name },
+      { label: `skill.${id}.description`, text: definition.description },
+    ]),
+    ...ACHIEVEMENT_DEFINITIONS.flatMap(({ id, name, description }) => [
+      { label: `achievement.${id}.name`, text: name },
+      { label: `achievement.${id}.description`, text: description },
+    ]),
+  ];
+}
+
+test("Given player-facing content copy, when product terminology is scanned, then the old hall model is absent", () => {
+  const offenders = playerFacingContentStrings()
+    .filter(({ text }) => PRODUCT_COPY_FORBIDDEN_DEFENSE_MODEL.test(text))
+    .map(({ label, text }) => `${label}: ${text}`);
+
+  assert.deepEqual(offenders, []);
+});
