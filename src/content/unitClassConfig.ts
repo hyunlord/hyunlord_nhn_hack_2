@@ -13,6 +13,7 @@ export interface UnitClassDefinition {
   readonly moveSpeed: number;
   readonly drawRadius: number;
   readonly drawShape: UnitShape;
+  readonly lineRank: number;
 }
 
 export type UnitRoster = Readonly<Partial<Record<UnitClassId, number>>>;
@@ -41,6 +42,7 @@ export const UNIT_CLASSES = {
     moveSpeed: 0.6,
     drawRadius: 4,
     drawShape: "circle",
+    lineRank: 78,
   },
   spear: {
     id: "spear",
@@ -53,6 +55,7 @@ export const UNIT_CLASSES = {
     moveSpeed: 0.5,
     drawRadius: 4.5,
     drawShape: "diamond",
+    lineRank: 96,
   },
   archer: {
     id: "archer",
@@ -65,6 +68,7 @@ export const UNIT_CLASSES = {
     moveSpeed: 0.55,
     drawRadius: 3.5,
     drawShape: "triangle",
+    lineRank: 52,
   },
   skirmisher: {
     id: "skirmisher",
@@ -77,6 +81,7 @@ export const UNIT_CLASSES = {
     moveSpeed: 0.9,
     drawRadius: 3,
     drawShape: "dot",
+    lineRank: 78,
   },
 } as const satisfies Readonly<Record<UnitClassId, UnitClassDefinition>>;
 

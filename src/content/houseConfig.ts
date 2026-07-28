@@ -28,6 +28,15 @@ export interface HouseSpawnSlot {
   readonly y: number;
 }
 
+export type HouseFormationStyle = "charge" | "hold" | "harass";
+
+export interface HouseFormation {
+  readonly lineSpacing: number;
+  readonly cohesion: number;
+  readonly jitter: number;
+  readonly style: HouseFormationStyle;
+}
+
 export interface SelectedHousePlacement {
   readonly houseId: HouseId;
   readonly slot: HouseSpawnSlot;
@@ -46,6 +55,7 @@ export interface HouseConfigEntry {
   readonly populationGrowthPerLevel: number;
   readonly populationCapBase: number;
   readonly populationCapPerLevel: number;
+  readonly formation: HouseFormation;
   readonly traits: {
     readonly maxHpMultiplier: number;
     readonly attackDamageMultiplier: number;
@@ -89,7 +99,7 @@ export const HOUSE_CONFIG = [
     id: "house_a",
     name: "Ashvale",
     identity: "aggressive skirmishers",
-    color: "#d4693f",
+    color: "#e07a45",
     initialPower: 50,
     unlockedByDefault: true,
     roster: { melee: 50, spear: 0, archer: 0, skirmisher: 50 },
@@ -98,6 +108,12 @@ export const HOUSE_CONFIG = [
     populationGrowthPerLevel: 2,
     populationCapBase: 52,
     populationCapPerLevel: 6,
+    formation: {
+      lineSpacing: 14,
+      cohesion: 0.45,
+      jitter: 0.35,
+      style: "charge",
+    },
     traits: {
       maxHpMultiplier: 1,
       attackDamageMultiplier: 1.1,
@@ -112,7 +128,7 @@ export const HOUSE_CONFIG = [
     id: "house_b",
     name: "Thornhold",
     identity: "stubborn defenders",
-    color: "#4f8fbf",
+    color: "#3f6f96",
     initialPower: 50,
     unlockedByDefault: true,
     roster: { melee: 30, spear: 70, archer: 0, skirmisher: 0 },
@@ -121,6 +137,12 @@ export const HOUSE_CONFIG = [
     populationGrowthPerLevel: 2,
     populationCapBase: 44,
     populationCapPerLevel: 5,
+    formation: {
+      lineSpacing: 11,
+      cohesion: 0.7,
+      jitter: 0.1,
+      style: "hold",
+    },
     traits: {
       maxHpMultiplier: 1.2,
       attackDamageMultiplier: 1,
@@ -144,6 +166,12 @@ export const HOUSE_CONFIG = [
     populationGrowthPerLevel: 2,
     populationCapBase: 50,
     populationCapPerLevel: 6,
+    formation: {
+      lineSpacing: 16,
+      cohesion: 0.5,
+      jitter: 0.2,
+      style: "hold",
+    },
     traits: {
       maxHpMultiplier: 1.05,
       attackDamageMultiplier: 1,
@@ -158,7 +186,7 @@ export const HOUSE_CONFIG = [
     id: "house_d",
     name: "Duskmere",
     identity: "fast, fragile",
-    color: "#8c68ba",
+    color: "#63c9c2",
     initialPower: 50,
     unlockedByDefault: false,
     roster: { melee: 0, spear: 0, archer: 30, skirmisher: 70 },
@@ -167,6 +195,12 @@ export const HOUSE_CONFIG = [
     populationGrowthPerLevel: 3,
     populationCapBase: 72,
     populationCapPerLevel: 8,
+    formation: {
+      lineSpacing: 26,
+      cohesion: 0.2,
+      jitter: 0.55,
+      style: "harass",
+    },
     traits: {
       maxHpMultiplier: 0.82,
       attackDamageMultiplier: 1,
@@ -181,7 +215,7 @@ export const HOUSE_CONFIG = [
     id: "house_e",
     name: "Stonewake",
     identity: "slow, immovable",
-    color: "#77818d",
+    color: "#5a6470",
     initialPower: 50,
     unlockedByDefault: false,
     roster: { melee: 15, spear: 85, archer: 0, skirmisher: 0 },
@@ -190,6 +224,12 @@ export const HOUSE_CONFIG = [
     populationGrowthPerLevel: 1,
     populationCapBase: 36,
     populationCapPerLevel: 4,
+    formation: {
+      lineSpacing: 9,
+      cohesion: 0.85,
+      jitter: 0.03,
+      style: "hold",
+    },
     traits: {
       maxHpMultiplier: 1.45,
       attackDamageMultiplier: 0.9,
@@ -204,7 +244,7 @@ export const HOUSE_CONFIG = [
     id: "house_f",
     name: "Highreach",
     identity: "wealth-focused",
-    color: "#d3a942",
+    color: "#d9b544",
     initialPower: 50,
     unlockedByDefault: false,
     roster: { melee: 40, spear: 0, archer: 60, skirmisher: 0 },
@@ -213,6 +253,12 @@ export const HOUSE_CONFIG = [
     populationGrowthPerLevel: 2,
     populationCapBase: 48,
     populationCapPerLevel: 5,
+    formation: {
+      lineSpacing: 22,
+      cohesion: 0.35,
+      jitter: 0.25,
+      style: "harass",
+    },
     traits: {
       maxHpMultiplier: 1,
       attackDamageMultiplier: 0.92,

@@ -1,8 +1,5 @@
 import type { Agent, House } from "../agents/agentTypes";
-import type {
-  HouseId,
-  HouseSelection,
-} from "../content/houseConfig";
+import type { HouseId, HouseSelection } from "../content/houseConfig";
 import type {
   MiracleOutcome,
   MiracleType,
@@ -31,12 +28,19 @@ export type RunPhase =
   | "victory"
   | "defeat";
 
-export interface Hall {
-  houseId: HouseId;
-  x: number;
-  y: number;
-  hp: number;
-  maxHp: number;
+export interface Keep {
+  readonly x: number;
+  readonly y: number;
+  readonly hp: number;
+  readonly maxHp: number;
+}
+
+export interface Banner {
+  readonly houseId: HouseId;
+  readonly x: number;
+  readonly y: number;
+  readonly hp: number;
+  readonly maxHp: number;
 }
 
 export interface WaveSummary {
@@ -73,7 +77,8 @@ export interface GameState {
   pendingDaylightRaid: boolean;
   daylightRaidWaveNumbers: number[];
   houses: House[];
-  halls: Hall[];
+  keep: Keep;
+  banners: Banner[];
   agents: Agent[];
   activeThreat: ThreatEvent | null;
   highlights: Highlight[];
