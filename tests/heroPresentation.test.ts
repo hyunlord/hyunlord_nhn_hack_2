@@ -210,8 +210,10 @@ test("Given Sera crosses the field, when render projection tracks her, then the 
   let projection = projectHeroRenderState(createInitialState(201).state, createHeroRenderTracker());
   const base = createInitialState(201).state;
   const sera = base.agents.find(({ heroId }) => heroId === "hero_ashvale");
-  if (sera === undefined) {
-    throw new RangeError("Expected Sera fixture.");
+  const bren = base.agents.find(({ heroId }) => heroId === "hero_thornhold");
+  const ivy = base.agents.find(({ heroId }) => heroId === "hero_greymoor");
+  if (sera === undefined || bren === undefined || ivy === undefined) {
+    throw new RangeError("Expected Sera, Bren, and Ivy fixtures.");
   }
   let movingState = base;
 
@@ -219,11 +221,24 @@ test("Given Sera crosses the field, when render projection tracks her, then the 
     movingState = {
       ...base,
       tick: index + 1,
-      agents: base.agents.map((agent) => agent.id === sera.id ? { ...agent, x: 200 + index, y: 210 + index } : agent),
+      agents: base.agents.map((agent) => {
+        if (agent.id === sera.id) {
+          return { ...agent, x: 200 + index, y: 210 + index };
+        }
+        if (agent.id === bren.id) {
+          return { ...agent, x: 300 + index, y: 310 + index };
+        }
+        if (agent.id === ivy.id) {
+          return { ...agent, x: 400 + index, y: 410 + index };
+        }
+        return agent;
+      }),
     };
     projection = projectHeroRenderState(movingState, projection.tracker);
   }
   const tracked = projection.livingHeroes.find(({ agent }) => agent.id === sera.id);
+  const trackedBren = projection.livingHeroes.find(({ agent }) => agent.id === bren.id);
+  const trackedIvy = projection.livingHeroes.find(({ agent }) => agent.id === ivy.id);
   assert.deepEqual(tracked?.trail.map(({ x, y }) => ({ x, y })), [
     { x: 202, y: 212 },
     { x: 203, y: 213 },
@@ -232,6 +247,10 @@ test("Given Sera crosses the field, when render projection tracks her, then the 
     { x: 206, y: 216 },
     { x: 207, y: 217 },
   ]);
+  assert.deepEqual(trackedBren?.trail, []);
+  assert.deepEqual(trackedIvy?.trail, []);
+  assert.equal(projection.tracker.trailsByHeroId.has("hero_thornhold"), false);
+  assert.equal(projection.tracker.trailsByHeroId.has("hero_greymoor"), false);
 
   const repeated = projectHeroRenderState(movingState, projection.tracker);
   const repeatedSera = repeated.livingHeroes.find(({ agent }) => agent.id === sera.id);

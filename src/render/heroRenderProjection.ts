@@ -45,6 +45,7 @@ export interface HeroRenderProjection {
   readonly brightenedAgentIds: readonly string[];
 }
 
+const SERA_HERO_ID = "hero_ashvale";
 const SERA_TRAIL_LIMIT = 6;
 const IVY_PULSE_TICKS = 45;
 const IVY_PULSE_SPREAD = 10;
@@ -80,6 +81,10 @@ function appendTrail(current: readonly HeroPoint[] | undefined, point: HeroPoint
     return current ?? [];
   }
   return [...(current ?? []), point].slice(-SERA_TRAIL_LIMIT);
+}
+
+function tracksTrail(hero: Agent): boolean {
+  return hero.heroId === SERA_HERO_ID && battleLineRoleForAgent(hero) === "outer_forward";
 }
 
 function livingTrackerForRun(
@@ -234,8 +239,13 @@ export function projectHeroRenderState(
     if (hero.hp > 0) {
       const point = { x: hero.x, y: hero.y };
       previousLivingByHeroId.set(hero.heroId, point);
-      const trail = appendTrail(activeTracker.trailsByHeroId.get(hero.heroId), point);
-      trailsByHeroId.set(hero.heroId, trail);
+      const shouldTrackTrail = tracksTrail(hero);
+      const trail = shouldTrackTrail
+        ? appendTrail(activeTracker.trailsByHeroId.get(hero.heroId), point)
+        : [];
+      if (shouldTrackTrail) {
+        trailsByHeroId.set(hero.heroId, trail);
+      }
       const projected = liveProjection(state, hero, trail);
       if (projected !== null) {
         livingHeroes.push(projected);

@@ -1,5 +1,6 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { SpriteId } from "../content/assetManifest";
+import { battleLineRoleForAgent } from "../engine/heroEngine";
 import { drawSprite, type BrowserSpriteDrawContext } from "./assets/drawSprite";
 import type { HeroFrontArc, HeroRenderProjection } from "./heroRenderProjection";
 
@@ -32,12 +33,17 @@ function canDrawSprites(context: HeroDrawContext): context is HeroDrawContext & 
   return "drawImage" in context && "imageSmoothingEnabled" in context && "scale" in context && "translate" in context;
 }
 
+function drawsTrail(hero: HeroRenderProjection["livingHeroes"][number]["agent"]): boolean {
+  return hero.heroId === SERA_HERO_ID && battleLineRoleForAgent(hero) === "outer_forward";
+}
+
 const HERO_RADIUS = 8;
 const HP_BAR_WIDTH = 34;
 const HP_BAR_HEIGHT = 4;
 const LABEL_HEIGHT = 12;
 const LABEL_PADDING_X = 3;
 const FRONT_ARC_RADIUS = HERO_RADIUS + 11;
+const SERA_HERO_ID = "hero_ashvale";
 
 export type HeroLabelFormatter = (heroId: string, level: number) => string;
 export type HeroFallLabelFormatter = (ticksRemaining: number) => string;
@@ -249,7 +255,9 @@ export function drawHeroes(
 
   void formatLabel;
   for (const { agent: hero, auraPulse, auraRadius, frontArc, houseColor, maxHp, trail } of projection.livingHeroes) {
-    drawTrail(context, trail, houseColor);
+    if (drawsTrail(hero)) {
+      drawTrail(context, trail, houseColor);
+    }
     drawAura(context, hero.x, hero.y, auraRadius, auraPulse);
     const spriteId = spriteIdForHero(hero.heroId);
     if (spriteId === null || (!canDrawSprites(context) || !drawSprite(context, spriteId, hero.x, hero.y, { tint: houseColor }))) {
