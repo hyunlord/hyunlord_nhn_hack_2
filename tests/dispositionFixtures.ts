@@ -39,9 +39,9 @@ export function context(
   overrides: Partial<DefenseContext> = {},
 ): DefenseContext {
   return {
-    ownHall: { x: 100, y: 100, hp: BALANCE_CONFIG.HALL_HP },
-    rallyHall: { x: 100, y: 100 },
-    threatenedHalls: [],
+    ownAnchor: { x: 100, y: 100, hp: BALANCE_CONFIG.BANNER_HP },
+    rallyAnchor: { x: 100, y: 100 },
+    threatenedAnchors: [],
     threats: [],
     ...overrides,
   };

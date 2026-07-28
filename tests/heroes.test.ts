@@ -36,7 +36,7 @@ test("Given a new run, when agents are created, then one configured hero per hou
   );
 });
 
-test("Given a dead hero at its due tick, when respawns resolve, then it returns at its hall with full effective HP", () => {
+test("Given a dead hero at its due tick, when respawns resolve, then it returns at its banner with full effective HP", () => {
   const state = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
   const hero = state.agents.find(({ heroId }) => heroId === "hero_ashvale");
   if (hero === undefined) {
@@ -52,21 +52,22 @@ test("Given a dead hero at its due tick, when respawns resolve, then it returns 
   };
   const agents = respawnHeroes(
     [dead],
-    state.halls,
+    state.keep,
+    state.banners,
     state.houseModifiers,
     700,
   );
   const returned = agents[0];
-  const ownHall = state.halls.find(({ houseId }) => houseId === hero.houseId);
+  const ownBanner = state.banners.find(({ houseId }) => houseId === hero.houseId);
   const modifiers = state.houseModifiers.find(
     ({ houseId }) => houseId === hero.houseId,
   )?.modifiers;
-  if (returned === undefined || ownHall === undefined || modifiers === undefined) {
+  if (returned === undefined || ownBanner === undefined || modifiers === undefined) {
     throw new RangeError("Expected a complete hero respawn fixture.");
   }
 
-  assert.equal(returned.x, ownHall.x);
-  assert.equal(returned.y, ownHall.y);
+  assert.equal(returned.x, ownBanner.x);
+  assert.equal(returned.y, ownBanner.y);
   assert.equal(returned.hp, maxHpForAgent(returned, modifiers));
   assert.equal(returned.state, "idle");
   assert.equal(returned.respawnAtTick, null);
@@ -144,7 +145,7 @@ test("Given an ally inside Ivy's aura, when combat bonuses resolve, then only th
   assert.equal(inside.has("enemy_creature"), false);
 });
 
-test("Given a due hero and no surviving hall, when respawns resolve, then it remains dead", () => {
+test("Given a due hero and no surviving anchor, when respawns resolve, then it remains dead", () => {
   const state = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
   const hero = state.agents.find(({ isHero }) => isHero);
   if (hero === undefined) {
@@ -159,7 +160,8 @@ test("Given a due hero and no surviving hall, when respawns resolve, then it rem
 
   const result = respawnHeroes(
     [dead],
-    state.halls.map((hall) => ({ ...hall, hp: 0 })),
+    { ...state.keep, hp: 0 },
+    state.banners.map((banner) => ({ ...banner, hp: 0 })),
     state.houseModifiers,
     600,
   );
@@ -167,7 +169,7 @@ test("Given a due hero and no surviving hall, when respawns resolve, then it rem
   assert.strictEqual(result[0], dead);
 });
 
-test("Given Hollow Crown disables a house hero respawn, when the hero is due, then it remains dead beside a surviving hall", () => {
+test("Given Hollow Crown disables a house hero respawn, when the hero is due, then it remains dead beside a surviving banner", () => {
   const state = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
   const hero = state.agents.find(({ heroId }) => heroId === "hero_ashvale");
   if (hero === undefined) {
@@ -191,7 +193,7 @@ test("Given Hollow Crown disables a house hero respawn, when the hero is due, th
       : entry,
   );
 
-  const result = respawnHeroes([dead], state.halls, modifiers, 600);
+  const result = respawnHeroes([dead], state.keep, state.banners, modifiers, 600);
 
   assert.strictEqual(result[0], dead);
 });
@@ -248,7 +250,7 @@ test("Given Ivy has Green Mercy, when she kills inside her aura, then nearby liv
         y: 100,
         hp: 1,
         agentDamage: 1,
-        hallDamage: 1,
+        structureDamage: 1,
         lastAttackTick: 0,
         haltedUntilTick: -1,
       },

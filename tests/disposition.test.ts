@@ -22,12 +22,12 @@ test("Given low health, when break thresholds are evaluated, then only a timid a
       hp: BALANCE_CONFIG.INITIAL_HP * 0.34,
       disposition: { aggression: 59, loyalty: 80 },
     }),
-    context({ rallyHall: { x: 20, y: 100 }, threats }),
+    context({ rallyAnchor: { x: 20, y: 100 }, threats }),
     false,
   );
   const healthy = decideIntent(
     createAgent({ disposition: { aggression: 59, loyalty: 80 } }),
-    context({ rallyHall: { x: 20, y: 100 }, threats }),
+    context({ rallyAnchor: { x: 20, y: 100 }, threats }),
     false,
   );
   const resolute = decideIntent(
@@ -35,7 +35,7 @@ test("Given low health, when break thresholds are evaluated, then only a timid a
       hp: BALANCE_CONFIG.INITIAL_HP * 0.34,
       disposition: { aggression: 60, loyalty: 80 },
     }),
-    context({ rallyHall: { x: 20, y: 100 }, threats }),
+    context({ rallyAnchor: { x: 20, y: 100 }, threats }),
     false,
   );
 
@@ -51,7 +51,7 @@ test("Given a broken agent and a rally hall, when retreating, then it flees towa
       disposition: { aggression: 20, loyalty: 80 },
     }),
     context({
-      rallyHall: { x: 20, y: 100 },
+      rallyAnchor: { x: 20, y: 100 },
       threats: [threat("creature_a", 110, 100)],
     }),
     false,
@@ -71,8 +71,8 @@ test("Given no rally hall, when a broken agent retreats, then it moves away from
       disposition: { aggression: 20, loyalty: 80 },
     }),
     context({
-      ownHall: null,
-      rallyHall: null,
+      ownAnchor: null,
+      rallyAnchor: null,
       threats: [threat("creature_a", 110, 100)],
     }),
     false,
@@ -118,7 +118,7 @@ test("Given an agent beyond its home leash, when it moves for 50 ticks, then it 
   const home = { x: 100, y: 100, hp: BALANCE_CONFIG.KEEP_HP };
   const intent = decideIntent(
     createAgent({ x: 700 }),
-    context({ ownHall: home, rallyHall: home }),
+    context({ ownAnchor: home, rallyAnchor: home }),
     false,
   );
   const rng = createCountingRng();

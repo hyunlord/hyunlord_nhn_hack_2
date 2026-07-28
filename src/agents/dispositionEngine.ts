@@ -20,22 +20,13 @@ type ThreatenedAnchor = {
 
 export interface DefenseContext {
   readonly tick?: number;
-  readonly ownAnchor?: DefensiveAnchor | null;
-  readonly rallyAnchor?: Point | null;
-  readonly threatenedAnchors?: readonly ThreatenedAnchor[];
-  readonly threats: readonly ThreatPresence[];
-  readonly battleLine?: BattleLineTarget;
-  readonly [legacyKey: string]: unknown;
-}
-
-type NormalizedDefenseContext = {
-  readonly tick?: number;
   readonly ownAnchor: DefensiveAnchor | null;
   readonly rallyAnchor: Point | null;
   readonly threatenedAnchors: readonly ThreatenedAnchor[];
   readonly threats: readonly ThreatPresence[];
   readonly battleLine?: BattleLineTarget;
-};
+}
+
 export type AgentIntent =
   | { readonly kind: "idle" }
   | {
@@ -73,25 +64,6 @@ function nearestThreat(
         distanceSquared(first, point) - distanceSquared(second, point);
       return delta === 0 ? first.id.localeCompare(second.id) : delta;
     })[0] ?? null;
-}
-
-function legacyContextValue<T>(context: DefenseContext, prefix: string): T | undefined {
-  const legacySuffix = String.fromCharCode(72, 97, 108, 108);
-  return context[`${prefix}${legacySuffix}`] as T | undefined;
-}
-
-function normalizeDefenseContext(context: DefenseContext): NormalizedDefenseContext {
-  const legacyOwnAnchor = legacyContextValue<DefensiveAnchor | null>(context, "own");
-  const legacyRallyAnchor = legacyContextValue<Point | null>(context, "rally");
-  const legacyThreatenedAnchors = legacyContextValue<readonly ThreatenedAnchor[]>(context, "threatened");
-  return {
-    ...(context.tick === undefined ? {} : { tick: context.tick }),
-    ownAnchor: context.ownAnchor ?? legacyOwnAnchor ?? null,
-    rallyAnchor: context.rallyAnchor ?? legacyRallyAnchor ?? null,
-    threatenedAnchors: context.threatenedAnchors ?? legacyThreatenedAnchors ?? [],
-    threats: context.threats,
-    ...(context.battleLine === undefined ? {} : { battleLine: context.battleLine }),
-  };
 }
 
 function engage(
@@ -162,14 +134,13 @@ export function decideIntent(
     return { kind: "idle" };
   }
 
-  const defense = normalizeDefenseContext(context);
-  const nearest = nearestThreat(defense.threats, agent);
+  const nearest = nearestThreat(context.threats, agent);
   const maxHp =
     (UNIT_CLASSES[agent.unitClass].maxHp + modifiers.maxHpBonus) *
     (modifiers.maxHpMultiplier ?? 1);
   const isBroken =
     !modifiers.ignoreBreak &&
-    (defense.tick ?? 0) >= agent.breakImmuneUntilTick &&
+    (context.tick ?? 0) >= agent.breakImmuneUntilTick &&
     agent.hp <
       maxHp *
         Math.max(
@@ -180,11 +151,11 @@ export function decideIntent(
     agent.disposition.aggression <
       BALANCE_CONFIG.AGENT_HOLD_AGGRESSION_THRESHOLD;
   if (isBroken && !agent.isHero) {
-    if (defense.rallyAnchor !== null) {
+    if (context.rallyAnchor !== null) {
       return {
         kind: "flee",
-        towardX: defense.rallyAnchor.x,
-        towardY: defense.rallyAnchor.y,
+        towardX: context.rallyAnchor.x,
+        towardY: context.rallyAnchor.y,
       };
     }
     if (nearest !== null) {
@@ -193,7 +164,7 @@ export function decideIntent(
   }
 
   const nearby = nearestThreat(
-    defense.threats,
+    context.threats,
     agent,
     BALANCE_CONFIG.AGENT_THREAT_SENSE_RADIUS +
       modifiers.threatSenseRadiusBonus,
@@ -207,10 +178,10 @@ export function decideIntent(
   ) {
     return fleeAway(agent, nearby);
   }
-  if (defense.ownAnchor !== null) {
+  if (context.ownAnchor !== null) {
     const anchorThreat = nearestThreat(
-      defense.threats,
-      defense.ownAnchor,
+      context.threats,
+      context.ownAnchor,
       BALANCE_CONFIG.KEEP_DEFENSE_RADIUS +
         modifiers.hallDefenseRadiusBonus,
     );
@@ -219,14 +190,14 @@ export function decideIntent(
     }
   }
 
-  if (defense.rallyAnchor !== null) {
+  if (context.rallyAnchor !== null) {
     const reinforcementAnchor = mostThreatenedAnchor(
-      defense.threatenedAnchors,
+      context.threatenedAnchors,
     );
     const rallyThreat = reinforcementAnchor === null
       ? null
       : nearestThreat(
-      defense.threats,
+      context.threats,
       reinforcementAnchor,
       BALANCE_CONFIG.KEEP_DEFENSE_RADIUS,
     );
@@ -239,8 +210,8 @@ export function decideIntent(
     }
   }
 
-  if (defense.battleLine !== undefined) {
-    return followBattleLine(defense.battleLine);
+  if (context.battleLine !== undefined) {
+    return followBattleLine(context.battleLine);
   }
 
   if (nearby !== null) {
@@ -248,14 +219,14 @@ export function decideIntent(
   }
 
   if (
-    defense.ownAnchor !== null &&
-    distanceSquared(agent, defense.ownAnchor) >
+    context.ownAnchor !== null &&
+    distanceSquared(agent, context.ownAnchor) >
       BALANCE_CONFIG.AGENT_HOME_LEASH ** 2
   ) {
     return {
       kind: "engage",
-      towardX: defense.ownAnchor.x,
-      towardY: defense.ownAnchor.y,
+      towardX: context.ownAnchor.x,
+      towardY: context.ownAnchor.y,
       targetId: null,
       preferredRange: 0,
     };
