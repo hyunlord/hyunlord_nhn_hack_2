@@ -1,4 +1,5 @@
 import type { ShopAvailability, ShopItemId } from "../../build/build.types";
+import type { GameState } from "../../engine/engine.types";
 import { useLocale, type LocaleKey } from "../../content/locale";
 import { WAVE_DEFINITIONS } from "../../content/waveConfig";
 import { shopAvailabilityForState } from "../../engine/shopEngine";
@@ -81,13 +82,10 @@ export function ShopOverlay() {
     state,
     towerPlacementActive,
   } = useGameStore();
-  const { t } = useLocale();
   if (state.phase !== "intermission") {
     return null;
   }
 
-  const clearedWave = WAVE_DEFINITIONS[state.waveIndex];
-  const summary = state.lastWaveSummary;
   const availability = shopAvailabilityForState(state);
 
   function buy(itemId: ShopItemId) {
@@ -100,6 +98,37 @@ export function ShopOverlay() {
       });
     }
   }
+
+  return (
+    <ShopOverlayView
+      availability={availability}
+      onBeginNextWave={() => dispatch({ type: "beginNextWave" })}
+      onBuy={buy}
+      onCancelTowerPlacement={() => dispatch({ type: "cancelTowerPlacement" })}
+      state={state}
+      towerPlacementActive={towerPlacementActive}
+    />
+  );
+}
+
+export function ShopOverlayView({
+  availability,
+  onBeginNextWave,
+  onBuy,
+  onCancelTowerPlacement,
+  state,
+  towerPlacementActive,
+}: {
+  readonly availability: readonly ShopAvailability[];
+  readonly onBeginNextWave: () => void;
+  readonly onBuy: (itemId: ShopItemId) => void;
+  readonly onCancelTowerPlacement: () => void;
+  readonly state: GameState;
+  readonly towerPlacementActive: boolean;
+}) {
+  const { t } = useLocale();
+  const clearedWave = WAVE_DEFINITIONS[state.waveIndex];
+  const summary = state.lastWaveSummary;
 
   return (
     <section
@@ -116,10 +145,12 @@ export function ShopOverlay() {
           <p className="shop-overlay__summary">
             {summary === null
               ? t("shop.summary.empty")
-              : `Last night ${summary.agentsLost} lost · ` +
-                `keep damage ${summary.keepDamage} · ` +
-                `banner damage ${summary.bannerDamage} · ` +
-                `${summary.tributeEarned} tribute earned`}
+              : t("shop.summary.lastNight", {
+                  bannerDamage: summary.bannerDamage,
+                  keepDamage: summary.keepDamage,
+                  lost: summary.agentsLost,
+                  tribute: summary.tributeEarned,
+                })}
           </p>
           {"pendingDaylightRaid" in state &&
           state.pendingDaylightRaid === true ? (
@@ -147,7 +178,7 @@ export function ShopOverlay() {
                   <ShopCard
                     availability={availability}
                     key={availability.item.id}
-                    onBuy={buy}
+                    onBuy={onBuy}
                     purchaseCount={state.shopPurchases[availability.item.id]}
                     towerPlacementActive={towerPlacementActive}
                   />
@@ -163,7 +194,7 @@ export function ShopOverlay() {
           <strong>{t("shop.placement.title")}</strong>
           <span>{t("shop.placement.body")}</span>
           <button
-            onClick={() => dispatch({ type: "cancelTowerPlacement" })}
+            onClick={onCancelTowerPlacement}
             type="button"
           >
             {t("shop.placement.cancel")}
@@ -175,7 +206,7 @@ export function ShopOverlay() {
         <span>{t("shop.footer")}</span>
         <button
           disabled={towerPlacementActive}
-          onClick={() => dispatch({ type: "beginNextWave" })}
+          onClick={onBeginNextWave}
           type="button"
         >
           {t("shop.beginNight", { wave: state.waveIndex + 2 })}

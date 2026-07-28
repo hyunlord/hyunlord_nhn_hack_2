@@ -2,15 +2,36 @@ import { ACHIEVEMENT_DEFINITIONS } from "../../content/metaConfig";
 import { HOUSE_CONFIG } from "../../content/houseConfig";
 import { useLocale } from "../../content/locale";
 import { achievementName, houseName } from "../../content/locale/display";
+import type { ApplyRunSummaryResult } from "../../meta/legacy";
 import { useAppFlow } from "../../state/appFlowContext";
+import type { AppAction } from "../../state/appFlow";
+import type { RunSummary } from "../../content/runSummary";
 
 export function RunSummaryScreen() {
   const { dispatch, state } = useAppFlow();
-  const { t } = useLocale();
   const { summary, completion } = state;
   if (summary === null || completion === null) {
     return null;
   }
+  return (
+    <RunSummaryView
+      completion={completion}
+      dispatch={dispatch}
+      summary={summary}
+    />
+  );
+}
+
+export function RunSummaryView({
+  completion,
+  dispatch,
+  summary,
+}: {
+  readonly completion: ApplyRunSummaryResult;
+  readonly dispatch: (action: AppAction) => void;
+  readonly summary: RunSummary;
+}) {
+  const { t } = useLocale();
   const traitor = HOUSE_CONFIG.find(({ id }) => id === summary.betrayal?.traitorHouseId);
   const alliance = summary.selectedHouseIds.map((id) => houseName(t, id)).join(" / ");
 
@@ -32,7 +53,7 @@ export function RunSummaryScreen() {
             <div><dt>{t("summary.waves")}</dt><dd>{summary.wavesCleared}</dd></div>
             <div><dt>{t("summary.survivors")}</dt><dd>{summary.survivingAgents}</dd></div>
             <div><dt>{t("summary.lost")}</dt><dd>{summary.agentsLost}</dd></div>
-            <div><dt>Banners standing</dt><dd>{summary.survivingBanners}/3</dd></div>
+            <div><dt>{t("summary.banners")}</dt><dd>{summary.survivingBanners}/3</dd></div>
             <div><dt>{t("summary.towers")}</dt><dd>{summary.towersBuilt}</dd></div>
             <div><dt>{t("summary.betrayal")}</dt><dd>{traitor === undefined ? t("common.none") : houseName(t, traitor.id)}</dd></div>
           </dl>
@@ -46,7 +67,7 @@ export function RunSummaryScreen() {
             <div><dt>{t("summary.legacy.waves")}</dt><dd>+{completion.runLegacy.waves}</dd></div>
             <div><dt>{t("summary.legacy.victory")}</dt><dd>+{completion.runLegacy.victory}</dd></div>
             <div><dt>{t("summary.legacy.survivingAgents")}</dt><dd>+{completion.runLegacy.survivingAgents}</dd></div>
-            <div><dt>Surviving banners</dt><dd>+{completion.runLegacy.survivingBanners}</dd></div>
+            <div><dt>{t("summary.legacy.survivingBanners")}</dt><dd>+{completion.runLegacy.survivingBanners}</dd></div>
             <div><dt>{t("summary.legacy.achievements")}</dt><dd>+{completion.achievementLegacyEarned}</dd></div>
           </dl>
         </section>
