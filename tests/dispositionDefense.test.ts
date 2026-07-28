@@ -166,3 +166,40 @@ test("Given multiple banner attackers, when defense is chosen, then agents focus
 
   assert.equal(intent.kind === "engage" ? intent.targetId : null, "creature_a");
 });
+
+test("Given a personal threat away from anchors and a centroid battle line, when defense is chosen, then nearby aggro wins", () => {
+  const personalThreat = threat("creature_personal", 510, 100);
+  const intent = decideIntent(
+    createAgent({ x: 500, y: 100 }),
+    context({
+      ownAnchor: { x: 100, y: 100, hp: BALANCE_CONFIG.BANNER_HP },
+      rallyAnchor: { x: 900, y: 100 },
+      threatenedAnchors: [
+        { houseId: "house_b", x: 900, y: 100, hostileCount: 1 },
+      ],
+      threats: [personalThreat],
+      battleLine: {
+        target: { x: 300, y: 300 },
+        direction: { x: 1, y: 0 },
+        threatSource: { kind: "nearby-centroid" },
+        targetId: null,
+        desiredRank: 78,
+        lateralDisplacement: 0,
+        jitterDisplacement: 0,
+        jitter: 0,
+        fractured: false,
+        posture: "engage",
+        formation: { lineSpacing: 10, cohesion: 0.4 },
+      },
+    }),
+    false,
+  );
+
+  assert.deepEqual(intent, {
+    kind: "engage",
+    towardX: personalThreat.x,
+    towardY: personalThreat.y,
+    targetId: personalThreat.id,
+    preferredRange: 13,
+  });
+});

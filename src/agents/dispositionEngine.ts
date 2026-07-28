@@ -178,6 +178,9 @@ export function decideIntent(
   ) {
     return fleeAway(agent, nearby);
   }
+  if (nearby !== null) {
+    return engage(agent, nearby);
+  }
   if (context.ownAnchor !== null) {
     const anchorThreat = nearestThreat(
       context.threats,
@@ -212,10 +215,6 @@ export function decideIntent(
 
   if (context.battleLine !== undefined) {
     return followBattleLine(context.battleLine);
-  }
-
-  if (nearby !== null) {
-    return engage(agent, nearby);
   }
 
   if (
