@@ -12,6 +12,7 @@ function assertApproxEqual(actual: number, expected: number): void {
 test("Given balance constants, when keep and banner geometry is inspected, then exact structure values ship", () => {
   assert.equal(BALANCE_CONFIG.KEEP_HP, 2_400);
   assert.equal(BALANCE_CONFIG.KEEP_RADIUS, 26);
+  assert.equal(BALANCE_CONFIG.KEEP_DEFENSE_RADIUS, 200);
   assert.equal(BALANCE_CONFIG.BANNER_HP, 420);
   assert.equal(BALANCE_CONFIG.BANNER_RADIUS, 11);
   assert.equal(BALANCE_CONFIG.BANNER_ORBIT_RADIUS, 52);
