@@ -141,12 +141,9 @@ export function GameCanvas() {
 
   return (
     <div
+      className="game-canvas-frame"
       ref={wrapperRef}
-      style={{
-        height: "100%",
-        transformOrigin: "center",
-        width: "100%",
-      }}
+      style={{ transformOrigin: "center" }}
     >
       <canvas
         aria-label={t("run.canvasLabel")}

@@ -59,8 +59,8 @@ export function DraftOverlay() {
         : null;
     const background = [
       ...document.querySelectorAll<HTMLElement>(
-        ".canvas-panel > :not(.draft-overlay), " +
-          ".scaffold-grid > :not(.canvas-panel)",
+        ".run-stage > :not(.draft-overlay), " +
+          ".run-viewport > :not(.run-stage)",
       ),
     ];
     const previousInert = background.map((element) => element.inert);

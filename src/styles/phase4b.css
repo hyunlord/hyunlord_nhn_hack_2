@@ -131,6 +131,77 @@ body:has(.run-viewport) {
   }
 }
 
+
+@media (max-aspect-ratio: 8 / 5) {
+  .run-stage {
+    display: grid;
+    place-items: center;
+    width: 100dvw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    aspect-ratio: auto;
+    contain: layout paint;
+    border: 0;
+    overflow: hidden;
+  }
+
+  .game-canvas-frame {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .run-stage .game-canvas {
+    align-self: center;
+    justify-self: center;
+    width: min(100dvw, 160dvh);
+    height: auto;
+    aspect-ratio: 8 / 5;
+  }
+
+  .run-hud {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .run-hud-top-left,
+  .run-hud-top-right,
+  .run-hud-top-left-secondary,
+  .run-hud-bottom-left,
+  .run-hud-bottom-center,
+  .run-hud-bottom-right {
+    max-height: max(64px, calc((100dvh - min(100dvh, 100dvw / 1.6)) / 2 - var(--space-4)));
+    overflow: auto;
+  }
+
+  .draft-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100dvw;
+    height: 100dvh;
+    max-width: 100dvw;
+    max-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .shop-overlay:not(.shop-overlay--placing) {
+    position: fixed;
+    inset: 0;
+    width: 100dvw;
+    height: 100dvh;
+    max-width: 100dvw;
+    max-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    align-content: start;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+}
+
 @media (max-width: 520px) {
   .run-stage {
     contain: none;
@@ -145,6 +216,8 @@ body:has(.run-viewport) {
     height: 100dvh;
     max-width: 100dvw;
     max-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .draft-card-list {

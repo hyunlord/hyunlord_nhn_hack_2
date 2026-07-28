@@ -1,80 +1,18 @@
 import type { ShopAvailability, ShopItemId } from "../../build/build.types";
 import type { GameState } from "../../engine/engine.types";
-import { useLocale, type LocaleKey } from "../../content/locale";
+import { useLocale } from "../../content/locale";
 import { WAVE_DEFINITIONS } from "../../content/waveConfig";
 import { shopAvailabilityForState } from "../../engine/shopEngine";
 import { useGameStore } from "../../state/gameStore";
-import { shopChoiceEffects } from "../choicePresentation/shopChoicePresentation";
 
-type ShopCategory = "troops" | "defense" | "recovery" | "upgrade";
-
-type ShopPresentation = {
-  readonly category: ShopCategory;
-  readonly nameKey: LocaleKey | null;
-  readonly descriptionKey: LocaleKey | null;
-};
-
-const SHOP_PRESENTATION: Readonly<Record<ShopItemId, ShopPresentation>> = {
-  field_medicine: {
-    category: "recovery",
-    descriptionKey: "shop.item.field_medicine.description",
-    nameKey: "shop.item.field_medicine.name",
-  },
-  raise_tower: {
-    category: "defense",
-    descriptionKey: "shop.item.raise_tower.description",
-    nameKey: "shop.item.raise_tower.name",
-  },
-  recruit_squad: {
-    category: "troops",
-    descriptionKey: "shop.item.recruit_squad.description",
-    nameKey: "shop.item.recruit_squad.name",
-  },
-  reinforce_keep: {
-    category: "defense",
-    descriptionKey: "shop.item.reinforce_keep.description",
-    nameKey: "shop.item.reinforce_keep.name",
-  },
-  revive_hero: {
-    category: "recovery",
-    descriptionKey: "shop.item.revive_hero.description",
-    nameKey: "shop.item.revive_hero.name",
-  },
-  sharpen_arms: {
-    category: "upgrade",
-    descriptionKey: "shop.item.sharpen_arms.description",
-    nameKey: "shop.item.sharpen_arms.name",
-  },
-};
-
-const SHOP_CATEGORY_ORDER = ["troops", "defense", "recovery", "upgrade"] as const;
-
-const SHOP_CATEGORY_KEYS: Readonly<Record<ShopCategory, LocaleKey>> = {
-  defense: "shop.category.defense",
-  recovery: "shop.category.recovery",
-  troops: "shop.category.troops",
-  upgrade: "shop.category.upgrade",
-};
-
-const SHOP_REASON_KEYS: Readonly<Record<string, LocaleKey>> = {
-  "no damaged living agents": "shop.reason.noDamagedAgents",
-  "no damaged surviving keep or banners": "shop.reason.noDamagedStructures",
-  "no dead hero": "shop.reason.noDeadHero",
-  "no dead regular agents": "shop.reason.noDeadAgents",
-  "not enough tribute": "shop.reason.notEnoughTribute",
-  "tower limit reached": "shop.reason.towerLimit",
-};
-
-function reasonMessage(
-  reason: string | null,
-  t: (key: LocaleKey) => string,
-): string | null {
-  if (reason === null) {
-    return null;
-  }
-  const key = SHOP_REASON_KEYS[reason];
-  return key === undefined ? reason : t(key);
-}
+import {
+  localizedShopEffects,
+  localizedShopReason,
+  SHOP_CATEGORY_ORDER,
+  shopAvailabilityByCategory,
+  shopCategoryLabelKey,
+  shopPresentationFor,
+} from "./shopOverlayPresentation";
 
 export function ShopOverlay() {
   const {
@@ -167,12 +105,10 @@ export function ShopOverlayView({
 
       <div className="shop-grid">
         {SHOP_CATEGORY_ORDER.map((category) => {
-          const entries = availability.filter(
-            ({ item }) => SHOP_PRESENTATION[item.id].category === category,
-          );
+          const entries = shopAvailabilityByCategory(availability, category);
           return (
             <section className="shop-category" key={category}>
-              <h3>{t(SHOP_CATEGORY_KEYS[category])}</h3>
+              <h3>{t(shopCategoryLabelKey(category))}</h3>
               <div className="shop-category__items">
                 {entries.map((availability) => (
                   <ShopCard
@@ -229,9 +165,9 @@ export function ShopCard({
 }) {
   const { t } = useLocale();
   const { available, cost, item, reason } = availability;
-  const presentation = SHOP_PRESENTATION[item.id];
-  const localizedReason = reasonMessage(reason, t);
-  const effects = shopChoiceEffects(item.id, t);
+  const presentation = shopPresentationFor(item.id);
+  const localizedReason = localizedShopReason(reason, t);
+  const effects = localizedShopEffects(item.id, t);
   return (
     <article className="shop-card">
       <div className="shop-card__heading">

@@ -1876,6 +1876,11 @@ body:has(.run-viewport) {
   contain: layout paint;
 }
 
+.game-canvas-frame {
+  width: 100%;
+  height: 100%;
+}
+
 .game-canvas {
   display: block;
   width: 100%;
