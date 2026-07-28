@@ -10,12 +10,14 @@ function assertApproxEqual(actual: number, expected: number): void {
 }
 
 test("Given balance constants, when keep and banner geometry is inspected, then exact structure values ship", () => {
+  assert.equal(BALANCE_CONFIG.KEEP_X, 480);
+  assert.equal(BALANCE_CONFIG.KEEP_Y, 300);
   assert.equal(BALANCE_CONFIG.KEEP_HP, 2_400);
   assert.equal(BALANCE_CONFIG.KEEP_RADIUS, 26);
-  assert.equal(BALANCE_CONFIG.KEEP_DEFENSE_RADIUS, 200);
+  assert.equal(BALANCE_CONFIG.KEEP_DEFENSE_RADIUS, 230);
   assert.equal(BALANCE_CONFIG.BANNER_HP, 420);
   assert.equal(BALANCE_CONFIG.BANNER_RADIUS, 11);
-  assert.equal(BALANCE_CONFIG.BANNER_ORBIT_RADIUS, 52);
+  assert.equal(BALANCE_CONFIG.BANNER_ORBIT, 52);
 });
 
 test("Given an ordered house selection, when defense structures are created, then the keep and banners use fixed center and pick order", () => {
@@ -26,8 +28,8 @@ test("Given an ordered house selection, when defense structures are created, the
   ]);
 
   assert.deepEqual(structures.keep, {
-    x: 480,
-    y: 300,
+    x: BALANCE_CONFIG.KEEP_X,
+    y: BALANCE_CONFIG.KEEP_Y,
     hp: 2_400,
     maxHp: 2_400,
   });
@@ -44,12 +46,21 @@ test("Given an ordered house selection, when defense structures are created, the
       { houseId: "house_d", hp: 420, maxHp: 420 },
     ],
   );
-  assertApproxEqual(structures.banners[0].x, 480);
-  assertApproxEqual(structures.banners[0].y, 248);
+  assertApproxEqual(structures.banners[0].x, BALANCE_CONFIG.KEEP_X);
+  assertApproxEqual(
+    structures.banners[0].y,
+    BALANCE_CONFIG.KEEP_Y - BALANCE_CONFIG.BANNER_ORBIT,
+  );
   assertApproxEqual(structures.banners[1].x, 525.0333209967908);
-  assertApproxEqual(structures.banners[1].y, 326);
+  assertApproxEqual(
+    structures.banners[1].y,
+    BALANCE_CONFIG.KEEP_Y + BALANCE_CONFIG.BANNER_ORBIT / 2,
+  );
   assertApproxEqual(structures.banners[2].x, 434.9666790032092);
-  assertApproxEqual(structures.banners[2].y, 326);
+  assertApproxEqual(
+    structures.banners[2].y,
+    BALANCE_CONFIG.KEEP_Y + BALANCE_CONFIG.BANNER_ORBIT / 2,
+  );
 });
 
 test("Given engine structure types, when game state contracts are checked, then keep and banners are the structure fields", () => {

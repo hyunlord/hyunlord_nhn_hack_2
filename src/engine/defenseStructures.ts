@@ -7,7 +7,6 @@ export interface DefenseStructures {
   readonly banners: [Banner, Banner, Banner];
 }
 
-const KEEP_CENTER = { x: 480, y: 300 } as const;
 const FIRST_BANNER_ANGLE_DEGREES = -90;
 const BANNER_ANGLE_STEP_DEGREES = 120;
 
@@ -24,8 +23,8 @@ function createBanner(
   );
   return {
     houseId,
-    x: KEEP_CENTER.x + Math.cos(angle) * BALANCE_CONFIG.BANNER_ORBIT_RADIUS,
-    y: KEEP_CENTER.y + Math.sin(angle) * BALANCE_CONFIG.BANNER_ORBIT_RADIUS,
+    x: BALANCE_CONFIG.KEEP_X + Math.cos(angle) * BALANCE_CONFIG.BANNER_ORBIT,
+    y: BALANCE_CONFIG.KEEP_Y + Math.sin(angle) * BALANCE_CONFIG.BANNER_ORBIT,
     hp: BALANCE_CONFIG.BANNER_HP,
     maxHp: BALANCE_CONFIG.BANNER_HP,
   };
@@ -36,8 +35,8 @@ export function createDefenseStructures(
 ): DefenseStructures {
   return {
     keep: {
-      x: KEEP_CENTER.x,
-      y: KEEP_CENTER.y,
+      x: BALANCE_CONFIG.KEEP_X,
+      y: BALANCE_CONFIG.KEEP_Y,
       hp: BALANCE_CONFIG.KEEP_HP,
       maxHp: BALANCE_CONFIG.KEEP_HP,
     },
