@@ -5,10 +5,15 @@ import {
 } from "react";
 import { useLocale } from "../../content/locale";
 import {
+  cardDescription,
+  cardKindLabel,
+  cardName,
+  cardRarityLabel,
+  formatCardApplicabilityWarning,
   formatCardEffect,
-  unitClassLabel,
   houseName,
 } from "../../content/locale/display";
+import { cardApplicabilityWarnings } from "../../progression/cardApplicability";
 import {
   CARD_DEFINITIONS,
 } from "../../content/cardConfig";
@@ -42,9 +47,6 @@ export function DraftOverlay() {
   const progress = state.houseProgress.find(
     ({ houseId }) => houseId === offer?.houseId,
   );
-  const houseRoster = HOUSE_CONFIG.find(
-    ({ id }) => id === offer?.houseId,
-  )?.roster;
   const isDraft = state.phase === "draft" && offer !== undefined;
 
   useEffect(() => {
@@ -162,9 +164,12 @@ export function DraftOverlay() {
                   backgroundSize: "100% 100%, auto",
                 };
           const cardEffects = formatCardEffect(card.effect, t);
-          const hasMissingClass =
-            card.effect.unitClass !== undefined &&
-            (houseRoster?.[card.effect.unitClass] ?? 0) <= 0;
+          const applicabilityWarnings = cardApplicabilityWarnings({
+            card,
+            selectedHouseIds: state.selectedHouseIds,
+            agents: state.agents,
+            halls: state.halls,
+          });
           return (
             <button
               className="draft-card"
@@ -189,14 +194,11 @@ export function DraftOverlay() {
               >
                 <span className="draft-card__meta">
                   <span>
-                    <b>{card.rarity}</b> · {card.kind}
+                    <b>{cardRarityLabel(t, card.rarity)}</b> · {cardKindLabel(t, card.kind)}
                   </span>
                   <kbd>{index + 1}</kbd>
                 </span>
-                <strong>{card.name}</strong>
-                <span className="draft-card__description">
-                  {card.description}
-                </span>
+                <strong>{cardName(t, card.id)}</strong>
                 {cardEffects.length > 0 ? (
                   <span className="draft-card__effects">
                     {cardEffects.map((line, effectIndex) => (
@@ -209,13 +211,19 @@ export function DraftOverlay() {
                     ))}
                   </span>
                 ) : null}
-                {card.effect.unitClass !== undefined && hasMissingClass ? (
-                  <span className="draft-card__warning">
+                {applicabilityWarnings.map((warning) => (
+                  <span
+                    className="draft-card__warning"
+                    key={`${card.id}-warning-${warning.kind}`}
+                  >
                     {t("draft.warning.class", {
-                      text: `${unitClassLabel(t, card.effect.unitClass)} 계열은 이 가문 구성에 없습니다`,
+                      text: formatCardApplicabilityWarning(t, warning),
                     })}
                   </span>
-                ) : null}
+                ))}
+                <span className="draft-card__description">
+                  {cardDescription(t, card.id)}
+                </span>
                 <span className="draft-card__stacks">
                   {t("draft.stacks", { current: stacks, max: card.maxStacks })}
                 </span>

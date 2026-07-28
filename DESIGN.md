@@ -51,6 +51,19 @@ restrained blueprint-like interface surrounding a dark, vignetted world map.
 | Resurgence | skill config | `#f3d37a` | Skill border and selected state |
 | Hero progress | HUD token | `#e8b73a` bar / `#9d7217` text | Hero XP and level emphasis |
 | Shop veil | `--shop-veil` | `rgba(26, 22, 19, 0.96)` | Intermission shop surface |
+| Stronghold ground core | `--stronghold-ground-core` | `rgba(149, 116, 72, 0.18)` | Worn-earth center below the three halls |
+| Stronghold ground rim | `--stronghold-ground-rim` | `rgba(94, 72, 48, 0.08)` | Outer falloff for the radius-170 stronghold patch |
+| Composition empty | `--composition-empty` | `color-mix(in srgb, var(--border) 18%, transparent)` | Zero-agent class-composition track |
+| Composition divider | `--composition-divider` | `rgba(0, 0, 0, 0.42)` | Hairline separation between class-composition segments |
+| Choice effect text | `--choice-effect-text` | `color-mix(in srgb, var(--text) 78%, var(--accent))` | Numeric effect lines on choice cards |
+| Choice warning text | `--choice-warning-text` | `color-mix(in srgb, #d4693f 72%, var(--draft-ink))` | Applicability and raid warning copy |
+| Combat hit flash | `--combat-hit-flash` | `rgba(255, 243, 196, 0.95)` | Recent-hit outline and ranged volley emphasis |
+| Combat death puff | `--combat-death-puff` | `rgba(214, 196, 161, 0.45)` | Render-local death-puff fade |
+| Hall pulse | `--hall-pulse` | `rgba(255, 214, 138, 0.32)` | Hall damage pulse and low-HP attention |
+| Wave banner ink | `--wave-banner-ink` | `#fff8df` | Wave-start banner text |
+| Motion quick | `--motion-quick` | `140ms` | Targeted hover/active feedback |
+| Motion combat | `--motion-combat` | `300ms` | Render-local combat transient fade |
+| Motion easing | `--motion-ease` | `cubic-bezier(0.2, 0.8, 0.2, 1)` | GPU-composited UI and combat motion |
 | Valid placement | canvas token | `rgba(108, 190, 132, 0.22)` | Valid tower preview |
 | Invalid placement | canvas token | `rgba(214, 91, 76, 0.22)` | Invalid tower preview |
 | Tower stone | canvas token | `#8f8a7d` | Tower body |
@@ -113,6 +126,9 @@ The content width is capped at 1200px and arranged with CSS Grid.
 - Run-visible rites name the track, rank, scope, and per-rank effect without
   storing MetaState in GameState or implying unselected-house effects apply
 - Existing scaffold spacing and border treatment remain unchanged
+- Phase 4B composition bars use one compact stacked track per house. Segment
+  widths derive from living regular-agent class percentages, with an empty
+  track for zero-agent states and fixed class-order tie-breaking.
 
 ### Unified ability controls
 
@@ -162,6 +178,9 @@ The content width is capped at 1200px and arranged with CSS Grid.
 - Tower selection enters a map placement mode and defers payment until a valid
   canvas click
 - The next-wave action is isolated in a footer to prevent accidental starts
+- Numeric effect lines lead flavour copy and use the shared choice-effect text
+  token; disabled reasons stay visible as structured text, not opacity-only
+  state.
 
 ### Level-up draft
 
@@ -177,6 +196,9 @@ The content width is capped at 1200px and arranged with CSS Grid.
   44px minimum targets
 - The overlay is a labeled modal region, announces the queued-draft count, and
   accepts both pointer selection and number keys
+- Applicability warnings sit after numeric effects and before flavour. Long
+  Korean and English lines wrap inside cards rather than widening the canvas
+  panel.
 
 ### Legacy overview
 
@@ -206,6 +228,19 @@ The content width is capped at 1200px and arranged with CSS Grid.
 - A live intelligence panel reveals public synergies and only previously
   discovered hidden synergies
 - Confirmation stays disabled until exactly three unlocked houses are selected
+- Selection cards reuse the same class-composition projection as the HUD and
+  keep numeric trait/roster lines before identity prose.
+
+### Stronghold ground and combat transients
+
+- The shared stronghold is marked by one radius-170 worn-earth patch centered at
+  `STRONGHOLD_CENTER`; it renders below halls, towers, agents, heroes, and
+  threats.
+- Hall damage pulses, death puffs, ranged volleys, and wave-start banners are
+  render-local effects. They consume simulation facts read-only and never add
+  presentation keys to `GameState`.
+- Combat motion uses transform and opacity only. Shake is setting-gated and
+  applied to the canvas wrapper, not layout dimensions.
 
 ### Run summary
 
@@ -232,6 +267,9 @@ only while a miracle is selected. Threat motion follows simulation ticks; the
 mage locator pulse derives from the current tick rather than wall-clock time.
 Screen transitions use no entrance animation. Hover and focus feedback is
 limited to color, border, and background changes.
+Phase 4B interaction motion uses the documented quick/combat durations and the
+shared easing token; layout properties such as width, height, margin, padding,
+top, and left are not animated.
 
 ## 7. Depth & Surface
 

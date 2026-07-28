@@ -1,28 +1,18 @@
 import { useEffect, useRef } from "react";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import { useLocale } from "../content/locale";
-import { heroName } from "../content/locale/display";
+import { useSettings } from "../settings/SettingsContext";
 import { useGameStore } from "../state/gameStore";
-import { drawAgents } from "./drawAgents";
-import { drawBackground } from "./drawBackground";
-import { dayNightFactor, type DayNightTracker } from "./dayNight";
-import {
-  drawEffects,
-  drawRangedAttackEffects,
-} from "./drawEffects";
-import { drawHalls } from "./drawHalls";
-import { drawHeroes } from "./drawHeroes";
-import { drawThreats } from "./drawThreats";
-import {
-  drawTowerPreview,
-  drawTowerRubble,
-  drawTowers,
-} from "./drawTowers";
-import { modifiersForAgent } from "../engine/progressionEngine";
+import { createCombatTransientTracker } from "./combatTransients";
+import { createHeroRenderTracker } from "./heroRenderProjection";
+import type { DayNightTracker } from "./dayNight";
+import { drawGameCanvasFrame } from "./gameCanvasFrame";
 
 export function GameCanvas() {
   const { t } = useLocale();
+  const { settings } = useSettings();
   const localeRef = useRef(t);
+  const screenShakeRef = useRef(settings.screenShake);
   const {
     dispatch,
     selectedMiracle,
@@ -31,13 +21,20 @@ export function GameCanvas() {
     towerPlacementActive,
     towerPreview,
   } = useGameStore();
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef(state);
   const dayNightTrackerRef = useRef<DayNightTracker | undefined>(undefined);
+  const transientTrackerRef = useRef(createCombatTransientTracker());
+  const heroTrackerRef = useRef(createHeroRenderTracker());
 
   useEffect(() => {
     localeRef.current = t;
   }, [t]);
+
+  useEffect(() => {
+    screenShakeRef.current = settings.screenShake;
+  }, [settings.screenShake]);
 
   useEffect(() => {
     stateRef.current = state;
@@ -70,90 +67,22 @@ export function GameCanvas() {
 
     let frameId = 0;
     const drawFrame = () => {
-      context.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-      context.clearRect(
-        0,
-        0,
-        BALANCE_CONFIG.WORLD_WIDTH,
-        BALANCE_CONFIG.WORLD_HEIGHT,
-      );
       const currentState = stateRef.current;
-      const lighting = dayNightFactor(
-        {
-          phase: currentState.phase,
-          phaseBeforeDraft: currentState.phaseBeforeDraft,
-          tick: currentState.tick,
-        },
-        dayNightTrackerRef.current,
-        { daylightRaidActive: currentState.activeThreat?.daylightRaid === true },
-      );
-      dayNightTrackerRef.current = lighting.tracker;
-      drawBackground(
+      const frameResult = drawGameCanvasFrame({
         context,
-        BALANCE_CONFIG.WORLD_WIDTH,
-        BALANCE_CONFIG.WORLD_HEIGHT,
-        lighting.factor,
-      );
-      drawHalls(
-        context,
-        stateRef.current.halls,
-        stateRef.current.houses,
-      );
-      drawTowers(context, stateRef.current.towers);
-      drawTowerRubble(
-        context,
-        stateRef.current.towerRubble,
-        stateRef.current.tick,
-      );
-      drawAgents(
-        context,
-        stateRef.current.agents,
-        stateRef.current.houses,
-        stateRef.current.tick,
-        lighting.factor,
-      );
-      drawHeroes(
-        context,
-        stateRef.current.agents,
-        stateRef.current.houses,
-        stateRef.current.agents.map((agent) => ({
-          agentId: agent.id,
-          houseId: agent.houseId,
-          modifiers: modifiersForAgent(stateRef.current, agent),
-        })),
-        stateRef.current.tick,
-        (heroId, level) =>
-          localeRef.current("canvas.heroLabel", {
-            hero: heroName(localeRef.current, heroId),
-            level,
-          }),
-      );
-      drawThreats(
-        context,
-        stateRef.current.activeThreat,
-        stateRef.current.tick,
-      );
-      drawRangedAttackEffects(
-        context,
-        stateRef.current.rangedAttackEffects,
-        new Map(
-          stateRef.current.houses.map(({ id, color }) => [id, color]),
-        ),
-        stateRef.current.tick,
-      );
-      drawEffects(
-        context,
-        stateRef.current.activeEffects,
-        stateRef.current.tick,
-      );
-      if (placementRef.current.active) {
-        drawTowerPreview(
-          context,
-          placementRef.current.preview,
-          stateRef.current.towers,
-          stateRef.current.halls,
-        );
-      }
+        currentState,
+        dayNightTracker: dayNightTrackerRef.current,
+        devicePixelRatio,
+        placement: placementRef.current,
+        screenShakeEnabled: screenShakeRef.current,
+        transientTracker: transientTrackerRef.current,
+        heroTracker: heroTrackerRef.current,
+        translate: localeRef.current,
+        wrapper: wrapperRef.current,
+      });
+      dayNightTrackerRef.current = frameResult.dayNightTracker;
+      transientTrackerRef.current = frameResult.transientTracker;
+      heroTrackerRef.current = frameResult.heroTracker;
       frameId = requestAnimationFrame(drawFrame);
     };
     frameId = requestAnimationFrame(drawFrame);
@@ -211,31 +140,40 @@ export function GameCanvas() {
   }, [dispatch, towerPlacementActive]);
 
   return (
-    <canvas
-      aria-label={t("run.canvasLabel")}
-      className={
-        selectedMiracle === null &&
-        selectedSkill === null &&
-        !towerPlacementActive
-          ? "game-canvas"
-          : "game-canvas game-canvas--targeting"
-      }
-      height={BALANCE_CONFIG.WORLD_HEIGHT}
-      onClick={handleClick}
-      onContextMenu={(event) => {
-        if (towerPlacementActive) {
-          event.preventDefault();
-          dispatch({ type: "cancelTowerPlacement" });
-        }
+    <div
+      ref={wrapperRef}
+      style={{
+        height: "100%",
+        transformOrigin: "center",
+        width: "100%",
       }}
-      onMouseMove={(event) => {
-        if (towerPlacementActive) {
-          dispatch({ type: "updateTowerPreview", ...worldPoint(event) });
+    >
+      <canvas
+        aria-label={t("run.canvasLabel")}
+        className={
+          selectedMiracle === null &&
+          selectedSkill === null &&
+          !towerPlacementActive
+            ? "game-canvas"
+            : "game-canvas game-canvas--targeting"
         }
-      }}
-      ref={canvasRef}
-      role="img"
-      width={BALANCE_CONFIG.WORLD_WIDTH}
-    />
+        height={BALANCE_CONFIG.WORLD_HEIGHT}
+        onClick={handleClick}
+        onContextMenu={(event) => {
+          if (towerPlacementActive) {
+            event.preventDefault();
+            dispatch({ type: "cancelTowerPlacement" });
+          }
+        }}
+        onMouseMove={(event) => {
+          if (towerPlacementActive) {
+            dispatch({ type: "updateTowerPreview", ...worldPoint(event) });
+          }
+        }}
+        ref={canvasRef}
+        role="img"
+        width={BALANCE_CONFIG.WORLD_WIDTH}
+      />
+    </div>
   );
 }

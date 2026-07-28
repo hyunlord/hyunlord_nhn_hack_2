@@ -506,3 +506,22 @@
   points from the Phase 3J baseline and outside the requested 35–45% band.
   No prohibited compensating balance change was made; the specified daylight
   raid is left for the next balance pass to evaluate.
+
+## 2026-07-28 — Phase 4B visible stronghold command lane
+
+- Consolidated the default battlefield around one central stronghold triangle and added tests for exact slot geometry, spawn radius, cross-house defense, render draw order, tower placement, and responsive presentation boundaries.
+- Added typed numeric presentation for card effects, applicability warnings, shop effects, investment rows, house traits, class composition, and hero status. Static fixes made during Todo12 were limited to `src/content/houseConfig.ts` (`SIZE_OK` comment for pure config data) and test-only canvas mocks in `tests/combatTransients.test.ts`, `tests/renderVisualTokens.test.ts`, and `tests/strongholdPresentation.test.ts` (`as unknown` double-casts removed). These static fixes do not change product runtime behavior.
+- DGX command gate results: typecheck 0; production build 0; full test suite 340/340; determinism 0; asset check 0 with the known six ready assets and 17 primitive sprite fallbacks; balance 0; `git diff --check` 0.
+- Determinism baseline: organic seed 20260810 reached victory at tick 2585 with tribute 543 and halls 900/900/900; full-state-machine lane reached victory at tick 1791 with tribute 190 and halls 900/900/900.
+- Balance observation: `abc` 200 runs, 87.5% victory, median Legacy 232.5. Prior recorded Phase 4A observation was 52.5%; no tuning was performed in this pass.
+- Additional gates: render/import boundary grep 0; changed source LOC 0 after the `houseConfig.ts` pure-data `SIZE_OK` annotation; structural no-excuse fallback 0; missing-locale negative control failed as expected and restored `src/content/locale/en.ts` from backup with restore status 0.
+- Todo12 initially remained open after command gates because browser QA found 375px clipping and double-plus numeric copy; the post-fix PASS record below supersedes that blocker.
+
+## 2026-07-28 — Phase 4B Todo12 post-fix PASS
+
+- Initial Chrome QA failed for two concrete reasons: mobile 375px choice surfaces clipped/overlapped, and Korean max-HP card lines rendered double signs (`++`).
+- Red-green fix evidence is in `.omo/evidence/task-12-fix-phase4b-visible-stronghold.md`: focused red tests failed, then `tests/cardEffects.test.ts` and `tests/phase4bResponsive.test.ts` passed 11/11 after the locale/CSS fix.
+- Post-fix browser evidence is in `.omo/evidence/task-12-browser-phase4b-visible-stronghold.md` and `.omo/evidence/phase4b-visible-stronghold/browser-postfix/`: Chrome PASS at 375/768/1280, console warn/error log `[]`, no `++`, no clipping/overlap in the 375 shop layout audit, and no horizontal document scroll in captured metrics.
+- Final DGX gates after the browser fix: typecheck 0; production build 0 (`dist/assets/index-ITmSIBu1.css`, `dist/assets/index-DriTRFkR.js`); full test suite 342/342; determinism 0; asset check 0 with six ready assets and 17 documented primitive fallbacks; `git diff --check` 0; boundary grep 0; changed-source LOC 0; structural no-excuse 0.
+- Balance was not rerun after the fix because the only post-measurement changes were locale copy, responsive CSS, tests, and static documentation/comments. The recorded Phase 4B observation remains `abc` 200 runs at 87.5% victory, median Legacy 232.5, with no tuning performed.
+- Todo12 is complete. Commit/push/restart remain Todo13 and were not performed here.

@@ -1,5 +1,5 @@
 import { ACHIEVEMENT_DEFINITIONS, HOUSE_UNLOCK_DEFINITIONS } from "../../content/metaConfig";
-import { INVESTMENT_TRACKS, type InvestmentTrack } from "../../content/investmentConfig";
+import { INVESTMENT_TRACKS } from "../../content/investmentConfig";
 import { HOUSE_CONFIG, type HouseId } from "../../content/houseConfig";
 import { HOUSE_SYNERGIES } from "../../content/houseSynergies";
 import { useLocale, type LocaleKey } from "../../content/locale";
@@ -8,19 +8,13 @@ import {
   achievementName,
   houseIdentity,
   houseName,
-  houseTrait,
-  investmentDescription,
-  investmentName,
+  houseTraitLabels,
   synergyDescription,
   synergyName,
 } from "../../content/locale/display";
-import { canPurchase, investmentCost } from "../../meta/investments";
 import { useAppFlow } from "../../state/appFlowContext";
-import {
-  activeBonusGroups,
-  investmentEffectLabel,
-  purchaseInvestmentLabel,
-} from "../investmentSummary";
+import { activeBonusGroups } from "../investmentSummary";
+import { InvestmentTrackCard, tracksForHouse } from "./meta/InvestmentTrackCard";
 
 function unlockRequirement(
   houseId: HouseId,
@@ -38,88 +32,6 @@ function unlockRequirement(
     return { key: "meta.unlock.victory", params: { count: definition.minimumVictories } };
   }
   return null;
-}
-
-function trackDisabledReason(
-  track: InvestmentTrack,
-  currentRank: number,
-  legacyPoints: number,
-  unlockedHouses: readonly HouseId[],
-  t: (key: LocaleKey, params?: Readonly<Record<string, string | number>>) => string,
-): string | null {
-  if (currentRank >= track.maxRank) {
-    return t("meta.investment.reason.max");
-  }
-  if (track.scope === "house" && (track.houseId === undefined || !unlockedHouses.includes(track.houseId))) {
-    return t("meta.investment.reason.unlock", {
-      house: track.houseId === undefined ? t("common.unknown") : houseName(t, track.houseId),
-    });
-  }
-  const cost = investmentCost(track, currentRank);
-  if (legacyPoints < cost) {
-    return t("meta.investment.reason.legacy", { amount: cost - legacyPoints });
-  }
-  return null;
-}
-
-function rankPips(currentRank: number, maxRank: number): string {
-  return `${"●".repeat(currentRank)}${"○".repeat(maxRank - currentRank)}`;
-}
-
-function InvestmentTrackCard({
-  currentRank,
-  legacyPoints,
-  onPurchase,
-  track,
-  unlockedHouses,
-}: {
-  readonly currentRank: number;
-  readonly legacyPoints: number;
-  readonly onPurchase: (trackId: string) => void;
-  readonly track: InvestmentTrack;
-  readonly unlockedHouses: readonly HouseId[];
-}) {
-  const { t } = useLocale();
-  const trackName = investmentName(t, track.id);
-  const reason = trackDisabledReason(track, currentRank, legacyPoints, unlockedHouses, t);
-  const nextCost = currentRank >= track.maxRank ? null : investmentCost(track, currentRank);
-  const purchasable = canPurchase(track, currentRank, legacyPoints, unlockedHouses);
-
-  return (
-    <article className="investment-track">
-      <div className="investment-track__header">
-        <div>
-          <h4>{trackName}</h4>
-          <p>{investmentDescription(t, track.id)}</p>
-        </div>
-        <span
-          aria-label={t("meta.investment.rank", { current: currentRank, max: track.maxRank })}
-          className="rank-pips"
-          role="img"
-        >
-          {rankPips(currentRank, track.maxRank)}
-        </span>
-      </div>
-      <p className="investment-track__effect">{investmentEffectLabel(track.effectPerRank, t)}</p>
-      <div className="investment-track__purchase">
-        <span>{nextCost === null ? t("meta.investment.max") : t("meta.investment.nextCost", { cost: nextCost })}</span>
-        <button
-          aria-describedby={reason === null ? undefined : `${track.id}-reason`}
-          aria-label={purchaseInvestmentLabel(trackName, t)}
-          disabled={!purchasable}
-          onClick={() => onPurchase(track.id)}
-          type="button"
-        >
-          {t("meta.investment.purchase")}
-        </button>
-      </div>
-      {reason === null ? null : (
-        <p className="investment-track__reason" id={`${track.id}-reason`}>
-          {reason}
-        </p>
-      )}
-    </article>
-  );
 }
 
 export function MetaScreen() {
@@ -196,7 +108,7 @@ export function MetaScreen() {
         </div>
         <div className="house-investment-grid">
           {HOUSE_CONFIG.map((house) => {
-            const houseTracks = INVESTMENT_TRACKS.filter((track) => track.houseId === house.id);
+            const houseTracks = tracksForHouse(house.id);
             const unlocked = meta.unlockedHouses.includes(house.id);
             return (
               <section
@@ -250,7 +162,11 @@ export function MetaScreen() {
                   </div>
                   <span className="status-label">{unlocked ? t("common.available") : t("common.locked")}</span>
                 </div>
-                <p className="trait-line">{houseTrait(t, house.id)}</p>
+                <ul className="trait-line">
+                  {houseTraitLabels(t, house).map((label) => (
+                    <li key={label}>{label}</li>
+                  ))}
+                </ul>
                 {!unlocked && definition !== undefined ? (
                   <div className="unlock-row">
                     <span>

@@ -10,7 +10,7 @@ import {
   UNIT_CLASSES,
 } from "../src/content/unitClassConfig";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
-import { HOUSE_CONFIG } from "../src/content/houseConfig";
+import { HOUSE_CONFIG, HOUSE_SPAWN_SLOTS } from "../src/content/houseConfig";
 import { createRng } from "../src/engine/prng";
 
 test("Given Ashvale and Stonewake, when their armies are created, then each receives its configured starting population", () => {
@@ -226,6 +226,80 @@ test("Given resolved house and investment modifiers, when a mixed army is create
     spear: 180,
     archer: 90,
   });
+});
+
+test("Given the stronghold spawn slots, when default agents are created, then every regular camp stays inside radius fifty-five without overlapping", () => {
+  // Given
+  const houses = createHouses(createRng(72), [
+    "house_a",
+    "house_b",
+    "house_c",
+  ]);
+
+  // When
+  const agents = createAgents(houses, createRng(72)).filter(
+    ({ isHero }) => !isHero,
+  );
+  const agentsByHouse = new Map(
+    houses.map((house, index) => {
+      const slot = HOUSE_SPAWN_SLOTS[index];
+      if (slot === undefined) {
+        throw new RangeError(`Missing spawn slot for ${house.id}.`);
+      }
+      return [
+        house.id,
+        {
+          agents: agents.filter(({ houseId }) => houseId === house.id),
+          slot,
+        },
+      ] as const;
+    }),
+  );
+  let minimumInterCampDistance = Number.POSITIVE_INFINITY;
+  for (const first of agents) {
+    for (const second of agents) {
+      if (first.houseId !== second.houseId) {
+        minimumInterCampDistance = Math.min(
+          minimumInterCampDistance,
+          Math.hypot(first.x - second.x, first.y - second.y),
+        );
+      }
+    }
+  }
+
+  // Then
+  assert.equal(BALANCE_CONFIG.HOUSE_SPAWN_RADIUS, 55);
+  for (const { agents: houseAgents, slot } of agentsByHouse.values()) {
+    assert.ok(
+      houseAgents.every(
+        ({ x, y }) =>
+          Math.hypot(x - slot.x, y - slot.y) <=
+          BALANCE_CONFIG.HOUSE_SPAWN_RADIUS,
+      ),
+    );
+  }
+  assert.ok(minimumInterCampDistance > 0);
+});
+
+test("Given a synthetic placement outside the spawn radius, when the spawn contract is evaluated, then distance fifty-five point zero one is rejected", () => {
+  // Given
+  const [slot] = HOUSE_SPAWN_SLOTS;
+  if (slot === undefined) {
+    throw new RangeError("Expected a spawn slot.");
+  }
+  const syntheticPlacement = {
+    x: slot.x + 55.01,
+    y: slot.y,
+  };
+
+  // When
+  const isInsideSpawnRadius =
+    Math.hypot(syntheticPlacement.x - slot.x, syntheticPlacement.y - slot.y) <=
+    BALANCE_CONFIG.HOUSE_SPAWN_RADIUS;
+
+  // Then
+  assert.equal(BALANCE_CONFIG.HOUSE_SPAWN_RADIUS, 55);
+  assert.equal(isInsideSpawnRadius, false);
 });
 
 test("Given a recruit batch at a surviving hall, when recruits are created, then roster allocation and nearby placement are deterministic at full HP", () => {

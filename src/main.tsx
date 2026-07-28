@@ -5,6 +5,7 @@ import { preloadAll } from "./render/assets/spriteLoader";
 import { AppFlowProvider } from "./state/appFlowContext";
 import { SettingsLocaleProvider, SettingsProvider } from "./settings/SettingsContext";
 import "./index.css";
+import "./styles/phase4b.css";
 
 class RootElementMissingError extends Error {
   public constructor() {

@@ -7,12 +7,16 @@ import {
   type DefenseContext,
 } from "../src/agents/dispositionEngine";
 import { stepAgent } from "../src/agents/movement";
+import { advanceWaveCombat } from "../src/engine/invasionCombat";
 import type {
   Agent,
   ThreatPresence,
 } from "../src/agents/agentTypes";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
+import { HOUSE_SPAWN_SLOTS } from "../src/content/houseConfig";
+import { createInitialState } from "../src/engine/tick";
 import type { Rng } from "../src/content/random";
+import { createRng } from "../src/engine/prng";
 
 function createAgent(overrides: Partial<Agent> = {}): Agent {
   return {
@@ -212,6 +216,115 @@ test("Given multiple hall attackers, when defense is chosen, then agents focus t
   );
 
   assert.equal(intent.kind === "engage" ? intent.targetId : null, "creature_a");
+});
+
+test("Given the concentrated stronghold, when one hall is threatened, then living regulars from all three houses defend it", () => {
+  const [north] = HOUSE_SPAWN_SLOTS;
+  if (north === undefined) {
+    throw new RangeError("Expected north spawn slot.");
+  }
+  const initial = createInitialState(802, [
+    "house_a",
+    "house_b",
+    "house_c",
+  ]).state;
+  const combat = advanceWaveCombat(
+    {
+      ...initial,
+      phase: "wave",
+      activeThreat: {
+        type: "monster_horde",
+        waveIndex: 0,
+        startTick: 0,
+        daylightRaid: false,
+        traitorHouseId: null,
+        creatures: [
+          {
+            id: "creature_near_north",
+            x: north.x,
+            y: north.y,
+            hp: BALANCE_CONFIG.CREATURE_HP,
+            agentDamage: BALANCE_CONFIG.CREATURE_ATTACK_DAMAGE,
+            hallDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+            lastAttackTick: -1,
+            haltedUntilTick: -1,
+          },
+        ],
+        mage: null,
+      },
+    },
+    1,
+    createRng(802),
+  );
+
+  assert.deepEqual(
+    new Set(
+      combat.agents
+        .filter(
+          ({ isHero, state }) =>
+            !isHero && (state === "fighting" || state === "helping"),
+        )
+        .map(({ houseId }) => houseId),
+    ),
+    new Set(["house_a", "house_b", "house_c"]),
+  );
+});
+
+test("Given the concentrated stronghold, when a threat is outside every hall defense radius, then it does not produce the three-house defense set", () => {
+  const initial = createInitialState(803, [
+    "house_a",
+    "house_b",
+    "house_c",
+  ]).state;
+  const farThreat = { x: 20, y: 20 };
+  assert.ok(
+    initial.halls.every(
+      (hall) =>
+        Math.hypot(hall.x - farThreat.x, hall.y - farThreat.y) >
+        BALANCE_CONFIG.HALL_DEFENSE_RADIUS,
+    ),
+  );
+  const combat = advanceWaveCombat(
+    {
+      ...initial,
+      phase: "wave",
+      activeThreat: {
+        type: "monster_horde",
+        waveIndex: 0,
+        startTick: 0,
+        daylightRaid: false,
+        traitorHouseId: null,
+        creatures: [
+          {
+            id: "creature_far_from_stronghold",
+            x: farThreat.x,
+            y: farThreat.y,
+            hp: BALANCE_CONFIG.CREATURE_HP,
+            agentDamage: BALANCE_CONFIG.CREATURE_ATTACK_DAMAGE,
+            hallDamage: BALANCE_CONFIG.CREATURE_HALL_DAMAGE,
+            lastAttackTick: -1,
+            haltedUntilTick: -1,
+          },
+        ],
+        mage: null,
+      },
+    },
+    1,
+    createRng(803),
+  );
+  const defendingHouseIds = new Set(
+    combat.agents
+      .filter(
+        ({ isHero, state }) =>
+          !isHero && (state === "fighting" || state === "helping"),
+      )
+      .map(({ houseId }) => houseId),
+  );
+
+  assert.notDeepEqual(
+    defendingHouseIds,
+    new Set(["house_a", "house_b", "house_c"]),
+  );
 });
 
 test("Given low health, when break thresholds are evaluated, then only a timid agent below the HP boundary flees", () => {

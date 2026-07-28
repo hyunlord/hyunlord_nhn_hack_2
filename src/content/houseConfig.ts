@@ -1,5 +1,7 @@
 import type { UnitRoster } from "./unitClassConfig";
 
+// SIZE_OK: pure house configuration data; kept together so roster, trait, and slot values stay auditable.
+
 export type HouseId =
   | "house_a"
   | "house_b"
@@ -21,7 +23,7 @@ export type HouseSelectionValidation =
     };
 
 export interface HouseSpawnSlot {
-  readonly id: "left" | "right" | "bottom_center";
+  readonly id: "north" | "southeast" | "southwest";
   readonly x: number;
   readonly y: number;
 }
@@ -70,10 +72,12 @@ export const DEFAULT_HOUSE_IDS = [
   "house_c",
 ] as const satisfies HouseSelection;
 
+export const STRONGHOLD_CENTER = { x: 480, y: 300 } as const;
+
 export const HOUSE_SPAWN_SLOTS = [
-  { id: "left", x: 240, y: 180 },
-  { id: "right", x: 720, y: 200 },
-  { id: "bottom_center", x: 480, y: 450 },
+  { id: "north", x: 480, y: 185 },
+  { id: "southeast", x: 580, y: 358 },
+  { id: "southwest", x: 380, y: 358 },
 ] as const satisfies readonly [
   HouseSpawnSlot,
   HouseSpawnSlot,

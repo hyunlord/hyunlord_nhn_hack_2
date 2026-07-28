@@ -1,4 +1,3 @@
-import type { Agent } from "../agents/agentTypes";
 import type {
   ShopAvailability,
   ShopItemId,
@@ -10,6 +9,7 @@ import {
   SHOP_CATALOG,
   availabilityForItem,
 } from "../build/shop";
+import { SHOP_EFFECT_VALUES } from "../build/shopEffects";
 import {
   TOWER_RADIUS,
   createTower,
@@ -17,48 +17,18 @@ import {
 } from "../build/structures";
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { GameState } from "./engine.types";
-import {
-  maxHpForAgent,
-  respawnHeroNow,
-} from "./heroEngine";
+import { maxHpForAgent } from "./heroEngine";
 import { modifiersForAgent } from "./progressionEngine";
-import { populationCapForHouse } from "./population";
-
-const MEDICINE_HEAL = 45;
-const HALL_REPAIR = 300;
-const SHARPEN_MULTIPLIER = 1.08;
+import {
+  eligibleDeadRegulars,
+  healLivingAgents,
+  reinforceMostDamagedHall,
+  reviveHero,
+  reviveRecruitSquadAgents,
+} from "./shopEffectEngine";
 
 export function createShopPurchases(): ShopPurchases {
   return { ...EMPTY_PURCHASES };
-}
-
-function eligibleDeadRegulars(state: GameState): Agent[] {
-  const livingHallHouses = new Set(
-    state.halls
-      .filter(({ hp }) => hp > 0)
-      .map(({ houseId }) => houseId),
-  );
-  return state.agents.filter(
-    (agent) => {
-      if (
-        agent.isHero ||
-        agent.hp > 0 ||
-        !livingHallHouses.has(agent.houseId)
-      ) {
-        return false;
-      }
-      const level = state.houseProgress.find(
-        ({ houseId }) => houseId === agent.houseId,
-      )?.level ?? 1;
-      const living = state.agents.filter(
-        (candidate) =>
-          !candidate.isHero &&
-          candidate.houseId === agent.houseId &&
-          candidate.hp > 0,
-      ).length;
-      return living < populationCapForHouse(agent.houseId, level);
-    },
-  );
 }
 
 export function shopSnapshotForState(state: GameState): ShopSnapshot {
@@ -145,115 +115,6 @@ function purchaseBase(
   };
 }
 
-function recruitSquad(state: GameState): Agent[] {
-  const dead = eligibleDeadRegulars(state);
-  const candidateHouse = [...new Set(dead.map(({ houseId }) => houseId))]
-    .sort((first, second) => {
-      const living = (houseId: string) =>
-        state.agents.filter(
-          (agent) =>
-            !agent.isHero && agent.houseId === houseId && agent.hp > 0,
-        ).length;
-      return living(first) - living(second) || first.localeCompare(second);
-    })[0];
-  const hall = state.halls.find(
-    ({ houseId, hp }) => houseId === candidateHouse && hp > 0,
-  );
-  if (candidateHouse === undefined || hall === undefined) {
-    return state.agents;
-  }
-  const level = state.houseProgress.find(
-    ({ houseId }) => houseId === candidateHouse,
-  )?.level ?? 1;
-  const livingCount = state.agents.filter(
-    (agent) =>
-      !agent.isHero &&
-      agent.houseId === candidateHouse &&
-      agent.hp > 0,
-  ).length;
-  const availableCapacity = Math.max(
-    0,
-    populationCapForHouse(candidateHouse, level) - livingCount,
-  );
-  const revivedIds = new Set(
-    dead
-      .filter(({ houseId }) => houseId === candidateHouse)
-      .sort((first, second) => first.id.localeCompare(second.id))
-      .slice(0, Math.min(5, availableCapacity))
-      .map(({ id }) => id),
-  );
-  return state.agents.map((agent) =>
-    revivedIds.has(agent.id)
-      ? {
-          ...agent,
-          x: hall.x,
-          y: hall.y,
-          hp: maxHpForAgent(agent, modifiersForAgent(state, agent)),
-          state: "idle" as const,
-          lastDamagedTick: -1,
-          lastAttackTick: state.tick,
-        }
-      : agent,
-  );
-}
-
-function healLivingAgents(state: GameState): Agent[] {
-  return state.agents.map((agent) =>
-    agent.hp <= 0
-      ? agent
-      : {
-          ...agent,
-          hp: Math.max(
-            agent.hp,
-            Math.min(
-              maxHpForAgent(agent, modifiersForAgent(state, agent)),
-              agent.hp + MEDICINE_HEAL,
-            ),
-          ),
-        },
-  );
-}
-
-function reinforceHall(state: GameState): GameState["halls"] {
-  const target = [...state.halls]
-    .filter(({ hp, maxHp }) => hp > 0 && hp < maxHp)
-    .sort(
-      (first, second) =>
-        second.maxHp - second.hp - (first.maxHp - first.hp) ||
-        first.houseId.localeCompare(second.houseId),
-    )[0];
-  return target === undefined
-    ? state.halls
-    : state.halls.map((hall) =>
-        hall.houseId === target.houseId
-          ? { ...hall, hp: Math.min(hall.maxHp, hall.hp + HALL_REPAIR) }
-          : hall,
-      );
-}
-
-function reviveHero(state: GameState): Agent[] {
-  const hero = [...state.agents]
-    .filter(({ isHero, hp }) => isHero && hp <= 0)
-    .sort((first, second) => first.id.localeCompare(second.id))[0];
-  if (hero === undefined) {
-    return state.agents;
-  }
-  return state.agents.map((agent) =>
-    agent.id === hero.id
-      ? respawnHeroNow(
-          agent,
-          state.halls,
-          [{
-            agentId: agent.id,
-            houseId: agent.houseId,
-            modifiers: modifiersForAgent(state, agent),
-          }],
-          state.tick,
-        )
-      : agent,
-  );
-}
-
 export function purchaseShopItem(
   state: GameState,
   itemId: Exclude<ShopItemId, "raise_tower">,
@@ -264,7 +125,7 @@ export function purchaseShopItem(
   }
   switch (itemId) {
     case "recruit_squad":
-      return { ...purchased, agents: recruitSquad(purchased) };
+      return { ...purchased, agents: reviveRecruitSquadAgents(purchased) };
     case "field_medicine":
       return { ...purchased, agents: healLivingAgents(purchased) };
     case "sharpen_arms":
@@ -273,11 +134,11 @@ export function purchaseShopItem(
         runUpgrades: {
           attackDamageMultiplier:
             purchased.runUpgrades.attackDamageMultiplier *
-            SHARPEN_MULTIPLIER,
+            SHOP_EFFECT_VALUES.sharpenArmsMultiplier,
         },
       };
     case "reinforce_hall":
-      return { ...purchased, halls: reinforceHall(purchased) };
+      return { ...purchased, halls: reinforceMostDamagedHall(purchased) };
     case "revive_hero":
       return { ...purchased, agents: reviveHero(purchased) };
   }

@@ -5,6 +5,7 @@ import {
   HOUSE_CONFIG,
   HOUSE_IDS,
   HOUSE_SPAWN_SLOTS,
+  STRONGHOLD_CENTER,
   expandHouseSelection,
   houseTraitSummary,
   validateHouseSelection,
@@ -51,7 +52,14 @@ test("Given every house, when selection presentation requests its traits, then a
   ]);
 });
 
-test("Given house constants, when defaults and spawn slots are inspected, then only the original trio is unlocked into three ordered map positions", () => {
+function distance(
+  first: { readonly x: number; readonly y: number },
+  second: { readonly x: number; readonly y: number },
+): number {
+  return Math.hypot(first.x - second.x, first.y - second.y);
+}
+
+test("Given house constants, when defaults and spawn slots are inspected, then the original trio surrounds one stronghold center", () => {
   assert.deepEqual(HOUSE_IDS, [
     "house_a",
     "house_b",
@@ -61,11 +69,19 @@ test("Given house constants, when defaults and spawn slots are inspected, then o
     "house_f",
   ]);
   assert.deepEqual(DEFAULT_HOUSE_IDS, ["house_a", "house_b", "house_c"]);
+  assert.deepEqual(STRONGHOLD_CENTER, { x: 480, y: 300 });
   assert.deepEqual(HOUSE_SPAWN_SLOTS, [
-    { id: "left", x: 240, y: 180 },
-    { id: "right", x: 720, y: 200 },
-    { id: "bottom_center", x: 480, y: 450 },
+    { id: "north", x: 480, y: 185 },
+    { id: "southeast", x: 580, y: 358 },
+    { id: "southwest", x: 380, y: 358 },
   ]);
+  for (const first of HOUSE_SPAWN_SLOTS) {
+    for (const second of HOUSE_SPAWN_SLOTS) {
+      if (first.id !== second.id) {
+        assert.ok(distance(first, second) <= 200);
+      }
+    }
+  }
 });
 
 test("Given three unique known house ids, when the selection validates, then its exact pick order is retained", () => {
@@ -107,7 +123,7 @@ test("Given an unknown house, when the selection validates, then an unknown-id f
   assert.deepEqual(result, { valid: false, reason: "unknown" });
 });
 
-test("Given a validated ordered trio, when spawn placements expand, then picks map left, right, and bottom-center in order", () => {
+test("Given a validated ordered trio, when spawn placements expand, then picks map north, southeast, and southwest in order", () => {
   const result = validateHouseSelection([
     "house_f",
     "house_c",
@@ -123,15 +139,15 @@ test("Given a validated ordered trio, when spawn placements expand, then picks m
   assert.deepEqual(placements, [
     {
       houseId: "house_f",
-      slot: { id: "left", x: 240, y: 180 },
+      slot: { id: "north", x: 480, y: 185 },
     },
     {
       houseId: "house_c",
-      slot: { id: "right", x: 720, y: 200 },
+      slot: { id: "southeast", x: 580, y: 358 },
     },
     {
       houseId: "house_d",
-      slot: { id: "bottom_center", x: 480, y: 450 },
+      slot: { id: "southwest", x: 380, y: 358 },
     },
   ]);
 });

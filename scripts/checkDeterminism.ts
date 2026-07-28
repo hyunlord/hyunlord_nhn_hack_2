@@ -16,6 +16,18 @@ import { castFirstAvailableSkill } from "./autoSkillStrategy";
 
 const WAVE_EXERCISE_TICKS = 500;
 const MAX_ORGANIC_TICKS = 20_000;
+const EXPECTED_ORGANIC_BASELINE = {
+  phase: "victory",
+  tick: 2585,
+  tribute: 543,
+  hallHp: "900/900/900",
+} as const;
+const EXPECTED_FULL_STATE_BASELINE = {
+  phase: "victory",
+  tick: 1791,
+  tribute: 190,
+  hallHp: "900/900/900",
+} as const;
 
 function chooseFirst(state: GameState): GameState {
   const offer = state.pendingDrafts[0];
@@ -136,6 +148,13 @@ assert.ok(
   firstOrganic.phase === "victory" || firstOrganic.phase === "defeat",
 );
 assert.ok(firstOrganic.tick < MAX_ORGANIC_TICKS);
+assert.equal(firstOrganic.phase, EXPECTED_ORGANIC_BASELINE.phase);
+assert.equal(firstOrganic.tick, EXPECTED_ORGANIC_BASELINE.tick);
+assert.equal(firstOrganic.tribute, EXPECTED_ORGANIC_BASELINE.tribute);
+assert.equal(
+  firstOrganic.halls.map(({ hp }) => hp).join("/"),
+  EXPECTED_ORGANIC_BASELINE.hallHp,
+);
 
 const firstState = runFullStateMachine(
   BALANCE_CONFIG.DEFAULT_SEED,
@@ -148,6 +167,13 @@ assert.deepEqual(firstState, secondState);
 assert.equal(firstState.phase, "victory");
 assert.equal(firstState.waveIndex, WAVE_DEFINITIONS.length - 1);
 assert.equal(firstState.activeThreat, null);
+assert.equal(firstState.phase, EXPECTED_FULL_STATE_BASELINE.phase);
+assert.equal(firstState.tick, EXPECTED_FULL_STATE_BASELINE.tick);
+assert.equal(firstState.tribute, EXPECTED_FULL_STATE_BASELINE.tribute);
+assert.equal(
+  firstState.halls.map(({ hp }) => hp).join("/"),
+  EXPECTED_FULL_STATE_BASELINE.hallHp,
+);
 assert.ok(
   firstState.agents.every(
     ({ x, y }) =>

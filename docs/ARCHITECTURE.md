@@ -125,11 +125,14 @@ agents outside the home leash return before resuming idle wandering.
 Canvas draw order is background → halls → towers → tower rubble → agents →
 heroes → threats → effects, followed by the transient tower preview. Halls
 remain visible as rubble at zero HP; destroyed towers leave a timed visual
-record but no longer occupy a placement slot. Rendering reads immutable
-snapshots and never consumes RNG or advances the simulation. React owns only
-presentation and user actions: house selection, miracle selection/casting,
-draft selection, intermission purchases and tower placement, continuation,
-summary processing, and retry with a fresh deterministic seed.
+record but no longer occupy a placement slot. Phase 4B combat feedback is
+render-local: hit flashes, death puffs, hall pulses, shake, and wave banners
+are derived by renderer-side snapshot comparison and are never persisted into
+`GameState`. Rendering reads immutable snapshots and never consumes RNG or
+advances the simulation. React owns only presentation and user actions: house
+selection, miracle selection/casting, draft selection, intermission purchases
+and tower placement, continuation, summary processing, and retry with a fresh
+deterministic seed.
 
 ## Sprite pipeline
 

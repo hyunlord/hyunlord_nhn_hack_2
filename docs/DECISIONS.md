@@ -671,3 +671,35 @@ The final 200-seed `abc` observation rose from the Phase 3J baseline of 44.5%
 to 52.5% victory. This exceeds the requested 35–45% review band. The specified
 daylight-raid event is the only balance-affecting addition in this slice, so no
 compensating tuning was made; the result is recorded for the next balance pass.
+
+## 2026-07-28 — Phase 4B visible stronghold command-gate record
+
+### Single stronghold is now the simulation layout under test
+
+The three default houses now deploy around `STRONGHOLD_CENTER = { x: 480, y: 300 }` with north, southeast, and southwest hall slots. The intent tests prove a threat at one hall draws defenders from all three houses, while placement tests keep multiple valid tower positions around the center. This pass deliberately did not retune rosters, card effects, shop prices, wave counts, unit stats, or investment values.
+
+### Player choices expose typed numbers before flavour
+
+Draft, shop, investment, and house-selection copy now route through typed presentation helpers. Card effects are formatted from the actual `CardEffect` fields, including reciprocal attack-speed math, and applicability warnings are projected from live regular-agent, hero, and hall state. The command gate includes an exhaustive formatter test and a missing-locale negative control: removing `selection.slot.southwest` from English made `tests/locale.test.ts` fail, and the file was restored byte-for-byte from a temporary backup.
+
+### Combat feedback remains render-local
+
+Hit flashes, death puffs, volley visibility, hall pulses, shake, and wave banners are derived from renderer snapshots and transient trackers. Boundary checks confirm `src/engine` and `src/state` do not import render/transient modules, and store tests verify no Phase 4B presentation-only keys were added to `GameState`.
+
+### Command lane passed; browser lane is still blocking
+
+DGX command verification passed: `npm run typecheck`, `npm run build`, `npm test` (340/340), `npm run check:determinism`, `npm run assets:check`, `npm run balance`, and `git diff --check` all exited 0. Additional changed-source LOC, structural no-excuse, boundary grep, and missing-locale negative-control evidence is under `/tmp/phase4b-evidence/`.
+
+The 200-seed `abc` balance observation is now 87.5% victory, compared with the prior Phase 4A observation of 52.5%. This is recorded as an observation only; no compensating tuning was made because Phase 4B forbids balance edits outside the specified layout/presentation work.
+
+Todo12 initially failed browser QA for 375px clipping and double-plus numeric copy; the post-fix verification record below supersedes that blocker with Chrome PASS evidence.
+
+## 2026-07-28 — Phase 4B Todo12 post-fix verification complete
+
+The initial real Chrome review correctly failed Todo12 for two defects: 375px choice surfaces clipped/overlapped visually, and Korean flat max-HP card effects rendered with a double plus such as `최대 체력 ++25`. The red tests in `.omo/evidence/task-12-fix-phase4b-visible-stronghold.md` reproduced both issues.
+
+The fix kept numeric signs owned by the formatter (`src/content/locale/ko.ts` no longer hardcodes a plus for `card.effect.maxHpBonus`) and moved phone-width draft/shop overlays out of the compressed 8:5 stage with fixed viewport overlays and internal scrolling. No simulation, state, balance, dependency, roster, wave, shop-price, investment, or card-effect values were changed.
+
+Post-fix Chrome QA is PASS in `.omo/evidence/task-12-browser-phase4b-visible-stronghold.md` with artifacts under `.omo/evidence/phase4b-visible-stronghold/browser-postfix/`: 375/768/1280 shop/daylight captures, 375 selected-house captures, 375 HP draft capture, DOM snapshots, layout metrics, and console logs. The post-fix evidence records `console []`, no `++`, no horizontal scroll, no overlap/clipping arrays for the 375 shop layout audit, and minimum active targets at or above 44px.
+
+Final DGX command gates are green after the browser fix: `npm run typecheck` 0, `npm run build` 0, `npm test` 342/342, `npm run check:determinism` 0, `npm run assets:check` 0 with the known 17 sprite fallbacks, `git diff --check` 0, render/state boundary grep 0, changed-source LOC 0, and structural no-excuse 0. The prior 87.5% `abc` balance observation is reused because post-balance changes were locale, CSS, test, and static-comment only; no balance-affecting source changed after that measurement.

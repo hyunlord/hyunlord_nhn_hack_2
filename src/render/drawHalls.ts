@@ -1,7 +1,7 @@
 import { BALANCE_CONFIG } from "../content/balanceConfig";
 import type { Hall } from "../engine/engine.types";
 import type { House } from "../agents/agentTypes";
-import { houseIdentity, houseName } from "../content/locale/display";
+import { houseName, type Translate } from "../content/locale/display";
 import { drawSprite } from "./assets/drawSprite";
 
 const RUBBLE_COLOR = "#3d3732";
@@ -9,8 +9,9 @@ const HP_TRACK_COLOR = "rgba(14, 12, 10, 0.85)";
 const HP_COLOR = "#d8c879";
 const HP_WIDTH = 44;
 const HP_HEIGHT = 5;
-const STRONGHOLD_NAME_OFFSET_Y = 18;
-const STRONGHOLD_IDENTITY_OFFSET_Y = 30;
+const STRONGHOLD_LABEL_OFFSET_Y = 24;
+const HOUSE_MARK = "*";
+const MAX_HALL_LABEL_LENGTH = 18;
 
 function drawHallPrimitive(
   context: CanvasRenderingContext2D,
@@ -49,11 +50,18 @@ function drawHallPrimitive(
   context.stroke();
 }
 
+function shortHallLabel(label: string): string {
+  return label.length > MAX_HALL_LABEL_LENGTH
+    ? `${label.slice(0, MAX_HALL_LABEL_LENGTH - 2)}..`
+    : label;
+}
+
 export function drawHalls(
   context: CanvasRenderingContext2D,
   halls: readonly Hall[],
   houses: readonly House[],
   housesSelected = true,
+  translate: Translate = (key) => key,
 ): void {
   context.save();
   for (const hall of halls) {
@@ -76,8 +84,9 @@ export function drawHalls(
     context.fillStyle = HP_COLOR;
     context.fillRect(hpX, hpY, HP_WIDTH * hpRatio, HP_HEIGHT);
 
-    const identity = house === undefined ? "Unknown" : houseIdentity(() => "", house.id);
-    const label = house === undefined ? "Stronghold" : houseName(() => "", house.id);
+    const label = house === undefined
+      ? "Stronghold"
+      : shortHallLabel(`${HOUSE_MARK} ${houseName(translate, house.id)}`);
     context.textAlign = "center";
     context.fillStyle = housesSelected && !isDestroyed && house !== undefined
       ? house.color
@@ -85,12 +94,8 @@ export function drawHalls(
     context.strokeStyle = "rgba(14, 12, 10, 0.7)";
     context.lineWidth = 2;
     context.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
-    context.fillText(label, hall.x, hall.y + STRONGHOLD_NAME_OFFSET_Y);
-    context.strokeText(label, hall.x, hall.y + STRONGHOLD_NAME_OFFSET_Y);
-    context.font = "9px ui-monospace, SFMono-Regular, Menlo, monospace";
-    const shortIdentity = identity.length > 20 ? `${identity.slice(0, 18)}…` : identity;
-    context.fillText(shortIdentity, hall.x, hall.y + STRONGHOLD_IDENTITY_OFFSET_Y);
-    context.strokeText(shortIdentity, hall.x, hall.y + STRONGHOLD_IDENTITY_OFFSET_Y);
+    context.fillText(label, hall.x, hall.y + STRONGHOLD_LABEL_OFFSET_Y);
+    context.strokeText(label, hall.x, hall.y + STRONGHOLD_LABEL_OFFSET_Y);
   }
   context.restore();
 }

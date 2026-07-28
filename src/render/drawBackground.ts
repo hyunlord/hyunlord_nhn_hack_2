@@ -1,5 +1,7 @@
+import { STRONGHOLD_CENTER } from "../content/houseConfig";
 import { drawSprite } from "./assets/drawSprite";
 import { mixRgba } from "./dayNight";
+import { CANVAS_VISUAL_TOKENS, STRONGHOLD_PATCH_RADIUS } from "./visualTokens";
 
 const GRID_SIZE = 40;
 
@@ -32,6 +34,40 @@ function drawBackgroundPrimitive(
     context.lineTo(width, y);
   }
   context.stroke();
+}
+
+function drawStrongholdPatch(context: CanvasRenderingContext2D): void {
+  context.save();
+  const wornEarth = context.createRadialGradient(
+    STRONGHOLD_CENTER.x,
+    STRONGHOLD_CENTER.y,
+    0,
+    STRONGHOLD_CENTER.x,
+    STRONGHOLD_CENTER.y,
+    STRONGHOLD_PATCH_RADIUS,
+  );
+  wornEarth.addColorStop(0, CANVAS_VISUAL_TOKENS.strongholdGroundCore.value);
+  wornEarth.addColorStop(0.72, CANVAS_VISUAL_TOKENS.strongholdGroundRim.value);
+  wornEarth.addColorStop(1, "rgba(0, 0, 0, 0)");
+  context.fillStyle = wornEarth;
+  context.beginPath();
+  context.arc(
+    STRONGHOLD_CENTER.x,
+    STRONGHOLD_CENTER.y,
+    STRONGHOLD_PATCH_RADIUS,
+    0,
+    Math.PI * 2,
+  );
+  context.fill();
+
+  context.strokeStyle = CANVAS_VISUAL_TOKENS.strongholdGroundRim.value;
+  context.lineWidth = 1;
+  for (const radius of [64, 112, 156] as const) {
+    context.beginPath();
+    context.arc(STRONGHOLD_CENTER.x, STRONGHOLD_CENTER.y, radius, 0, Math.PI * 2);
+    context.stroke();
+  }
+  context.restore();
 }
 
 function drawLighting(
@@ -80,5 +116,6 @@ export function drawBackground(
   if (!drawSprite(context, "background_field", 0, 0)) {
     drawBackgroundPrimitive(context, width, height, dayNightFactor);
   }
+  drawStrongholdPatch(context);
   drawLighting(context, width, height, dayNightFactor);
 }

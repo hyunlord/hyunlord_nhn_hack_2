@@ -1,8 +1,9 @@
-import type { ShopItemId } from "../../build/build.types";
+import type { ShopAvailability, ShopItemId } from "../../build/build.types";
 import { useLocale, type LocaleKey } from "../../content/locale";
 import { WAVE_DEFINITIONS } from "../../content/waveConfig";
 import { shopAvailabilityForState } from "../../engine/shopEngine";
 import { useGameStore } from "../../state/gameStore";
+import { shopChoiceEffects } from "../choicePresentation/shopChoicePresentation";
 
 type InstantItem = Exclude<ShopItemId, "raise_tower">;
 
@@ -141,38 +142,15 @@ export function ShopOverlay() {
             <section className="shop-category" key={category}>
               <h3>{t(SHOP_CATEGORY_KEYS[category])}</h3>
               <div className="shop-category__items">
-                {entries.map(({ item, cost, available, reason }) => {
-                  const presentation = SHOP_PRESENTATION[item.id];
-                  const localizedReason = reasonKey(reason);
-                  return (
-                    <article className="shop-card" key={item.id}>
-                      <div className="shop-card__heading">
-                        <h4>{t(presentation.nameKey)}</h4>
-                        <strong>{cost}</strong>
-                      </div>
-                      <p>{t(presentation.descriptionKey)}</p>
-                      <p className="shop-card__count">
-                        {t("shop.purchased", {
-                          count: state.shopPurchases[item.id],
-                        })}
-                      </p>
-                      <button
-                        disabled={!available || towerPlacementActive}
-                        onClick={() => buy(item.id)}
-                        type="button"
-                      >
-                        {item.needsPlacement
-                          ? t("shop.choosePosition")
-                          : t("shop.purchase")}
-                      </button>
-                      {localizedReason === null ? null : (
-                        <small className="shop-card__reason">
-                          {t(localizedReason)}
-                        </small>
-                      )}
-                    </article>
-                  );
-                })}
+                {entries.map((availability) => (
+                  <ShopCard
+                    availability={availability}
+                    key={availability.item.id}
+                    onBuy={buy}
+                    purchaseCount={state.shopPurchases[availability.item.id]}
+                    towerPlacementActive={towerPlacementActive}
+                  />
+                ))}
               </div>
             </section>
           );
@@ -203,5 +181,50 @@ export function ShopOverlay() {
         </button>
       </footer>
     </section>
+  );
+}
+
+export function ShopCard({
+  availability,
+  onBuy,
+  purchaseCount,
+  towerPlacementActive,
+}: {
+  readonly availability: ShopAvailability;
+  readonly onBuy: (itemId: ShopItemId) => void;
+  readonly purchaseCount: number;
+  readonly towerPlacementActive: boolean;
+}) {
+  const { t } = useLocale();
+  const { available, cost, item, reason } = availability;
+  const presentation = SHOP_PRESENTATION[item.id];
+  const localizedReason = reasonKey(reason);
+  const effects = shopChoiceEffects(item.id, t);
+  return (
+    <article className="shop-card">
+      <div className="shop-card__heading">
+        <h4>{t(presentation.nameKey)}</h4>
+        <strong>{cost}</strong>
+      </div>
+      <ul className="shop-card__effects">
+        {effects.map((effect) => (
+          <li key={effect}>{effect}</li>
+        ))}
+      </ul>
+      <p>{t(presentation.descriptionKey)}</p>
+      <p className="shop-card__count">
+        {t("shop.purchased", { count: purchaseCount })}
+      </p>
+      <button
+        disabled={!available || towerPlacementActive}
+        onClick={() => onBuy(item.id)}
+        type="button"
+      >
+        {item.needsPlacement ? t("shop.choosePosition") : t("shop.purchase")}
+      </button>
+      {localizedReason === null ? null : (
+        <small className="shop-card__reason">{t(localizedReason)}</small>
+      )}
+    </article>
   );
 }

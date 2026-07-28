@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import test from "node:test";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import { EMPTY_STARTING_MODIFIER_BUNDLE } from "../src/content/runConfiguration";
@@ -9,6 +11,28 @@ import {
   gameTickIntervalMsForSpeed,
 } from "../src/state/gameStore";
 import type { CommitStateAction } from "../src/state/gameStore.types";
+import { forbiddenRenderImports } from "./importBoundary";
+
+const SIMULATION_DIRS = ["src/engine", "src/state"] as const;
+const RENDER_ONLY_GAMESTATE_KEYS = [
+  "combatTransients",
+  "deathPuffs",
+  "hitFlashes",
+  "hallPulses",
+  "screenShake",
+  "waveBanner",
+  "heroFallMarkers",
+] as const;
+
+function sourceFiles(root: string): string[] {
+  return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(root, entry.name);
+    if (entry.isDirectory()) {
+      return sourceFiles(path);
+    }
+    return /\.(?:ts|tsx)$/.test(entry.name) ? [path] : [];
+  });
+}
 
 test("Given one committed state action, when the reducer is called twice, then both results match without mutating shared inputs", () => {
   const initial = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
@@ -90,5 +114,48 @@ test("Given a new game state, when settings boundaries are inspected, then setti
   const state = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
   for (const key of ["language", "simulationSpeed", "screenShake", "masterVolume"]) {
     assert.equal(key in state, false);
+  }
+});
+
+test("Given Phase 4B render-only feedback, when simulation modules are scanned, then engine and state never import render transients", () => {
+  for (const file of SIMULATION_DIRS.flatMap((directory) => sourceFiles(directory))) {
+    assert.deepEqual(forbiddenRenderImports(readFileSync(file, "utf8")), []);
+  }
+});
+
+test("Given a dynamic import of a render transient, when boundary imports are parsed, then it is rejected", () => {
+  assert.deepEqual(
+    forbiddenRenderImports(`
+      export async function leakRenderModule(): Promise<unknown> {
+        return import("../render/combatTransients");
+      }
+    `),
+    ["../render/combatTransients"],
+  );
+});
+
+test("Given render transient imports in every supported form, when boundary imports are parsed, then all are rejected", () => {
+  assert.deepEqual(
+    forbiddenRenderImports(`
+      import "../render/combatTransients";
+      export { createCombatTransients } from "../render/combatTransients";
+      import renderBoundary = require("../render/combatTransients");
+      const directRequire = require("../render/combatTransients");
+      const dynamicTemplate = import(\`../render/combatTransients\`);
+    `),
+    [
+      "../render/combatTransients",
+      "../render/combatTransients",
+      "../render/combatTransients",
+      "../render/combatTransients",
+      "../render/combatTransients",
+    ],
+  );
+});
+
+test("Given a new game state, when render-only transient keys are inspected, then they stay out of replayable state", () => {
+  const state = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
+  for (const key of RENDER_ONLY_GAMESTATE_KEYS) {
+    assert.equal(key in state, false, `${key} must remain render-local`);
   }
 });

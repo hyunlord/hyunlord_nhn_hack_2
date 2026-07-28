@@ -1,9 +1,8 @@
-import type { Agent, House } from "../agents/agentTypes";
+import { BALANCE_CONFIG } from "../content/balanceConfig";
 import { HERO_DEFINITIONS } from "../content/heroConfig";
-import type { ResolvedModifiers } from "../progression/modifiers";
-import { maxHpForAgent } from "../engine/heroEngine";
 import type { SpriteId } from "../content/assetManifest";
 import { drawSprite } from "./assets/drawSprite";
+import type { HeroRenderProjection } from "./heroRenderProjection";
 
 const HERO_RADIUS = 8;
 const HP_BAR_WIDTH = 34;
@@ -12,12 +11,7 @@ const LABEL_HEIGHT = 12;
 const LABEL_PADDING_X = 3;
 
 export type HeroLabelFormatter = (heroId: string, level: number) => string;
-
-type ModifierEntry = {
-  readonly houseId: string;
-  readonly agentId?: string;
-  readonly modifiers: ResolvedModifiers;
-};
+export type HeroFallLabelFormatter = (ticksRemaining: number) => string;
 
 function spriteIdForHero(heroId: string | null): SpriteId | null {
   switch (heroId) {
@@ -40,11 +34,12 @@ function spriteIdForHero(heroId: string | null): SpriteId | null {
 
 function drawHeroPrimitiveBody(
   context: CanvasRenderingContext2D,
-  hero: Agent,
+  x: number,
+  y: number,
   color: string,
 ): void {
   context.beginPath();
-  context.arc(hero.x, hero.y, HERO_RADIUS, 0, Math.PI * 2);
+  context.arc(x, y, HERO_RADIUS, 0, Math.PI * 2);
   context.fillStyle = color;
   context.fill();
   context.strokeStyle = "rgba(255, 248, 214, 0.96)";
@@ -52,108 +47,140 @@ function drawHeroPrimitiveBody(
   context.stroke();
 }
 
+function drawAura(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+): void {
+  if (radius <= 0) {
+    return;
+  }
+  context.save();
+  context.beginPath();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.fillStyle = "rgba(123, 176, 106, 0.18)";
+  context.strokeStyle = "rgba(190, 238, 151, 0.64)";
+  context.lineWidth = 2;
+  context.setLineDash([7, 5]);
+  context.fill();
+  context.stroke();
+  context.restore();
+}
+
+function drawHpBar(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  hp: number,
+  maxHp: number,
+): void {
+  const barX = x - HP_BAR_WIDTH / 2;
+  const barY = y - HERO_RADIUS - 10;
+  context.fillStyle = "rgba(26, 22, 19, 0.88)";
+  context.fillRect(barX, barY, HP_BAR_WIDTH, HP_BAR_HEIGHT);
+  context.fillStyle = "#8fe3b0";
+  context.fillRect(
+    barX,
+    barY,
+    HP_BAR_WIDTH * Math.max(0, Math.min(1, hp / maxHp)),
+    HP_BAR_HEIGHT,
+  );
+}
+
+function drawHeroLabel(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  label: string,
+): void {
+  context.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
+  context.textAlign = "center";
+  context.textBaseline = "top";
+  const labelY = y + HERO_RADIUS + 12;
+  const labelWidth = context.measureText(label).width;
+  context.fillStyle = "rgba(26, 22, 19, 0.88)";
+  context.fillRect(
+    x - labelWidth / 2 - LABEL_PADDING_X,
+    labelY - 1,
+    labelWidth + LABEL_PADDING_X * 2,
+    LABEL_HEIGHT,
+  );
+  context.fillStyle = "rgba(255, 253, 246, 0.96)";
+  context.fillText(label, x, labelY);
+}
+
+function drawLevelFlourish(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  levelUpTick: number,
+  currentTick: number,
+): void {
+  if (levelUpTick < 0 || currentTick - levelUpTick >= 40) {
+    return;
+  }
+  const flourishProgress = (currentTick - levelUpTick) / 40;
+  context.beginPath();
+  context.arc(x, y, HERO_RADIUS + 8 + flourishProgress * 18, 0, Math.PI * 2);
+  context.globalAlpha = Math.max(0, 1 - flourishProgress);
+  context.strokeStyle = "#e8b73a";
+  context.lineWidth = 2;
+  context.stroke();
+  context.globalAlpha = 1;
+}
+
+function drawFallSite(
+  context: CanvasRenderingContext2D,
+  marker: HeroRenderProjection["fallenHeroes"][number],
+  formatLabel: HeroFallLabelFormatter,
+): void {
+  context.save();
+  context.translate(marker.x, marker.y);
+  context.strokeStyle = marker.houseColor;
+  context.fillStyle = "rgba(26, 22, 19, 0.82)";
+  context.lineWidth = 3;
+  context.beginPath();
+  context.arc(0, 0, HERO_RADIUS + 5, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+  context.beginPath();
+  context.moveTo(-7, -7);
+  context.lineTo(7, 7);
+  context.moveTo(7, -7);
+  context.lineTo(-7, 7);
+  context.stroke();
+  context.restore();
+  drawHeroLabel(context, marker.x, marker.y, formatLabel(marker.respawnTicksRemaining));
+}
+
 export function drawHeroes(
   context: CanvasRenderingContext2D,
-  agents: readonly Agent[],
-  houses: readonly House[],
-  modifiersByHouse: readonly ModifierEntry[],
+  projection: HeroRenderProjection,
   currentTick: number,
   formatLabel?: HeroLabelFormatter,
+  formatFallLabel: HeroFallLabelFormatter = (ticks) =>
+    `${Math.ceil(ticks / BALANCE_CONFIG.TICKS_PER_SECOND)}s`,
 ): void {
-  const colorsByHouse = new Map(
-    houses.map((house) => [house.id, house.color] as const),
-  );
+  for (const marker of projection.fallenHeroes) {
+    drawFallSite(context, marker, formatFallLabel);
+  }
 
-  for (const hero of agents.filter(({ isHero }) => isHero)) {
-    const definition = HERO_DEFINITIONS.find(
-      ({ id }) => id === hero.heroId,
-    );
-    const modifiers =
-      modifiersByHouse.find(({ agentId }) => agentId === hero.id)
-        ?.modifiers ??
-      modifiersByHouse.find(
-        ({ agentId, houseId }) =>
-          agentId === undefined && houseId === hero.houseId,
-      )?.modifiers;
-    const color = colorsByHouse.get(hero.houseId);
-    if (
-      definition === undefined ||
-      modifiers === undefined ||
-      color === undefined ||
-      hero.hp <= 0
-    ) {
+  for (const { agent: hero, auraRadius, houseColor, maxHp } of projection.livingHeroes) {
+    const definition = HERO_DEFINITIONS.find(({ id }) => id === hero.heroId);
+    if (definition === undefined) {
       continue;
     }
-
-    const auraRadius =
-      definition.auraRadius + modifiers.heroAuraRadiusBonus;
-    if (auraRadius > 0) {
-      context.beginPath();
-      context.arc(hero.x, hero.y, auraRadius, 0, Math.PI * 2);
-      context.fillStyle = "rgba(123, 176, 106, 0.15)";
-      context.strokeStyle = "rgba(160, 214, 139, 0.40)";
-      context.lineWidth = 1;
-      context.fill();
-      context.stroke();
-    }
-
+    drawAura(context, hero.x, hero.y, auraRadius);
     const spriteId = spriteIdForHero(hero.heroId);
-    if (
-      spriteId === null ||
-      !drawSprite(context, spriteId, hero.x, hero.y, { tint: color })
-    ) {
-      drawHeroPrimitiveBody(context, hero, color);
+    if (spriteId === null || !drawSprite(context, spriteId, hero.x, hero.y, { tint: houseColor })) {
+      drawHeroPrimitiveBody(context, hero.x, hero.y, houseColor);
     }
-    if (
-      hero.heroLevelUpTick >= 0 &&
-      currentTick - hero.heroLevelUpTick < 40
-    ) {
-      const flourishProgress =
-        (currentTick - hero.heroLevelUpTick) / 40;
-      context.beginPath();
-      context.arc(
-        hero.x,
-        hero.y,
-        HERO_RADIUS + 8 + flourishProgress * 18,
-        0,
-        Math.PI * 2,
-      );
-      context.globalAlpha = Math.max(0, 1 - flourishProgress);
-      context.strokeStyle = "#e8b73a";
-      context.lineWidth = 2;
-      context.stroke();
-      context.globalAlpha = 1;
-    }
-
-    const maxHp = maxHpForAgent(hero, modifiers);
-    const barX = hero.x - HP_BAR_WIDTH / 2;
-    const barY = hero.y - HERO_RADIUS - 10;
-    context.fillStyle = "rgba(26, 22, 19, 0.88)";
-    context.fillRect(barX, barY, HP_BAR_WIDTH, HP_BAR_HEIGHT);
-    context.fillStyle = "#8fe3b0";
-    context.fillRect(
-      barX,
-      barY,
-      HP_BAR_WIDTH * Math.max(0, Math.min(1, hero.hp / maxHp)),
-      HP_BAR_HEIGHT,
-    );
-
+    drawLevelFlourish(context, hero.x, hero.y, hero.heroLevelUpTick, currentTick);
+    drawHpBar(context, hero.x, hero.y, hero.hp, maxHp);
     const label = formatLabel?.(definition.id, hero.heroLevel);
     if (label !== undefined) {
-      context.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
-      context.textAlign = "center";
-      context.textBaseline = "top";
-      const labelY = hero.y + HERO_RADIUS + 12;
-      const labelWidth = context.measureText(label).width;
-      context.fillStyle = "rgba(26, 22, 19, 0.88)";
-      context.fillRect(
-        hero.x - labelWidth / 2 - LABEL_PADDING_X,
-        labelY - 1,
-        labelWidth + LABEL_PADDING_X * 2,
-        LABEL_HEIGHT,
-      );
-      context.fillStyle = "rgba(255, 253, 246, 0.96)";
-      context.fillText(label, hero.x, labelY);
+      drawHeroLabel(context, hero.x, hero.y, label);
     }
   }
 }

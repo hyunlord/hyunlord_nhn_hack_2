@@ -1,9 +1,15 @@
 import type { CSSProperties } from "react";
 import { HOUSE_CONFIG, HOUSE_SPAWN_SLOTS } from "../../content/houseConfig";
-import type { UnitClassId } from "../../content/unitClassConfig";
-import { UNIT_CLASS_IDS } from "../../content/unitClassConfig";
 import { useLocale } from "../../content/locale";
-import { houseIdentity, houseName, houseTrait, unitClassLabel, synergyDescription, synergyName } from "../../content/locale/display";
+import {
+  houseIdentity,
+  houseName,
+  houseTraitLabels,
+  synergyDescription,
+  synergyName,
+  UNIT_CLASS_ORDER,
+  unitClassLabel,
+} from "../../content/locale/display";
 import {
   frameBackgroundImage,
   HOUSE_FRAME_CONTENT_PERCENT,
@@ -19,27 +25,24 @@ const FRAME_CONTENT_STYLE = {
   width: `${HOUSE_FRAME_CONTENT_PERCENT.width}%`,
 } as const satisfies CSSProperties;
 
-const UNIT_CLASS_COMPOSITION_PALETTE: Readonly<Record<UnitClassId, string>> = {
-  melee: "#d2a86a",
-  spear: "#9aa5ff",
-  archer: "#82d1b7",
-  skirmisher: "#f08f8b",
-};
-
 function rosterComposition(houseId: typeof HOUSE_CONFIG[number]["id"]) {
   const house = HOUSE_CONFIG.find(({ id }) => id === houseId);
   if (house === undefined) {
     return [];
   }
-  const total = UNIT_CLASS_IDS.reduce(
+  const total = UNIT_CLASS_ORDER.reduce(
     (sum, id) => sum + (house.roster[id] ?? 0),
     0,
   );
-  return UNIT_CLASS_IDS.map((unitClass) => ({
+  return UNIT_CLASS_ORDER.map((unitClass) => ({
     unitClass,
     count: house.roster[unitClass] ?? 0,
-    ratio: total === 0 ? 0 : ((house.roster[unitClass] ?? 0) / total) * 100,
+    percent: total === 0 ? 0 : ((house.roster[unitClass] ?? 0) / total) * 100,
   }));
+}
+
+function selectionSegmentFill(houseColor: string, index: number): string {
+  return `color-mix(in srgb, ${houseColor} ${40 + index * 14}%, var(--panel))`;
 }
 
 export function HouseSelectScreen() {
@@ -94,52 +97,14 @@ export function HouseSelectScreen() {
                 selected ? "color-mix(in srgb, var(--accent) 8%, var(--panel))" : "var(--panel)",
               );
               return (
-                <button
-                  aria-pressed={selected}
-                  className={`selection-card${unlocked ? "" : " selection-card--locked"}`}
-                  data-frame-sprite={HOUSE_SELECTION_FRAME.frameSpriteId}
-                  disabled={!unlocked}
+                <HouseSelectionCard
+                  backgroundImage={backgroundImage}
+                  house={house}
                   key={house.id}
-                  onClick={() => dispatch({ type: "toggleHouse", houseId: house.id })}
-                  style={
-                    backgroundImage === undefined
-                      ? undefined
-                      : { backgroundImage, backgroundRepeat: "no-repeat, repeat", backgroundSize: "100% 100%, auto" }
-                  }
-                  type="button"
-                >
-                  <span className="selection-card__content" style={FRAME_CONTENT_STYLE}>
-                    <span aria-hidden="true" className="house-mark" style={{ backgroundColor: house.color }} />
-                    <span>
-                    <strong>{houseName(t, house.id)}</strong>
-                      <small>{houseIdentity(t, house.id)}</small>
-                      <small className="trait-line">{houseTrait(t, house.id)}</small>
-                    </span>
-                    <div className="selection-composition">
-                      {rosterComposition(house.id).map(({ unitClass, count, ratio }) => (
-                        <div className="selection-composition__row" key={unitClass}>
-                          <span>
-                            {unitClassLabel(t, unitClass)}
-                            {" "}
-                            {count}
-                          </span>
-                          <div className="selection-composition__track">
-                            <span
-                              className="selection-composition__fill"
-                              style={{
-                                background: UNIT_CLASS_COMPOSITION_PALETTE[unitClass],
-                                width: `${Math.round(ratio)}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <span className="status-label">
-                      {selected ? t("selection.pick", { order: order + 1 }) : unlocked ? t("selection.choose") : t("common.locked")}
-                    </span>
-                  </span>
-                </button>
+                  onToggle={() => dispatch({ type: "toggleHouse", houseId: house.id })}
+                  selectedOrder={order}
+                  unlocked={unlocked}
+                />
               );
             })}
           </div>
@@ -176,5 +141,74 @@ export function HouseSelectScreen() {
         </button>
       </footer>
     </main>
+  );
+}
+
+export function HouseSelectionCard({
+  backgroundImage,
+  house,
+  onToggle,
+  selectedOrder,
+  unlocked,
+}: {
+  readonly backgroundImage: string | undefined;
+  readonly house: typeof HOUSE_CONFIG[number];
+  readonly onToggle: () => void;
+  readonly selectedOrder: number;
+  readonly unlocked: boolean;
+}) {
+  const { t } = useLocale();
+  const selected = selectedOrder >= 0;
+  return (
+    <button
+      aria-pressed={selected}
+      className={`selection-card${unlocked ? "" : " selection-card--locked"}`}
+      data-frame-sprite={HOUSE_SELECTION_FRAME.frameSpriteId}
+      disabled={!unlocked}
+      onClick={onToggle}
+      style={
+        backgroundImage === undefined
+          ? undefined
+          : { backgroundImage, backgroundRepeat: "no-repeat, repeat", backgroundSize: "100% 100%, auto" }
+      }
+      type="button"
+    >
+      <span className="selection-card__content" style={FRAME_CONTENT_STYLE}>
+        <span aria-hidden="true" className="house-mark" style={{ backgroundColor: house.color }} />
+        <span>
+          <strong>{houseName(t, house.id)}</strong>
+          {houseTraitLabels(t, house).map((label) => (
+            <small className="trait-line" key={label}>{label}</small>
+          ))}
+        </span>
+        <div className="selection-composition" aria-label={t("selection.composition", { house: houseName(t, house.id) })}>
+          {rosterComposition(house.id).map(({ unitClass, count, percent }, index) => (
+            <div className="selection-composition__row" key={unitClass}>
+              <span>
+                {unitClassLabel(t, unitClass)}
+                {" "}
+                {count}
+                {" · "}
+                {Math.round(percent)}
+                %
+              </span>
+              <div className="selection-composition__track">
+                <span
+                  className="selection-composition__fill"
+                  style={{
+                    background: selectionSegmentFill(house.color, index),
+                    width: `${Math.round(percent)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <small>{houseIdentity(t, house.id)}</small>
+        <span className="status-label">
+          {selected ? t("selection.pick", { order: selectedOrder + 1 }) : unlocked ? t("selection.choose") : t("common.locked")}
+        </span>
+      </span>
+    </button>
   );
 }
