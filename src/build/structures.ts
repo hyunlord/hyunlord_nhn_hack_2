@@ -58,13 +58,13 @@ export function validateTowerPlacement(
   if (tooCloseTower) {
     return { ok: false, reason: "too close to another tower" };
   }
-  const overlapsHall = context.halls.some(
-    (hall) =>
-      distanceSquared(point, hall) <
-      (hall.radius + TOWER_RADIUS) ** 2,
+  const overlapsDefenseStructure = context.structures.some(
+    (structure) =>
+      distanceSquared(point, structure) <
+      (structure.radius + TOWER_RADIUS) ** 2,
   );
-  return overlapsHall
-    ? { ok: false, reason: "too close to a hall" }
+  return overlapsDefenseStructure
+    ? { ok: false, reason: "too close to keep or banner" }
     : { ok: true, reason: null };
 }
 

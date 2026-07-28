@@ -4,6 +4,11 @@ import {
   TOWER_CONFIG,
   createTower,
 } from "../src/build/structures";
+import {
+  EMPTY_PURCHASES,
+  priceForItem,
+} from "../src/build/shop";
+import { BALANCE_CONFIG } from "../src/content/balanceConfig";
 import { applyTowerDamages } from "../src/engine/combatDamage";
 import { createInitialState } from "../src/engine/tick";
 import type { GameState } from "../src/engine/engine.types";
@@ -12,8 +17,11 @@ import {
   purchaseTowerAt,
   shopAvailabilityForState,
 } from "../src/engine/shopEngine";
+import {
+  cardApplicabilityWarnings,
+} from "../src/progression/cardApplicability";
 
-function intermissionState(tribute = 500) {
+function intermissionState(tribute = 500): GameState {
   return {
     ...createInitialState(91).state,
     phase: "intermission" as const,
@@ -28,7 +36,7 @@ test("Given an unaffordable purchase, when shop resolution runs, then the exact 
     purchaseShopItem(state, "sharpen_arms"),
     state,
   );
-  assert.strictEqual(purchaseTowerAt(state, 480, 300), state);
+  assert.strictEqual(purchaseTowerAt(state, 860, 300), state);
 });
 
 test("Given tribute outside intermission, when any purchase is requested, then the exact state reference is rejected", () => {
@@ -41,7 +49,7 @@ test("Given tribute outside intermission, when any purchase is requested, then t
     purchaseShopItem(state, "field_medicine"),
     state,
   );
-  assert.strictEqual(purchaseTowerAt(state, 480, 300), state);
+  assert.strictEqual(purchaseTowerAt(state, 860, 300), state);
 });
 
 test("Given no hero is dead, when availability is listed, then revive hero is disabled with its reason", () => {
@@ -53,7 +61,7 @@ test("Given no hero is dead, when availability is listed, then revive hero is di
   assert.equal(revive?.reason, "no dead hero");
 });
 
-test("Given five fallen regulars in the weakest house, when Recruit Squad is purchased, then exactly those five return at full HP by their hall", () => {
+test("Given five fallen regulars in the weakest house, when Recruit Squad is purchased, then exactly those five return at full HP by their banner", () => {
   const initial = intermissionState();
   const fallenIds = initial.agents
     .filter(
@@ -72,7 +80,7 @@ test("Given five fallen regulars in the weakest house, when Recruit Squad is pur
   const snapshot = structuredClone(state);
 
   const result = purchaseShopItem(state, "recruit_squad");
-  const hall = state.halls.find(({ houseId }) => houseId === "house_a");
+  const banner = state.banners.find(({ houseId }) => houseId === "house_a");
 
   assert.equal(
     result.agents.filter(
@@ -83,23 +91,38 @@ test("Given five fallen regulars in the weakest house, when Recruit Squad is pur
   assert.ok(
     result.agents
       .filter(({ id }) => fallenIds.includes(id))
-      .every(({ x, y, hp }) => x === hall?.x && y === hall?.y && hp === 100),
+      .every(({ x, y, hp }) => x === banner?.x && y === banner?.y && hp === 100),
   );
   assert.equal(result.shopPurchases.recruit_squad, 1);
   assert.equal(result.tribute, state.tribute - 40);
   assert.deepEqual(state, snapshot);
 });
 
-test("Given valid and invalid tower positions, when placement commits, then only the valid click deducts tribute and creates a tower", () => {
+test("Given valid, keep-overlapping, and banner-overlapping tower positions, when placement commits, then only the valid click deducts tribute and creates a tower", () => {
   const state = intermissionState();
-  const invalid = purchaseTowerAt(
-    state,
-    state.halls[0]?.x ?? 0,
-    state.halls[0]?.y ?? 0,
+  const keepOverlap = purchaseTowerAt(state, state.keep.x, state.keep.y);
+  const banner = state.banners[0];
+  if (banner === undefined) {
+    throw new RangeError("Expected banner fixture.");
+  }
+  const bannerOverlap = purchaseTowerAt(state, banner.x, banner.y);
+  const destroyedBannerOverlap = purchaseTowerAt(
+    {
+      ...state,
+      banners: state.banners.map((candidate) =>
+        candidate.houseId === banner.houseId
+          ? { ...candidate, hp: 0 }
+          : candidate,
+      ),
+    },
+    banner.x,
+    banner.y,
   );
-  const valid = purchaseTowerAt(state, 480, 300);
+  const valid = purchaseTowerAt(state, 860, 300);
 
-  assert.strictEqual(invalid, state);
+  assert.strictEqual(keepOverlap, state);
+  assert.strictEqual(bannerOverlap, state);
+  assert.equal(destroyedBannerOverlap.towers.length, state.towers.length);
   assert.equal(valid.towers.length, 1);
   assert.equal(valid.towers[0]?.hp, 300);
   assert.equal(valid.shopPurchases.raise_tower, 1);
@@ -126,7 +149,7 @@ test("Given Deeproot Dominion, when a tower is priced and purchased, then its tr
   const tower = shopAvailabilityForState(state).find(
     ({ item }) => item.id === "raise_tower",
   );
-  const result = purchaseTowerAt(state, 480, 300);
+  const result = purchaseTowerAt(state, 860, 300);
 
   assert.equal(tower?.cost, 42);
   assert.equal(tower?.available, true);
@@ -163,7 +186,7 @@ test("Given a max-count tower field loses one tower, when a replacement is purch
   assert.equal(result.towers.at(-1)?.y, 520);
 });
 
-test("Given a damaged army, hall, and dead hero, when matching purchases resolve, then exact effects apply deterministically", () => {
+test("Given a damaged army, keep, and dead hero, when matching purchases resolve, then exact effects apply deterministically", () => {
   const initial = intermissionState();
   const regular = initial.agents.find(({ isHero }) => !isHero);
   const hero = initial.agents.find(({ isHero }) => isHero);
@@ -184,13 +207,11 @@ test("Given a damaged army, hall, and dead hero, when matching purchases resolve
             }
           : agent,
     ),
-    halls: initial.halls.map((hall, index) =>
-      index === 0 ? { ...hall, hp: 400 } : hall,
-    ),
+    keep: { ...initial.keep, hp: 400 },
   };
 
   state = purchaseShopItem(state, "field_medicine");
-  state = purchaseShopItem(state, "reinforce_hall");
+  state = purchaseShopItem(state, "reinforce_keep");
   state = purchaseShopItem(state, "sharpen_arms");
   state = purchaseShopItem(state, "revive_hero");
 
@@ -198,7 +219,121 @@ test("Given a damaged army, hall, and dead hero, when matching purchases resolve
     state.agents.find(({ id }) => id === regular.id)?.hp,
     65,
   );
-  assert.equal(state.halls[0]?.hp, 700);
+  assert.equal(state.keep.hp, 700);
   assert.equal(state.runUpgrades.attackDamageMultiplier, 1.08);
   assert.ok((state.agents.find(({ id }) => id === hero.id)?.hp ?? 0) > 0);
+});
+
+test("Given reinforce keep is renamed, when prices and availability resolve, then the old id is absent and the existing curve remains", () => {
+  const initial = intermissionState();
+  const state = {
+    ...initial,
+    keep: { ...initial.keep, hp: 2_000 },
+  };
+  const availability = shopAvailabilityForState(state);
+  const itemIds: readonly string[] = availability.map(({ item }) => item.id);
+
+  assert.equal(priceForItem("reinforce_keep", EMPTY_PURCHASES), 45);
+  assert.equal(
+    priceForItem("reinforce_keep", {
+      ...EMPTY_PURCHASES,
+      reinforce_keep: 1,
+    }),
+    59,
+  );
+  assert.equal(itemIds.includes("reinforce_hall"), false);
+  assert.equal(
+    availability.find(({ item }) => item.id === "reinforce_keep")?.available,
+    true,
+  );
+});
+
+test("Given damaged keep and banners, when reinforce keep is purchased, then the lowest hp ratio repairs exactly 300 and clamps at max", () => {
+  const initial = intermissionState();
+  let state: GameState = {
+    ...initial,
+    keep: { ...initial.keep, hp: 2_300 },
+    banners: initial.banners.map((banner, index) =>
+      index === 0
+        ? { ...banner, hp: 100, maxHp: 420 }
+        : index === 1
+          ? { ...banner, hp: 400, maxHp: 420 }
+          : banner,
+    ),
+  };
+
+  state = purchaseShopItem(state, "reinforce_keep");
+  assert.equal(state.banners[0]?.hp, 400);
+  assert.equal(state.keep.hp, 2_300);
+
+  state = purchaseShopItem(state, "reinforce_keep");
+  assert.equal(state.banners[0]?.hp, 420);
+});
+
+test("Given equal repair ratios in shuffled banners, when reinforce keep is purchased, then stable structure id chooses the same banner", () => {
+  const initial = intermissionState();
+  const banners = [...initial.banners]
+    .reverse()
+    .map((banner) => ({ ...banner, hp: 210, maxHp: 420 }));
+  const state = purchaseShopItem(
+    {
+      ...initial,
+      keep: { ...initial.keep, hp: 1_200, maxHp: 2_400 },
+      banners,
+    },
+    "reinforce_keep",
+  );
+
+  assert.equal(
+    state.banners.find(({ houseId }) => houseId === "house_a")?.hp,
+    420,
+  );
+  assert.equal(
+    state.banners.find(({ houseId }) => houseId === "house_b")?.hp,
+    210,
+  );
+  assert.equal(state.keep.hp, 1_200);
+});
+
+test("Given destroyed banners and full structures, when reinforce keep is requested, then destroyed banners are excluded and unavailable no-ops preserve state", () => {
+  const initial = intermissionState();
+  const destroyedOnly = {
+    ...initial,
+    keep: { ...initial.keep, hp: initial.keep.maxHp },
+    banners: initial.banners.map((banner) =>
+      banner.houseId === "house_a" ? { ...banner, hp: 0 } : banner,
+    ),
+  };
+
+  assert.strictEqual(
+    purchaseShopItem(destroyedOnly, "reinforce_keep"),
+    destroyedOnly,
+  );
+});
+
+test("Given house-scoped cards, when owning banner or fallback keep state is checked, then only houses without a live anchor warn", () => {
+  const initial = intermissionState();
+  const houseCard = {
+    effect: {},
+    houseId: "house_a",
+  };
+
+  assert.deepEqual(cardApplicabilityWarnings({
+    card: houseCard,
+    selectedHouseIds: initial.selectedHouseIds,
+    agents: [],
+    keep: { ...initial.keep, hp: BALANCE_CONFIG.KEEP_HP },
+    banners: initial.banners.map((banner) =>
+      banner.houseId === "house_a" ? { ...banner, hp: 0 } : banner,
+    ),
+  }), []);
+  assert.deepEqual(cardApplicabilityWarnings({
+    card: houseCard,
+    selectedHouseIds: initial.selectedHouseIds,
+    agents: [],
+    keep: { ...initial.keep, hp: 0 },
+    banners: initial.banners.map((banner) =>
+      banner.houseId === "house_a" ? { ...banner, hp: 0 } : banner,
+    ),
+  }), [{ kind: "fallenHouseStronghold", houseId: "house_a" }]);
 });

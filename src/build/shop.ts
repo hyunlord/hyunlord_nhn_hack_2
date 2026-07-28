@@ -12,7 +12,7 @@ export const SHOP_CATALOG: readonly ShopItem[] = [
     id: "recruit_squad",
     name: "Recruit Squad",
     description:
-      "Revive 5 dead agents of the house with the fewest living, at its hall, at full HP.",
+      "Revive 5 dead agents of the house with the fewest living, at its banner or the keep, at full HP.",
     baseCost: 40,
     costGrowth: 1.35,
     repeatable: true,
@@ -46,9 +46,9 @@ export const SHOP_CATALOG: readonly ShopItem[] = [
     needsPlacement: false,
   },
   {
-    id: "reinforce_hall",
-    name: "Reinforce Hall",
-    description: "Restore 300 HP to the most damaged surviving hall.",
+    id: "reinforce_keep",
+    name: "Reinforce Keep",
+    description: "Restore 300 HP to the most damaged surviving keep or banner.",
     baseCost: 45,
     costGrowth: 1.3,
     repeatable: true,
@@ -70,7 +70,7 @@ export const EMPTY_PURCHASES: ShopPurchases = {
   field_medicine: 0,
   raise_tower: 0,
   sharpen_arms: 0,
-  reinforce_hall: 0,
+  reinforce_keep: 0,
   revive_hero: 0,
 };
 
@@ -109,10 +109,10 @@ function domainReason(
         : "tower limit reached";
     case "sharpen_arms":
       return null;
-    case "reinforce_hall":
-      return snapshot.damagedHallCount > 0
+    case "reinforce_keep":
+      return snapshot.damagedStructureCount > 0
         ? null
-        : "no damaged surviving halls";
+        : "no damaged surviving keep or banners";
     case "revive_hero":
       return snapshot.deadHeroCount > 0 ? null : "no dead hero";
   }

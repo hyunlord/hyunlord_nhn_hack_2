@@ -5,8 +5,12 @@ import { CARD_DEFINITIONS } from "../src/content/cardConfig";
 import {
   canCastSkill,
   resolveSkill,
+  type SkillTargetSnapshot,
 } from "../src/divine/skillResolver";
-import type { DivineSkillEvent } from "../src/divine/skillTypes";
+import type {
+  DivineSkillEvent,
+  DivineSkillId,
+} from "../src/divine/skillTypes";
 import { chooseDraftCard } from "../src/engine/progressionEngine";
 import { castSkill } from "../src/engine/skillApplication";
 import {
@@ -38,7 +42,7 @@ function creatureThreat(): ThreatEvent {
       y: 100,
       hp: 100,
       agentDamage: 6,
-      hallDamage: 5,
+      structureDamage: 5,
       lastAttackTick: 0,
       haltedUntilTick: -1,
     }],
@@ -205,9 +209,12 @@ test("Given Chains of Dusk, when a rooted creature advances, then it holds for e
   const inRange = stepThreat(
     threat,
     [{
-      ...farTarget[0]!,
       id: "agent_near",
+      houseId: "house_a",
       x: 105,
+      y: 100,
+      hp: 100,
+      state: "idle",
     }],
     [],
     110,
@@ -270,14 +277,15 @@ test("Given Sanctuary, when living agents are inside, then they heal and cannot 
   assert.equal(result.agents[0]?.breakImmuneUntilTick, 250);
 });
 
-test("Given more than eight fallen regulars and dead heroes, when Resurgence resolves, then eight regulars are round-robin distributed and every hero returns", () => {
-  const snapshot = {
+test("Given more than eight fallen regulars and dead heroes, when Resurgence resolves, then eight regulars use owning live banners or the keep", () => {
+  const snapshot: SkillTargetSnapshot = {
     enemies: [],
     towers: [],
-    halls: [
-      { id: "house_a", x: 0, y: 0, hp: 1 },
-      { id: "house_b", x: 10, y: 0, hp: 1 },
-      { id: "house_c", x: 20, y: 0, hp: 1 },
+    keep: { id: "keep", x: 5, y: 0, hp: 1 },
+    banners: [
+      { id: "banner:house_a", houseId: "house_a", x: 0, y: 0, hp: 1 },
+      { id: "banner:house_b", houseId: "house_b", x: 10, y: 0, hp: 0 },
+      { id: "banner:house_c", houseId: "house_c", x: 20, y: 0, hp: 1 },
     ],
     agents: [
       ...["house_a", "house_b", "house_c"].flatMap((houseId) =>
@@ -313,16 +321,16 @@ test("Given more than eight fallen regulars and dead heroes, when Resurgence res
 
   assert.equal(outcome.regularRevives.length, 8);
   assert.deepEqual(
-    outcome.regularRevives.map(({ hallId }) => hallId),
+    outcome.regularRevives.map(({ structureId }) => structureId),
     [
-      "house_a",
-      "house_b",
-      "house_c",
-      "house_a",
-      "house_b",
-      "house_c",
-      "house_a",
-      "house_b",
+      "banner:house_a",
+      "keep",
+      "banner:house_c",
+      "banner:house_a",
+      "keep",
+      "banner:house_c",
+      "banner:house_a",
+      "keep",
     ],
   );
   assert.deepEqual(outcome.heroRevives, [
@@ -330,6 +338,59 @@ test("Given more than eight fallen regulars and dead heroes, when Resurgence res
     "hero_b",
     "hero_c",
   ]);
+});
+
+test("Given Resurgence is cast with one destroyed owning banner, when effects apply, then revived regulars spawn at live banners or the keep and costs remain unchanged", () => {
+  const base = createInitialState(BALANCE_CONFIG.DEFAULT_SEED).state;
+  const deadRegularA = base.agents.find(
+    ({ isHero, houseId }) => !isHero && houseId === "house_a",
+  );
+  const deadRegularB = base.agents.find(
+    ({ isHero, houseId }) => !isHero && houseId === "house_b",
+  );
+  const houseABanner = base.banners.find(({ houseId }) => houseId === "house_a");
+  const houseBBanner = base.banners.find(({ houseId }) => houseId === "house_b");
+  if (
+    deadRegularA === undefined ||
+    deadRegularB === undefined ||
+    houseABanner === undefined ||
+    houseBBanner === undefined
+  ) {
+    throw new RangeError("Expected agent and banner fixtures.");
+  }
+  const deadRegularIds = [deadRegularA.id, deadRegularB.id];
+  const unlockedSkills: DivineSkillId[] = ["resurgence"];
+  const state = {
+    ...base,
+    tick: 70,
+    phase: "wave" as const,
+    divinePower: 100,
+    unlockedSkills,
+    banners: base.banners.map((banner) =>
+      banner.houseId === "house_b" ? { ...banner, hp: 0 } : banner,
+    ),
+    agents: base.agents.map((agent) =>
+      deadRegularIds.includes(agent.id)
+        ? { ...agent, hp: 0, state: "dead" as const, x: 1, y: 1 }
+        : agent,
+    ),
+  };
+
+  const result = castSkill(state, {
+    type: "resurgence",
+    targetX: 0,
+    targetY: 0,
+    tick: 70,
+  });
+  const revivedA = result.agents.find(({ id }) => id === deadRegularIds[0]);
+  const revivedB = result.agents.find(({ id }) => id === deadRegularIds[1]);
+
+  assert.equal(revivedA?.x, houseABanner.x);
+  assert.equal(revivedA?.y, houseABanner.y);
+  assert.equal(revivedB?.x, state.keep.x);
+  assert.equal(revivedB?.y, state.keep.y);
+  assert.equal(result.divinePower, 30);
+  assert.equal(result.skillCooldowns.resurgence, 600);
 });
 
 test("Given Martyr's Ember, when a hero dies, then the death grants exactly four additional divine power", () => {

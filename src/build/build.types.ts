@@ -1,9 +1,11 @@
+import type { HouseId } from "../content/houseConfig";
+
 export type ShopItemId =
   | "recruit_squad"
   | "field_medicine"
   | "raise_tower"
   | "sharpen_arms"
-  | "reinforce_hall"
+  | "reinforce_keep"
   | "revive_hero";
 
 export interface Tower {
@@ -21,8 +23,8 @@ export interface TowerDestroyed {
   readonly tick: number;
 }
 
-export interface BuildHallSnapshot {
-  readonly id: string;
+export interface BuildKeepSnapshot {
+  readonly id: "keep";
   readonly x: number;
   readonly y: number;
   readonly hp: number;
@@ -30,10 +32,24 @@ export interface BuildHallSnapshot {
   readonly radius: number;
 }
 
+export interface BuildBannerSnapshot {
+  readonly id: `banner:${HouseId}`;
+  readonly houseId: HouseId;
+  readonly x: number;
+  readonly y: number;
+  readonly hp: number;
+  readonly maxHp: number;
+  readonly radius: number;
+}
+
+export type BuildDefenseSnapshot =
+  | BuildKeepSnapshot
+  | BuildBannerSnapshot;
+
 export interface TowerPlacementContext {
   readonly worldWidth: number;
   readonly worldHeight: number;
-  readonly halls: readonly BuildHallSnapshot[];
+  readonly structures: readonly BuildDefenseSnapshot[];
   readonly towers: readonly Tower[];
 }
 
@@ -59,7 +75,7 @@ export interface ShopSnapshot {
   readonly purchases: ShopPurchases;
   readonly towerCount: number;
   readonly damagedAgentCount: number;
-  readonly damagedHallCount: number;
+  readonly damagedStructureCount: number;
   readonly deadHeroCount: number;
   readonly deadRegularAgentCount: number;
 }

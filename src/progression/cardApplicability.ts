@@ -1,7 +1,7 @@
 import type { Agent } from "../agents/agentTypes";
 import { HOUSE_IDS, type HouseId } from "../content/houseConfig";
 import type { UnitClassId } from "../content/unitClassConfig";
-import type { Hall } from "../engine/engine.types";
+import type { Banner, Keep } from "../engine/engine.types";
 
 const MINIMUM_CLASS_SHARE_PERCENT = 15;
 
@@ -16,7 +16,7 @@ export type CardApplicabilityWarning =
       readonly heroId: string;
     }
   | {
-      readonly kind: "fallenHouseHall";
+      readonly kind: "fallenHouseStronghold";
       readonly houseId: HouseId;
     };
 
@@ -30,7 +30,8 @@ export interface CardApplicabilityInput {
   };
   readonly selectedHouseIds: readonly HouseId[];
   readonly agents: readonly Agent[];
-  readonly halls: readonly Hall[];
+  readonly keep: Keep;
+  readonly banners: readonly Banner[];
 }
 
 function isHouseId(houseId: string): houseId is HouseId {
@@ -104,18 +105,21 @@ function heroWarning({
   return heroUnavailable ? { kind: "deadHero", heroId: card.heroId } : null;
 }
 
-function hallWarning({
+function strongholdWarning({
   card,
-  halls,
+  keep,
+  banners,
 }: CardApplicabilityInput): CardApplicabilityWarning | null {
   if (card.houseId === undefined || !isHouseId(card.houseId)) {
     return null;
   }
 
-  const hall = halls.find((candidate) => candidate.houseId === card.houseId);
-  return hall !== undefined && hall.hp <= 0
-    ? { kind: "fallenHouseHall", houseId: card.houseId }
-    : null;
+  const banner = banners.find(
+    (candidate) => candidate.houseId === card.houseId,
+  );
+  return (banner?.hp ?? 0) > 0 || keep.hp > 0
+    ? null
+    : { kind: "fallenHouseStronghold", houseId: card.houseId };
 }
 
 export function cardApplicabilityWarnings(
@@ -124,7 +128,7 @@ export function cardApplicabilityWarnings(
   const warnings = [
     classShareWarning(input),
     heroWarning(input),
-    hallWarning(input),
+    strongholdWarning(input),
   ];
   return warnings.filter(
     (warning): warning is CardApplicabilityWarning => warning !== null,

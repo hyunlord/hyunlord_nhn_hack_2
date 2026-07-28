@@ -5,6 +5,7 @@ import {
   resolveSkill,
   type SkillTargetSnapshot,
 } from "../divine/skillResolver";
+import type { DefenseStructureId } from "../threat/threatTypes";
 import { applyDamageToThreat } from "../threat/waveDirector";
 import { applyTowerDamages } from "./combatDamage";
 import type { GameState } from "./engine.types";
@@ -43,13 +44,34 @@ function targetSnapshot(state: GameState): SkillTargetSnapshot {
         ],
     towers: state.towers,
     agents: state.agents,
-    halls: state.halls.map(({ houseId, x, y, hp }) => ({
-      id: houseId,
-      x,
-      y,
-      hp,
+    keep: {
+      id: "keep",
+      x: state.keep.x,
+      y: state.keep.y,
+      hp: state.keep.hp,
+    },
+    banners: state.banners.map((banner) => ({
+      id: `banner:${banner.houseId}`,
+      houseId: banner.houseId,
+      x: banner.x,
+      y: banner.y,
+      hp: banner.hp,
     })),
   };
+}
+
+function revivalPoint(
+  state: GameState,
+  structureId: DefenseStructureId,
+): { readonly x: number; readonly y: number } | null {
+  if (structureId === "keep") {
+    return state.keep.hp > 0 ? state.keep : null;
+  }
+  const banner = state.banners.find(
+    (candidate) =>
+      `banner:${candidate.houseId}` === structureId && candidate.hp > 0,
+  );
+  return banner ?? null;
 }
 
 export function castSkill(
@@ -121,20 +143,21 @@ export function castSkill(
     ]),
   );
   const regularRevives = new Map(
-    outcome.regularRevives.map(({ agentId, hallId }) => [agentId, hallId]),
+    outcome.regularRevives.map(({ agentId, structureId }) => [
+      agentId,
+      structureId,
+    ]),
   );
   const heroRevives = new Set(outcome.heroRevives);
   let agents = state.agents.map((agent) => {
-    const hallId = regularRevives.get(agent.id);
-    if (hallId !== undefined) {
-      const hall = state.halls.find(
-        ({ houseId, hp }) => houseId === hallId && hp > 0,
-      );
-      if (hall !== undefined) {
+    const structureId = regularRevives.get(agent.id);
+    if (structureId !== undefined) {
+      const point = revivalPoint(state, structureId);
+      if (point !== null) {
         return {
           ...agent,
-          x: hall.x,
-          y: hall.y,
+          x: point.x,
+          y: point.y,
           hp: maxHpForAgent(
             agent,
             modifiersForAgent(state, agent),
@@ -176,7 +199,8 @@ export function castSkill(
       heroRevives.has(agent.id)
         ? respawnHeroNow(
             agent,
-            state.halls,
+            state.keep,
+            state.banners,
             [{
               agentId: agent.id,
               houseId: agent.houseId,

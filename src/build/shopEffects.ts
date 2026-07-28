@@ -3,7 +3,7 @@ import { TOWER_CONFIG } from "./structures";
 
 export const SHOP_EFFECT_VALUES = {
   fieldMedicineHeal: 45,
-  hallRepair: 300,
+  strongholdRepair: 300,
   recruitSquadCount: 5,
   sharpenArmsMultiplier: 1.08,
 } as const;
@@ -18,7 +18,7 @@ export type ShopEffect =
       readonly range: number;
     }
   | { readonly kind: "runAttackDamage"; readonly multiplier: number }
-  | { readonly kind: "repairHall"; readonly hp: number }
+  | { readonly kind: "repairStronghold"; readonly hp: number }
   | { readonly kind: "reviveHero" };
 
 export const SHOP_ITEM_EFFECTS = {
@@ -36,8 +36,8 @@ export const SHOP_ITEM_EFFECTS = {
   recruit_squad: [
     { kind: "reviveRegulars", count: SHOP_EFFECT_VALUES.recruitSquadCount },
   ],
-  reinforce_hall: [
-    { kind: "repairHall", hp: SHOP_EFFECT_VALUES.hallRepair },
+  reinforce_keep: [
+    { kind: "repairStronghold", hp: SHOP_EFFECT_VALUES.strongholdRepair },
   ],
   revive_hero: [{ kind: "reviveHero" }],
   sharpen_arms: [

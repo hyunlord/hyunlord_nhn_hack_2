@@ -1,84 +1,60 @@
 import { DIVINE_SKILL_DEFINITIONS } from "../content/skillConfig";
+import type { DefenseStructureId } from "../threat/threatTypes";
 import type {
   DivineSkillEvent,
   DivineSkillId,
 } from "./skillTypes";
 
 export interface SkillEnemySnapshot {
-  readonly id: string;
-  readonly kind: "creature" | "mage";
-  readonly x: number;
-  readonly y: number;
-  readonly hp: number;
+  readonly id: string; readonly kind: "creature" | "mage";
+  readonly x: number; readonly y: number; readonly hp: number;
 }
 
 export interface SkillTowerSnapshot {
-  readonly id: string;
-  readonly x: number;
-  readonly y: number;
-  readonly hp: number;
+  readonly id: string; readonly x: number; readonly y: number; readonly hp: number;
 }
 
 export interface SkillAgentSnapshot {
-  readonly id: string;
-  readonly houseId: string;
-  readonly x: number;
-  readonly y: number;
-  readonly hp: number;
-  readonly isHero: boolean;
+  readonly id: string; readonly houseId: string; readonly x: number;
+  readonly y: number; readonly hp: number; readonly isHero: boolean;
 }
 
-export interface SkillHallSnapshot {
-  readonly id: string;
-  readonly x: number;
-  readonly y: number;
-  readonly hp: number;
+export interface SkillKeepSnapshot {
+  readonly id: "keep"; readonly x: number; readonly y: number; readonly hp: number;
+}
+
+export interface SkillBannerSnapshot {
+  readonly id: DefenseStructureId; readonly houseId: string;
+  readonly x: number; readonly y: number; readonly hp: number;
 }
 
 export interface SkillTargetSnapshot {
   readonly enemies: readonly SkillEnemySnapshot[];
   readonly towers: readonly SkillTowerSnapshot[];
   readonly agents: readonly SkillAgentSnapshot[];
-  readonly halls: readonly SkillHallSnapshot[];
+  readonly keep: SkillKeepSnapshot;
+  readonly banners: readonly SkillBannerSnapshot[];
 }
 
 export interface SkillOutcome {
-  readonly id: string;
-  readonly type: DivineSkillId;
-  readonly x: number;
-  readonly y: number;
-  readonly radius: number;
-  readonly color: string;
-  readonly startTick: number;
-  readonly durationTicks: number;
-  readonly enemyDamages: readonly {
-    readonly enemyId: string;
-    readonly amount: number;
-  }[];
-  readonly towerDamages: readonly {
-    readonly towerId: string;
-    readonly amount: number;
-  }[];
-  readonly agentHeals: readonly {
-    readonly agentId: string;
-    readonly amount: number;
-  }[];
-  readonly breakImmunities: readonly {
-    readonly agentId: string;
-    readonly untilTick: number;
-  }[];
-  readonly creatureHalts: readonly {
-    readonly creatureId: string;
-    readonly untilTick: number;
-  }[];
-  readonly regularRevives: readonly {
-    readonly agentId: string;
-    readonly hallId: string;
-  }[];
+  readonly id: string; readonly type: DivineSkillId;
+  readonly x: number; readonly y: number; readonly radius: number;
+  readonly color: string; readonly startTick: number; readonly durationTicks: number;
+  readonly enemyDamages: readonly { readonly enemyId: string; readonly amount: number }[];
+  readonly towerDamages: readonly { readonly towerId: string; readonly amount: number }[];
+  readonly agentHeals: readonly { readonly agentId: string; readonly amount: number }[];
+  readonly breakImmunities: readonly { readonly agentId: string; readonly untilTick: number }[];
+  readonly creatureHalts: readonly { readonly creatureId: string; readonly untilTick: number }[];
+  readonly regularRevives: readonly { readonly agentId: string; readonly structureId: DefenseStructureId }[];
   readonly heroRevives: readonly string[];
 }
 
 type Point = { readonly x: number; readonly y: number };
+
+type RevivalAnchor = {
+  readonly houseId: string;
+  readonly structureId: DefenseStructureId;
+};
 
 function distanceToEvent(point: Point, event: DivineSkillEvent): number {
   return Math.hypot(
@@ -123,33 +99,59 @@ function emptyOutcome(event: DivineSkillEvent): SkillOutcome {
   };
 }
 
+function revivalAnchorForHouse(
+  snapshot: SkillTargetSnapshot,
+  houseId: string,
+): RevivalAnchor | null {
+  const banner = snapshot.banners.find(
+    (candidate) => candidate.houseId === houseId && candidate.hp > 0,
+  );
+  if (banner !== undefined) {
+    return { houseId, structureId: banner.id };
+  }
+  return snapshot.keep.hp > 0
+    ? { houseId, structureId: snapshot.keep.id }
+    : null;
+}
+
 function resurgenceRevives(
   snapshot: SkillTargetSnapshot,
 ): Pick<SkillOutcome, "regularRevives" | "heroRevives"> {
-  const halls = [...snapshot.halls]
-    .filter(({ hp }) => hp > 0)
-    .sort((first, second) => first.id.localeCompare(second.id));
+  const houseIds = [...new Set(
+    snapshot.agents
+      .filter(({ isHero, hp }) => !isHero && hp <= 0)
+      .map(({ houseId }) => houseId),
+  )].sort();
+  const anchors = houseIds
+    .map((houseId) => revivalAnchorForHouse(snapshot, houseId))
+    .filter((anchor): anchor is RevivalAnchor => anchor !== null);
   const deadRegularsByHouse = new Map(
-    halls.map(({ id }) => [
-      id,
+    anchors.map(({ houseId }) => [
+      houseId,
       snapshot.agents
         .filter(
           (agent) =>
-            !agent.isHero && agent.hp <= 0 && agent.houseId === id,
+            !agent.isHero && agent.hp <= 0 && agent.houseId === houseId,
         )
         .sort((first, second) => first.id.localeCompare(second.id)),
     ]),
   );
-  const regularRevives: { agentId: string; hallId: string }[] = [];
+  const regularRevives: {
+    agentId: string;
+    structureId: DefenseStructureId;
+  }[] = [];
   while (regularRevives.length < 8) {
     let revivedThisRound = false;
-    for (const hall of halls) {
-      const queue = deadRegularsByHouse.get(hall.id);
+    for (const anchor of anchors) {
+      const queue = deadRegularsByHouse.get(anchor.houseId);
       const agent = queue?.shift();
       if (agent === undefined) {
         continue;
       }
-      regularRevives.push({ agentId: agent.id, hallId: hall.id });
+      regularRevives.push({
+        agentId: agent.id,
+        structureId: anchor.structureId,
+      });
       revivedThisRound = true;
       if (regularRevives.length === 8) {
         break;
