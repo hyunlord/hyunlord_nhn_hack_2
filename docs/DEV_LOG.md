@@ -566,3 +566,35 @@
 - No balance tuning was performed: no roster, card, shop-price, investment,
   wave-count, unit-stat, hero-stat, or multiplier changes were made in this
   task.
+
+## 2026-07-29 — Phase 5A final audit and verification
+
+- The final geometry audit made the Phase 5A contract literal: the keep is at
+  `(480, 300)` with `2400` HP and radius `26`; the defense radius is `230`;
+  each banner has `420` HP, radius `11`, and orbit radius `52`.
+- Formation configuration now uses the specified `spacing` field. Intact
+  banners suppress ordinary idle jitter while an active threat is present;
+  a destroyed banner switches only that house to deterministic fracture
+  scatter, preserving the specified `0.6` scatter behavior.
+- Focused tests cover exact formation rank-error and spread after fracture,
+  hue-distance between all three house palettes, and Ivy's actual ticked
+  movement to the exact 40px standoff. The render remains label-free for
+  heroes so class/house silhouettes and the battle line carry identity.
+- Fresh DGX gates passed: typecheck, production build, 398/398 tests, and both
+  determinism lanes. Asset inspection found six ready UI assets and 19 known
+  world-sprite fallbacks; missing art continues to render as primitive shapes.
+  Audio remains intentionally unavailable.
+- Final determinism baselines are organic victory at tick `2172`, tribute
+  `556`, keep `2400`, banners `0/420/420`; and full-state-machine victory at
+  tick `1695`, tribute `388`, keep `2400`, banners `216/420/420`.
+- Performance changed from the recorded Phase 4B baseline average/worst/peak
+  of `3.830 ms / 14.289 ms / 288 MB` to
+  `4.825 ms / 28.888 ms / 287 MB` in the final DGX run.
+- The final 200-seed balance observation was 198 victories and two defeats
+  (`99.0%` victory), compared with the recorded Phase 4B `87.5%`. This is an
+  observation only; no compensating balance tuning was made.
+- Real Chrome visual QA captured the intact rest formation and live engaged
+  formation at the direct DGX URL. The exact fracture geometry is additionally
+  locked by deterministic automated tests. The browser extension disconnected
+  after a debugger pause before a third fracture screenshot could be retained,
+  so that specific screenshot is not claimed as verified evidence.

@@ -741,3 +741,29 @@ victory at tick `2179` with tribute `987`, keep HP `2400`, and banners
 with tribute `598`, keep HP `2400`, and banners `420/420/420`. No balance,
 roster, card, shop-price, investment, wave-count, or stat tuning was performed
 in this boundary cleanup.
+
+## 2026-07-29 — Phase 5A formation and palette audit decisions
+
+The neutral keep remains the sole visual anchor at `(480, 300)`. Its
+`230`-pixel defense radius is deliberately larger than the banner orbit, while
+the three banners remain compact house identifiers at radius `11` and orbit
+radius `52`. These values are configuration contracts rather than renderer
+approximations.
+
+Formation identity uses hue and luminance separation between the three
+house-color palettes. The palette avoids the creature-facing purple/magenta
+range, so friendly lines remain distinguishable during dense combat without
+adding hero-name labels to the battlefield.
+
+An intact banner owns a stable ranked line. Ordinary idle jitter is suppressed
+while an active threat is present because it weakened the readable defense
+front. When a banner falls, only its house changes to deterministic
+fracture-scatter offsets. Reusing idle jitter for both states was rejected:
+the two states need visibly different semantics, and deterministic scatter
+keeps replay equality intact.
+
+The final audit did not introduce compensating balance changes. The measured
+`99.0%` victory rate and the performance movement from
+`3.830/14.289 ms` average/worst to `4.825/28.888 ms` are recorded for later
+profiling and balancing rather than silently tuned inside this presentation
+pass.
