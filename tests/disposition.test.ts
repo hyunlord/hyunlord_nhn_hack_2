@@ -7,6 +7,7 @@ import {
 } from "../src/agents/dispositionEngine";
 import { stepAgent } from "../src/agents/movement";
 import { BALANCE_CONFIG } from "../src/content/balanceConfig";
+import { UNIT_CLASSES } from "../src/content/unitClassConfig";
 import {
   context,
   createAgent,
@@ -204,4 +205,67 @@ test("Given every intent variant, when mapped and moved, then directed paths con
   assert.ok(returning.x > agent.x);
   assert.ok(returning.y < agent.y);
   assert.ok(rankSeeking.x > agent.x);
+});
+
+test("Given aligned formation pressure on directed movement, when stepped, then final displacement stays within effective speed", () => {
+  const agent = createAgent();
+  const effectiveSpeed =
+    UNIT_CLASSES.melee.moveSpeed * BALANCE_CONFIG.AGENT_ENGAGE_SPEED_MULTIPLIER;
+  const rng = createCountingRng();
+
+  const moved = stepAgent(
+    agent,
+    rng.rng,
+    {
+      kind: "engage",
+      towardX: 200,
+      towardY: 100,
+      targetId: "creature_a",
+      preferredRange: 13,
+    },
+    {
+      moveSpeedMultiplier: 1,
+      formation: {
+        neighbours: [createAgent({ id: "house_a_01", x: 99, y: 100 })],
+        houseFormation: { lineSpacing: 20, cohesion: 0 },
+      },
+    },
+  );
+
+  assert.equal(rng.count(), 0);
+  assert.ok(Math.hypot(moved.x - agent.x, moved.y - agent.y) <= effectiveSpeed);
+});
+
+test("Given opposing or zero formation pressure, when directed movement steps, then clamping remains stable", () => {
+  const agent = createAgent();
+  const effectiveSpeed =
+    UNIT_CLASSES.melee.moveSpeed * BALANCE_CONFIG.AGENT_ENGAGE_SPEED_MULTIPLIER;
+  const intent: AgentIntent = {
+    kind: "engage",
+    towardX: 200,
+    towardY: 100,
+    targetId: "creature_a",
+    preferredRange: 13,
+  };
+
+  const baseline = stepAgent(agent, createCountingRng().rng, intent);
+  const opposing = stepAgent(agent, createCountingRng().rng, intent, {
+    moveSpeedMultiplier: 1,
+    formation: {
+      neighbours: [createAgent({ id: "house_a_03", x: 101, y: 100 })],
+      houseFormation: { lineSpacing: 20, cohesion: 0 },
+    },
+  });
+  const zero = stepAgent(agent, createCountingRng().rng, intent, {
+    moveSpeedMultiplier: 1,
+    formation: {
+      neighbours: [],
+      houseFormation: { lineSpacing: 20, cohesion: 0 },
+    },
+  });
+
+  assert.ok(
+    Math.hypot(opposing.x - agent.x, opposing.y - agent.y) <= effectiveSpeed,
+  );
+  assert.deepEqual(zero, baseline);
 });

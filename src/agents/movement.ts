@@ -21,6 +21,15 @@ function normalizeHeading(heading: number): number {
   return ((heading % FULL_TURN) + FULL_TURN) % FULL_TURN;
 }
 
+function clampMovementVector(vector: Point, maxMagnitude: number): Point {
+  const magnitude = Math.hypot(vector.x, vector.y);
+  if (magnitude === 0 || magnitude <= maxMagnitude) {
+    return vector;
+  }
+  const scale = maxMagnitude / magnitude;
+  return { x: vector.x * scale, y: vector.y * scale };
+}
+
 export function stepAgent(
   agent: Agent,
   rng: Rng,
@@ -92,8 +101,15 @@ export function stepAgent(
           formation: modifiers.formation.houseFormation,
           maxMagnitude: speed,
         });
-  let x = agent.x + Math.cos(heading) * speed + formationNudge.x;
-  let y = agent.y + Math.sin(heading) * speed + formationNudge.y;
+  const movementVector = clampMovementVector(
+    {
+      x: Math.cos(heading) * speed + formationNudge.x,
+      y: Math.sin(heading) * speed + formationNudge.y,
+    },
+    speed,
+  );
+  let x = agent.x + movementVector.x;
+  let y = agent.y + movementVector.y;
 
   if (x < minimum || x > maximumX) {
     x = Math.min(maximumX, Math.max(minimum, x));
