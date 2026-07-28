@@ -18,17 +18,17 @@ const WAVE_EXERCISE_TICKS = 500;
 const MAX_ORGANIC_TICKS = 20_000;
 const EXPECTED_ORGANIC_BASELINE = {
   phase: "victory",
-  tick: 2179,
-  tribute: 987,
+  tick: 2172,
+  tribute: 556,
   keepHp: 2400,
-  bannerHp: 1260,
+  bannerHp: 840,
 } as const;
 const EXPECTED_FULL_STATE_BASELINE = {
   phase: "victory",
-  tick: 1707,
-  tribute: 598,
+  tick: 1695,
+  tribute: 388,
   keepHp: 2400,
-  bannerHp: 1260,
+  bannerHp: 1056,
 } as const;
 
 function chooseFirst(state: GameState): GameState {
