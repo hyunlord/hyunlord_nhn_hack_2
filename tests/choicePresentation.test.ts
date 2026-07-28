@@ -41,6 +41,12 @@ function renderEnglish(element: ReactElement): string {
   );
 }
 
+function renderKorean(element: ReactElement): string {
+  return renderToStaticMarkup(
+    createElement(LocaleProvider, { language: "ko" }, element),
+  );
+}
+
 test("Given rendered shop choices, when card markup is produced, then numeric effects lead flavour while costs counts and reasons stay visible", () => {
   const snapshot = {
     tribute: 500,
@@ -101,6 +107,47 @@ test("Given rendered shop choices, when card markup is produced, then numeric ef
     "Purchase",
     "No dead hero.",
   ]);
+});
+
+
+test("Given reinforce keep is unavailable in Korean, when the shop card renders, then every visible label is localized", () => {
+  const reinforce = shopAvailability({
+    tribute: 500,
+    purchases: {
+      field_medicine: 0,
+      raise_tower: 0,
+      recruit_squad: 0,
+      reinforce_keep: 0,
+      revive_hero: 0,
+      sharpen_arms: 0,
+    },
+    towerCount: 0,
+    damagedAgentCount: 0,
+    damagedStructureCount: 0,
+    deadHeroCount: 0,
+    deadRegularAgentCount: 0,
+  }).find(({ item }) => item.id === "reinforce_keep");
+  assert.ok(reinforce);
+
+  const markup = renderKorean(
+    createElement(ShopCard, {
+      availability: reinforce,
+      onBuy: () => undefined,
+      purchaseCount: 0,
+      towerPlacementActive: false,
+    }),
+  );
+
+  assertOrderedText(markup, [
+    "성채 보강",
+    "45",
+    "성채/깃발 HP +300 회복",
+    "가장 손상된 생존 성채나 깃발 HP 300 회복.",
+    "구매 0회",
+    "구매",
+    "피해를 입은 생존 성채나 깃발이 없습니다.",
+  ]);
+  assert.doesNotMatch(markup, /Reinforce Keep|Keep\/banner repair|no damaged surviving keep or banners/);
 });
 
 test("Given rendered investment choices, when card markup is produced, then numeric per-rank effect leads description and disabled reason remains visible", () => {

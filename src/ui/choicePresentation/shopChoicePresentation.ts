@@ -28,7 +28,7 @@ function formatShopEffect(t: Translate, effect: ShopEffect): string {
         value: multiplierPercent(effect.multiplier),
       });
     case "repairStronghold":
-      return `Keep/banner repair +${effect.hp} HP`;
+      return t("shop.effect.repairStronghold", { hp: effect.hp });
     case "reviveHero":
       return t("shop.effect.reviveHero");
     default:

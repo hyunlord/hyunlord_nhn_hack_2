@@ -31,8 +31,8 @@ const SHOP_PRESENTATION: Readonly<Record<ShopItemId, ShopPresentation>> = {
   },
   reinforce_keep: {
     category: "defense",
-    descriptionKey: null,
-    nameKey: null,
+    descriptionKey: "shop.item.reinforce_keep.description",
+    nameKey: "shop.item.reinforce_keep.name",
   },
   revive_hero: {
     category: "recovery",
@@ -57,6 +57,7 @@ const SHOP_CATEGORY_KEYS: Readonly<Record<ShopCategory, LocaleKey>> = {
 
 const SHOP_REASON_KEYS: Readonly<Record<string, LocaleKey>> = {
   "no damaged living agents": "shop.reason.noDamagedAgents",
+  "no damaged surviving keep or banners": "shop.reason.noDamagedStructures",
   "no dead hero": "shop.reason.noDeadHero",
   "no dead regular agents": "shop.reason.noDeadAgents",
   "not enough tribute": "shop.reason.notEnoughTribute",
