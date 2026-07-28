@@ -226,7 +226,8 @@ export function projectHeroRenderState(
   tracker: HeroRenderTracker,
 ): HeroRenderProjection {
   const activeTracker = livingTrackerForRun(state, tracker);
-  const previousLivingByHeroId = new Map(activeTracker.previousLivingByHeroId);
+  const previousLivingLookup = activeTracker.previousLivingByHeroId;
+  const previousLivingByHeroId = new Map<string, HeroPoint>();
   const trailsByHeroId = new Map<string, readonly HeroPoint[]>();
   const fallSitesByHeroId = new Map<string, HeroFallSite>();
   const livingHeroes: LivingHeroRenderProjection[] = [];
@@ -252,7 +253,11 @@ export function projectHeroRenderState(
       }
       continue;
     }
-    const site = fallSiteForHero(hero, state.tick, activeTracker);
+    const site = fallSiteForHero(
+      hero,
+      state.tick,
+      { ...activeTracker, previousLivingByHeroId: previousLivingLookup },
+    );
     if (site === null) {
       continue;
     }

@@ -272,6 +272,34 @@ test("Given Sera crosses the field, when render projection tracks her, then the 
   assert.deepEqual(resetSera.trail, [{ x: resetSera.agent.x, y: resetSera.agent.y }]);
 });
 
+test("Given a living hero disappears before reappearing dead, when render projection updates, then no stale fall marker is synthesized", () => {
+  const state = createInitialState(205).state;
+  const sera = state.agents.find(({ heroId }) => heroId === "hero_ashvale");
+  if (sera === undefined) {
+    throw new RangeError("Expected Sera fixture.");
+  }
+
+  const primed = projectHeroRenderState({
+    ...state,
+    tick: 1,
+    agents: state.agents.map((agent) => agent.id === sera.id ? { ...agent, x: 501, y: 411 } : agent),
+  }, createHeroRenderTracker());
+  const missing = projectHeroRenderState({
+    ...state,
+    tick: 2,
+    agents: state.agents.filter((agent) => agent.id !== sera.id),
+  }, primed.tracker);
+  const reappearedDead = projectHeroRenderState({
+    ...state,
+    tick: 3,
+    agents: state.agents.map((agent) => agent.id === sera.id ? { ...agent, hp: 0, state: "dead" as const, respawnAtTick: 603 } : agent),
+  }, missing.tracker);
+
+  assert.equal(missing.tracker.previousLivingByHeroId.has("hero_ashvale"), false);
+  assert.equal(reappearedDead.fallenHeroes.some(({ heroId }) => heroId === "hero_ashvale"), false);
+  assert.equal(reappearedDead.tracker.fallSitesByHeroId.has("hero_ashvale"), false);
+});
+
 test("Given living and fallen heroes, when hero rendering draws labels, then living labels produce no text while fall countdown remains text", () => {
   const state = createInitialState(203).state;
   const livingProjection = projectHeroRenderState(state, createHeroRenderTracker());
