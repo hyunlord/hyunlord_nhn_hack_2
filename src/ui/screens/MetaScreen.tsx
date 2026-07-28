@@ -1,17 +1,8 @@
-import {
-  ACHIEVEMENT_DEFINITIONS,
-  HOUSE_UNLOCK_DEFINITIONS,
-} from "../../content/metaConfig";
-import {
-  INVESTMENT_TRACKS,
-  type InvestmentTrack,
-} from "../../content/investmentConfig";
-import {
-  HOUSE_CONFIG,
-  type HouseId,
-} from "../../content/houseConfig";
+import { ACHIEVEMENT_DEFINITIONS, HOUSE_UNLOCK_DEFINITIONS } from "../../content/metaConfig";
+import { INVESTMENT_TRACKS, type InvestmentTrack } from "../../content/investmentConfig";
+import { HOUSE_CONFIG, type HouseId } from "../../content/houseConfig";
 import { HOUSE_SYNERGIES } from "../../content/houseSynergies";
-import { useLocale } from "../../content/locale";
+import { useLocale, type LocaleKey } from "../../content/locale";
 import {
   achievementDescription,
   achievementName,
@@ -20,64 +11,49 @@ import {
   houseTrait,
   investmentDescription,
   investmentName,
-  localizedActiveBonusGroups,
-  localizedInvestmentEffectLabel,
   synergyDescription,
   synergyName,
-  type Translate,
 } from "../../content/locale/display";
-import {
-  canPurchase,
-  investmentCost,
-} from "../../meta/investments";
+import { canPurchase, investmentCost } from "../../meta/investments";
 import { useAppFlow } from "../../state/appFlowContext";
+import {
+  activeBonusGroups,
+  investmentEffectLabel,
+  purchaseInvestmentLabel,
+} from "../investmentSummary";
 
 function unlockRequirement(
-  t: Translate,
   houseId: HouseId,
   bestWaveReached: number,
   victories: number,
-): string | null {
-  const definition = HOUSE_UNLOCK_DEFINITIONS.find(
-    (candidate) => candidate.houseId === houseId,
-  );
+): { readonly key: LocaleKey; readonly params: Readonly<Record<string, number>> } | null {
+  const definition = HOUSE_UNLOCK_DEFINITIONS.find((candidate) => candidate.houseId === houseId);
   if (definition === undefined) {
     return null;
   }
-  if (
-    definition.minimumWaveReached !== undefined &&
-    bestWaveReached < definition.minimumWaveReached
-  ) {
-    return t("meta.unlock.wave", { wave: definition.minimumWaveReached });
+  if (definition.minimumWaveReached !== undefined && bestWaveReached < definition.minimumWaveReached) {
+    return { key: "meta.unlock.wave", params: { wave: definition.minimumWaveReached } };
   }
-  if (
-    definition.minimumVictories !== undefined &&
-    victories < definition.minimumVictories
-  ) {
-    return t("meta.unlock.victory", { count: definition.minimumVictories });
+  if (definition.minimumVictories !== undefined && victories < definition.minimumVictories) {
+    return { key: "meta.unlock.victory", params: { count: definition.minimumVictories } };
   }
   return null;
 }
 
 function trackDisabledReason(
-  t: Translate,
   track: InvestmentTrack,
   currentRank: number,
   legacyPoints: number,
   unlockedHouses: readonly HouseId[],
+  t: (key: LocaleKey, params?: Readonly<Record<string, string | number>>) => string,
 ): string | null {
   if (currentRank >= track.maxRank) {
     return t("meta.investment.reason.max");
   }
-  if (
-    track.scope === "house" &&
-    (track.houseId === undefined || !unlockedHouses.includes(track.houseId))
-  ) {
-    const house =
-      track.houseId === undefined
-        ? t("common.unknown")
-        : houseName(t, track.houseId);
-    return t("meta.investment.reason.unlock", { house });
+  if (track.scope === "house" && (track.houseId === undefined || !unlockedHouses.includes(track.houseId))) {
+    return t("meta.investment.reason.unlock", {
+      house: track.houseId === undefined ? t("common.unknown") : houseName(t, track.houseId),
+    });
   }
   const cost = investmentCost(track, currentRank);
   if (legacyPoints < cost) {
@@ -104,54 +80,32 @@ function InvestmentTrackCard({
   readonly unlockedHouses: readonly HouseId[];
 }) {
   const { t } = useLocale();
-  const reason = trackDisabledReason(
-    t,
-    track,
-    currentRank,
-    legacyPoints,
-    unlockedHouses,
-  );
-  const nextCost =
-    currentRank >= track.maxRank ? null : investmentCost(track, currentRank);
-  const purchasable = canPurchase(
-    track,
-    currentRank,
-    legacyPoints,
-    unlockedHouses,
-  );
+  const trackName = investmentName(t, track.id);
+  const reason = trackDisabledReason(track, currentRank, legacyPoints, unlockedHouses, t);
+  const nextCost = currentRank >= track.maxRank ? null : investmentCost(track, currentRank);
+  const purchasable = canPurchase(track, currentRank, legacyPoints, unlockedHouses);
 
   return (
     <article className="investment-track">
       <div className="investment-track__header">
         <div>
-          <h4>{investmentName(t, track.id)}</h4>
+          <h4>{trackName}</h4>
           <p>{investmentDescription(t, track.id)}</p>
         </div>
         <span
-          aria-label={t("meta.investment.rank", {
-            current: currentRank,
-            max: track.maxRank,
-          })}
+          aria-label={t("meta.investment.rank", { current: currentRank, max: track.maxRank })}
           className="rank-pips"
           role="img"
         >
           {rankPips(currentRank, track.maxRank)}
         </span>
       </div>
-      <p className="investment-track__effect">
-        {localizedInvestmentEffectLabel(t, track.effectPerRank)}
-      </p>
+      <p className="investment-track__effect">{investmentEffectLabel(track.effectPerRank, t)}</p>
       <div className="investment-track__purchase">
-        <span>
-          {nextCost === null
-            ? t("meta.investment.max")
-            : t("meta.investment.nextCost", { cost: nextCost })}
-        </span>
+        <span>{nextCost === null ? t("meta.investment.max") : t("meta.investment.nextCost", { cost: nextCost })}</span>
         <button
           aria-describedby={reason === null ? undefined : `${track.id}-reason`}
-          aria-label={t("meta.investment.purchaseLabel", {
-            track: investmentName(t, track.id),
-          })}
+          aria-label={purchaseInvestmentLabel(trackName, t)}
           disabled={!purchasable}
           onClick={() => onPurchase(track.id)}
           type="button"
@@ -172,10 +126,8 @@ export function MetaScreen() {
   const { dispatch, state } = useAppFlow();
   const { t } = useLocale();
   const { meta } = state;
-  const activeBonuses = localizedActiveBonusGroups(t, meta.investmentRanks);
-  const globalTracks = INVESTMENT_TRACKS.filter(
-    (track) => track.scope === "global",
-  );
+  const activeBonuses = activeBonusGroups(meta.investmentRanks, t);
+  const globalTracks = INVESTMENT_TRACKS.filter((track) => track.scope === "global");
 
   return (
     <main className="app-shell screen-shell" data-screen="meta">
@@ -199,10 +151,7 @@ export function MetaScreen() {
           <h2 id="investments-heading">{t("meta.investments.heading")}</h2>
         </div>
         <div className="investment-layout">
-          <section
-            aria-labelledby="global-investments-heading"
-            className="investment-group"
-          >
+          <section aria-labelledby="global-investments-heading" className="investment-group">
             <div className="investment-group__heading">
               <h3 id="global-investments-heading">{t("meta.global.heading")}</h3>
               <p>{t("meta.global.description")}</p>
@@ -213,9 +162,7 @@ export function MetaScreen() {
                   currentRank={meta.investmentRanks[track.id] ?? 0}
                   key={track.id}
                   legacyPoints={meta.legacyPoints}
-                  onPurchase={(trackId) =>
-                    dispatch({ type: "purchaseInvestment", trackId })
-                  }
+                  onPurchase={(trackId) => dispatch({ type: "purchaseInvestment", trackId })}
                   track={track}
                   unlockedHouses={meta.unlockedHouses}
                 />
@@ -223,10 +170,7 @@ export function MetaScreen() {
             </div>
           </section>
 
-          <aside
-            aria-labelledby="bonus-summary-heading"
-            className="investment-summary"
-          >
+          <aside aria-labelledby="bonus-summary-heading" className="investment-summary">
             <p className="eyebrow">{t("meta.bonus.eyebrow")}</p>
             <h3 id="bonus-summary-heading">{t("meta.bonus.heading")}</h3>
             {activeBonuses.length === 0 ? (
@@ -234,17 +178,9 @@ export function MetaScreen() {
             ) : (
               <div className="investment-summary__groups">
                 {activeBonuses.map((group) => (
-                  <section
-                    aria-label={t("hud.legacyRitesGroup", { group: group.heading })}
-                    className="investment-summary__group"
-                    key={group.heading}
-                  >
+                  <section aria-label={group.heading} className="investment-summary__group" key={group.heading}>
                     <h4>{group.heading}</h4>
-                    <ul>
-                      {group.labels.map((label) => (
-                        <li key={label}>{label}</li>
-                      ))}
-                    </ul>
+                    <ul>{group.labels.map((label) => <li key={label}>{label}</li>)}</ul>
                   </section>
                 ))}
               </div>
@@ -260,9 +196,7 @@ export function MetaScreen() {
         </div>
         <div className="house-investment-grid">
           {HOUSE_CONFIG.map((house) => {
-            const houseTracks = INVESTMENT_TRACKS.filter(
-              (track) => track.houseId === house.id,
-            );
+            const houseTracks = INVESTMENT_TRACKS.filter((track) => track.houseId === house.id);
             const unlocked = meta.unlockedHouses.includes(house.id);
             return (
               <section
@@ -271,15 +205,9 @@ export function MetaScreen() {
                 key={house.id}
               >
                 <div className="house-investment__heading">
-                  <span
-                    aria-hidden="true"
-                    className="house-mark"
-                    style={{ backgroundColor: house.color }}
-                  />
+                  <span aria-hidden="true" className="house-mark" style={{ backgroundColor: house.color }} />
                   <div>
-                    <h3 id={`${house.id}-investments-heading`}>
-                      {houseName(t, house.id)}
-                    </h3>
+                    <h3 id={`${house.id}-investments-heading`}>{houseName(t, house.id)}</h3>
                     <p>{unlocked ? t("common.unlocked") : t("common.locked")}</p>
                   </div>
                 </div>
@@ -289,9 +217,7 @@ export function MetaScreen() {
                       currentRank={meta.investmentRanks[track.id] ?? 0}
                       key={track.id}
                       legacyPoints={meta.legacyPoints}
-                      onPurchase={(trackId) =>
-                        dispatch({ type: "purchaseInvestment", trackId })
-                      }
+                      onPurchase={(trackId) => dispatch({ type: "purchaseInvestment", trackId })}
                       track={track}
                       unlockedHouses={meta.unlockedHouses}
                     />
@@ -311,55 +237,28 @@ export function MetaScreen() {
         <div className="house-roster">
           {HOUSE_CONFIG.map((house) => {
             const unlocked = meta.unlockedHouses.includes(house.id);
-            const definition = HOUSE_UNLOCK_DEFINITIONS.find(
-              (candidate) => candidate.houseId === house.id,
-            );
-            const prerequisite = unlockRequirement(
-              t,
-              house.id,
-              meta.bestWaveReached,
-              meta.victories,
-            );
-            const canPurchaseUnlock =
-              definition !== undefined &&
-              prerequisite === null &&
-              meta.legacyPoints >= definition.legacyCost;
+            const definition = HOUSE_UNLOCK_DEFINITIONS.find((candidate) => candidate.houseId === house.id);
+            const prerequisite = unlockRequirement(house.id, meta.bestWaveReached, meta.victories);
+            const canBuyUnlock = definition !== undefined && prerequisite === null && meta.legacyPoints >= definition.legacyCost;
             return (
-              <article
-                className={`house-record${unlocked ? "" : " house-record--locked"}`}
-                key={house.id}
-              >
+              <article className={`house-record${unlocked ? "" : " house-record--locked"}`} key={house.id}>
                 <div className="house-record__heading">
-                  <span
-                    aria-hidden="true"
-                    className="house-mark"
-                    style={{ backgroundColor: house.color }}
-                  />
+                  <span aria-hidden="true" className="house-mark" style={{ backgroundColor: house.color }} />
                   <div>
                     <h3>{houseName(t, house.id)}</h3>
                     <p>{houseIdentity(t, house.id)}</p>
                   </div>
-                  <span className="status-label">
-                    {unlocked ? t("common.available") : t("common.locked")}
-                  </span>
+                  <span className="status-label">{unlocked ? t("common.available") : t("common.locked")}</span>
                 </div>
                 <p className="trait-line">{houseTrait(t, house.id)}</p>
                 {!unlocked && definition !== undefined ? (
                   <div className="unlock-row">
                     <span>
-                      {prerequisite ??
-                        t("meta.unlock.cost", { cost: definition.legacyCost })}
+                      {prerequisite === null
+                        ? t("meta.unlock.cost", { cost: definition.legacyCost })
+                        : t(prerequisite.key, prerequisite.params)}
                     </span>
-                    <button
-                      disabled={!canPurchaseUnlock}
-                      onClick={() =>
-                        dispatch({
-                          type: "purchaseUnlock",
-                          houseId: house.id,
-                        })
-                      }
-                      type="button"
-                    >
+                    <button disabled={!canBuyUnlock} onClick={() => dispatch({ type: "purchaseUnlock", houseId: house.id })} type="button">
                       {t("meta.unlock.button", { cost: definition.legacyCost })}
                     </button>
                   </div>
@@ -383,11 +282,7 @@ export function MetaScreen() {
                   <strong>{achievementName(t, achievement.id)}</strong>
                   <small>{achievementDescription(t, achievement.id)}</small>
                 </span>
-                <span>
-                  {meta.unlockedAchievements.includes(achievement.id)
-                    ? t("common.earned")
-                    : `+${achievement.legacyReward}`}
-                </span>
+                <span>{meta.unlockedAchievements.includes(achievement.id) ? t("common.earned") : `+${achievement.legacyReward}`}</span>
               </li>
             ))}
           </ul>
@@ -404,16 +299,8 @@ export function MetaScreen() {
               return (
                 <li key={synergy.id}>
                   <span>
-                    <strong>
-                      {discovered
-                        ? synergyName(t, synergy.id)
-                        : t("meta.synergies.undiscovered")}
-                    </strong>
-                    <small>
-                      {discovered
-                        ? synergyDescription(t, synergy.id)
-                        : t("meta.synergies.clue")}
-                    </small>
+                    <strong>{discovered ? synergyName(t, synergy.id) : t("meta.synergies.undiscovered")}</strong>
+                    <small>{discovered ? synergyDescription(t, synergy.id) : t("meta.synergies.clue")}</small>
                   </span>
                   <span>{discovered ? t("common.known") : t("common.hidden")}</span>
                 </li>
@@ -425,11 +312,7 @@ export function MetaScreen() {
 
       <footer className="screen-actions">
         <p>{t("meta.footer.note")}</p>
-        <button
-          className="primary-action"
-          onClick={() => dispatch({ type: "beginSelection" })}
-          type="button"
-        >
+        <button className="primary-action" onClick={() => dispatch({ type: "beginSelection" })} type="button">
           {t("meta.beginRun")}
         </button>
       </footer>

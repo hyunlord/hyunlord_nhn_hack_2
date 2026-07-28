@@ -1,10 +1,7 @@
 import { ACHIEVEMENT_DEFINITIONS } from "../../content/metaConfig";
 import { HOUSE_CONFIG } from "../../content/houseConfig";
 import { useLocale } from "../../content/locale";
-import {
-  achievementName,
-  houseName,
-} from "../../content/locale/display";
+import { achievementName, houseName } from "../../content/locale/display";
 import { useAppFlow } from "../../state/appFlowContext";
 
 export function RunSummaryScreen() {
@@ -14,25 +11,8 @@ export function RunSummaryScreen() {
   if (summary === null || completion === null) {
     return null;
   }
-  const traitor = HOUSE_CONFIG.find(
-    ({ id }) => id === summary.betrayal?.traitorHouseId,
-  );
-  const betrayal =
-    summary.betrayal === null
-      ? t("common.none")
-      : traitor === undefined
-        ? t("common.unknown")
-        : houseName(t, traitor.id);
-  const alliance = summary.selectedHouseIds
-    .map((id) => houseName(t, id))
-    .join(" / ");
-  const daylightRaidWaveNumbers = summary.daylightRaidWaveNumbers ?? [];
-  const daylightRaids =
-    daylightRaidWaveNumbers.length === 0
-      ? t("summary.daylightRaids.none")
-      : daylightRaidWaveNumbers
-          .map((wave) => t("summary.daylightRaids.wave", { wave }))
-          .join(" / ");
+  const traitor = HOUSE_CONFIG.find(({ id }) => id === summary.betrayal?.traitorHouseId);
+  const alliance = summary.selectedHouseIds.map((id) => houseName(t, id)).join(" / ");
 
   return (
     <main className="app-shell screen-shell" data-screen="summary">
@@ -54,16 +34,13 @@ export function RunSummaryScreen() {
             <div><dt>{t("summary.lost")}</dt><dd>{summary.agentsLost}</dd></div>
             <div><dt>{t("summary.halls")}</dt><dd>{summary.survivingHalls}/3</dd></div>
             <div><dt>{t("summary.towers")}</dt><dd>{summary.towersBuilt}</dd></div>
-            <div><dt>{t("summary.betrayal")}</dt><dd>{betrayal}</dd></div>
-            <div><dt>{t("summary.daylightRaids")}</dt><dd>{daylightRaids}</dd></div>
+            <div><dt>{t("summary.betrayal")}</dt><dd>{traitor === undefined ? t("common.none") : houseName(t, traitor.id)}</dd></div>
           </dl>
         </section>
 
         <section className="legacy-award" aria-labelledby="legacy-award-heading">
           <p className="eyebrow">{t("summary.legacy.eyebrow")}</p>
-          <h2 id="legacy-award-heading">
-            +{completion.runLegacy.total + completion.achievementLegacyEarned}
-          </h2>
+          <h2 id="legacy-award-heading">+{completion.runLegacy.total + completion.achievementLegacyEarned}</h2>
           <dl>
             <div><dt>{t("summary.legacy.base")}</dt><dd>+{completion.runLegacy.base}</dd></div>
             <div><dt>{t("summary.legacy.waves")}</dt><dd>+{completion.runLegacy.waves}</dd></div>
@@ -82,16 +59,13 @@ export function RunSummaryScreen() {
         </div>
         <ul className="population-arc">
           {summary.selectedHouseIds.map((houseId) => {
-            const house = HOUSE_CONFIG.find(({ id }) => id === houseId);
             const arc = summary.populationHistory
               .filter((entry) => entry.houseId === houseId)
-              .map(({ wave, count }) =>
-                t("summary.population.entry", { wave, count }),
-              )
+              .map(({ wave, count }) => `${wave}: ${count}`)
               .join(" → ");
             return (
               <li key={houseId}>
-                <strong>{house === undefined ? t("common.unknown") : houseName(t, house.id)}</strong>
+                <strong>{houseName(t, houseId)}</strong>
                 <span>{arc || t("summary.population.empty")}</span>
               </li>
             );
@@ -104,32 +78,18 @@ export function RunSummaryScreen() {
           <p className="eyebrow">{t("summary.newAchievements")}</p>
           <ul>
             {completion.newAchievementIds.map((id) => {
-              const achievement = ACHIEVEMENT_DEFINITIONS.find(
-                (candidate) => candidate.id === id,
-              );
-              return (
-                <li key={id}>
-                  {achievement === undefined ? t("common.unknown") : achievementName(t, id)}
-                </li>
-              );
+              const achievement = ACHIEVEMENT_DEFINITIONS.find((candidate) => candidate.id === id);
+              return <li key={id}>{achievement === undefined ? id : achievementName(t, achievement.id)}</li>;
             })}
           </ul>
         </section>
       ) : null}
 
       <footer className="screen-actions">
-        <button
-          className="text-action"
-          onClick={() => dispatch({ type: "returnToMeta" })}
-          type="button"
-        >
+        <button className="text-action" onClick={() => dispatch({ type: "returnToMeta" })} type="button">
           {t("summary.return")}
         </button>
-        <button
-          className="primary-action"
-          onClick={() => dispatch({ type: "retryRun" })}
-          type="button"
-        >
+        <button className="primary-action" onClick={() => dispatch({ type: "retryRun" })} type="button">
           {t("summary.retry")}
         </button>
       </footer>
