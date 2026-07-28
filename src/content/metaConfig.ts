@@ -28,7 +28,7 @@ export const ACHIEVEMENT_DEFINITIONS = [
   {
     id: "unbroken",
     name: "Unbroken",
-    description: "Win with all three halls still standing.",
+    description: "Win with all three banners intact and the keep standing.",
     legacyReward: 75,
   },
   {

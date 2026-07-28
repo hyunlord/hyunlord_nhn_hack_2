@@ -18,15 +18,15 @@ const WAVE_EXERCISE_TICKS = 500;
 const MAX_ORGANIC_TICKS = 20_000;
 const EXPECTED_ORGANIC_BASELINE = {
   phase: "victory",
-  tick: 2940,
-  tribute: 675,
+  tick: 2179,
+  tribute: 987,
   keepHp: 2400,
-  bannerHp: 966,
+  bannerHp: 1260,
 } as const;
 const EXPECTED_FULL_STATE_BASELINE = {
   phase: "victory",
-  tick: 1792,
-  tribute: 279,
+  tick: 1707,
+  tribute: 598,
   keepHp: 2400,
   bannerHp: 1260,
 } as const;

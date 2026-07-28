@@ -43,7 +43,7 @@ export const DIVINE_SKILL_DEFINITIONS: Readonly<
     id: "resurgence",
     name: "Resurgence",
     description:
-      "Revive 8 fallen agents at their halls and return every dead hero.",
+      "Revive 8 fallen agents at their banners or the keep and return every dead hero.",
     cost: 70,
     cooldownTicks: 600,
     radius: 0,

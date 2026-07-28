@@ -703,3 +703,41 @@ The fix kept numeric signs owned by the formatter (`src/content/locale/ko.ts` no
 Post-fix Chrome QA is PASS in `.omo/evidence/task-12-browser-phase4b-visible-stronghold.md` with artifacts under `.omo/evidence/phase4b-visible-stronghold/browser-postfix/`: 375/768/1280 shop/daylight captures, 375 selected-house captures, 375 HP draft capture, DOM snapshots, layout metrics, and console logs. The post-fix evidence records `console []`, no `++`, no horizontal scroll, no overlap/clipping arrays for the 375 shop layout audit, and minimum active targets at or above 44px.
 
 Final DGX command gates are green after the browser fix: `npm run typecheck` 0, `npm run build` 0, `npm test` 342/342, `npm run check:determinism` 0, `npm run assets:check` 0 with the known 17 sprite fallbacks, `git diff --check` 0, render/state boundary grep 0, changed-source LOC 0, and structural no-excuse 0. The prior 87.5% `abc` balance observation is reused because post-balance changes were locale, CSS, test, and static-comment only; no balance-affecting source changed after that measurement.
+
+## 2026-07-29 — Phase 5A keep/banner migration closure
+
+### One keep and three banners are the product language
+
+Phase 5A closes the old hall wording at the player-facing boundary. The
+simulation and render contract is one shared keep plus three house-colour
+banners, and the remaining `src tests scripts` boundary scan for
+`\bhalls\b|\bHall\b|HALL_` and `reinforce_hall` returns no matches. Existing
+internal field names that do not match that product-boundary scan were left in
+place; this pass is not a schema churn or compatibility-alias migration.
+
+### Presentation repair favors the keep/banner model
+
+The stronghold repair choice stays named as keep repair and is localized through
+shop presentation keys. Resurgence, Unbroken, summary victory, summary defense
+counts, and card-effect copy now name banners, keep, or generic defenses
+instead of reviving the hall model. No `drawHalls` alias or old sprite/test
+compatibility model was kept, because it would preserve a second visual contract
+beside `drawDefenses`.
+
+### Visual hierarchy remains compact and readable
+
+The approved Phase 5A visual line remains: neutral keep stone and HP colors,
+house-colour banner pips, render-local damage/break announcements, compact rank
+pips for legacy rites, and class/house identity carried by color and localized
+text. Stale hero labels are removed from the projection tracker when a hero is
+no longer present, so old coordinates cannot leave ghost fall markers.
+
+### Baselines changed only after repeated deterministic evidence
+
+The determinism constants were updated after two identical probe runs on seed
+`20260810`, each also proving same-run deep equality. Organic now reaches
+victory at tick `2179` with tribute `987`, keep HP `2400`, and banners
+`420/420/420`. The full-state-machine lane now reaches victory at tick `1707`
+with tribute `598`, keep HP `2400`, and banners `420/420/420`. No balance,
+roster, card, shop-price, investment, wave-count, or stat tuning was performed
+in this boundary cleanup.

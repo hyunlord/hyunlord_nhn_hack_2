@@ -538,3 +538,31 @@
   document overflow, overlay containment, phone viewport escape, internal
   scrolling, 44px targets, and live long-text wrapping. DGX has no Chrome, so
   the module is served by Vite for the independent Mac Chrome/CDP QA lane.
+
+## 2026-07-29 — Phase 5A one-keep closure Task8
+
+- Removed the remaining product-boundary hall wording from `src tests scripts`:
+  divine resurgence copy, Unbroken achievement copy, summary defense labels,
+  and the card-effect presentation test now use banners, keep, or generic
+  defenses. The exact boundary greps for `\bhalls\b|\bHall\b|HALL_` and
+  `reinforce_hall` both returned exit 1 with no matches.
+- Kept the atomic keep/banner migration line from the prior Phase 5A commits:
+  `drawDefenses` owns one neutral keep plus three house-colour banners,
+  compact HUD pips expose banner integrity, and no `drawHalls` compatibility
+  alias was retained.
+- Recorded the presentation choices that shaped the closeout: the rank line
+  stays as compact legacy rite pips plus localized effect text, the palette
+  stays neutral keep stone with house-colour banner identity, and stale hero
+  labels/fall markers are pruned by rebuilding the living-hero tracker from the
+  current projected state.
+- The repair choice remains `reinforce_keep` and routes through localized shop
+  presentation keys. The rejected compatibility model was to keep hall wording,
+  hall sprite names, or fallback aliases visible beside the keep/banner model.
+- Updated `scripts/checkDeterminism.ts` baselines only after two identical DGX
+  probe runs. New organic baseline: seed 20260810, victory, tick 2179, tribute
+  987, keep 2400, banners 420/420/420. New full-state-machine baseline: seed
+  20260810, three waves, victory, tick 1707, tribute 598, keep 2400, banners
+  420/420/420.
+- No balance tuning was performed: no roster, card, shop-price, investment,
+  wave-count, unit-stat, hero-stat, or multiplier changes were made in this
+  task.

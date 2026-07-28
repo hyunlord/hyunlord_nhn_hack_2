@@ -209,7 +209,7 @@ test("Given numeric card effects, when choices are formatted, then source-derive
   assert.deepEqual(formatCardEffect({ maxHpBonus: 25 }, english), ["Max HP +25"]);
   assert.deepEqual(formatCardEffect({ threatSenseRadiusBonus: 60 }, english), ["Threat sense +60"]);
   assert.deepEqual(formatCardEffect({ breakHpRatioDelta: -0.1 }, english), ["Breaks at -10%p lower"]);
-  assert.deepEqual(formatCardEffect({ hallDefenseRadiusBonus: 90 }, english), ["Hall defense radius +90"]);
+  assert.deepEqual(formatCardEffect({ hallDefenseRadiusBonus: 90 }, english), ["Defense radius +90"]);
   assert.deepEqual(formatCardEffect({ divineRegenMultiplier: 1.3 }, english), ["Divine regen +30%"]);
   assert.deepEqual(formatCardEffect({ miracleRadiusMultiplier: 1.25 }, english), ["Miracle radius +25%"]);
   assert.deepEqual(formatCardEffect({ tributePerKillBonus: 2 }, english), ["Tribute +2 per kill"]);
