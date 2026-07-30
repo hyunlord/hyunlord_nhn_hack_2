@@ -79,6 +79,15 @@ test("Given framed choices, when their source is inspected, then transparent art
   assert.match(PHASE5B_CSS, /--draft-safe-block:\s*7\.2917%/);
 });
 
+test("Given a house reaches a level, when its draft opens, then a motion-safe revelation moment precedes card focus", () => {
+  assert.match(DRAFT_OVERLAY, /LEVEL_UP_REVEAL_MS\s*=\s*640/);
+  assert.match(DRAFT_OVERLAY, /prefers-reduced-motion:\s*reduce/);
+  assert.match(DRAFT_OVERLAY, /draft-overlay__revelation/);
+  assert.match(DRAFT_OVERLAY, /aria-busy=\{isRevealing\}/);
+  assert.match(PHASE5B_CSS, /animation:\s*level-up-revelation\s+var\(--motion-revelation\)/);
+  assert.match(PHASE5B_CSS, /@keyframes\s+level-up-revelation/);
+});
+
 test("Given dark menu screens, when legacy selectors compete, then critical headings remain readable and each screen keeps one kicker", () => {
   assert.match(PHASE5B_CSS, /\.title-card__identity h1\s*\{[\s\S]*color:\s*var\(--text\)/);
   assert.match(PHASE5B_CSS, /\.settings-screen \.screen-header h1[\s\S]*color:\s*var\(--text\)/);

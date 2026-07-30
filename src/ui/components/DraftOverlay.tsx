@@ -1,6 +1,7 @@
 import {
   useEffect,
   useRef,
+  useState,
   type CSSProperties,
 } from "react";
 import { useLocale } from "../../content/locale";
@@ -28,6 +29,8 @@ type DraftCardStyle = CSSProperties & {
   readonly "--rarity-text-color": string;
 };
 
+const LEVEL_UP_REVEAL_MS = 640;
+
 export function DraftOverlay() {
   const { dispatch, state } = useGameStore();
   const { t } = useLocale();
@@ -36,6 +39,8 @@ export function DraftOverlay() {
   const offer = state.pendingDrafts[0];
   const house = HOUSE_CONFIG.find(({ id }) => id === offer?.houseId);
   const isDraft = state.phase === "draft" && offer !== undefined;
+  const [revealedOfferId, setRevealedOfferId] = useState<string | null>(null);
+  const isRevealing = isDraft && revealedOfferId !== offer.id;
 
   useEffect(() => {
     if (!isDraft) {
@@ -65,14 +70,28 @@ export function DraftOverlay() {
   }, [isDraft]);
 
   useEffect(() => {
-    if (!isDraft) {
+    if (!isDraft || offer === undefined) {
+      return undefined;
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setRevealedOfferId(offer.id);
+      return undefined;
+    }
+    const timeout = window.setTimeout(() => {
+      setRevealedOfferId(offer.id);
+    }, LEVEL_UP_REVEAL_MS);
+    return () => window.clearTimeout(timeout);
+  }, [isDraft, offer]);
+
+  useEffect(() => {
+    if (!isDraft || isRevealing) {
       return;
     }
     buttonReferences.current[0]?.focus();
-  }, [isDraft, offer?.id]);
+  }, [isDraft, isRevealing, offer?.id]);
 
   useEffect(() => {
-    if (offer === undefined) {
+    if (offer === undefined || isRevealing) {
       return undefined;
     }
     const chooseByKey = (event: KeyboardEvent) => {
@@ -100,7 +119,7 @@ export function DraftOverlay() {
     };
     window.addEventListener("keydown", chooseByKey);
     return () => window.removeEventListener("keydown", chooseByKey);
-  }, [dispatch, offer]);
+  }, [dispatch, isRevealing, offer]);
 
   if (
     state.phase !== "draft" ||
@@ -113,17 +132,25 @@ export function DraftOverlay() {
   return (
     <section
       aria-label={t("draft.label", { house: houseName(t, house.id), level: offer.level })}
+      aria-busy={isRevealing}
       aria-modal="true"
-      className="draft-overlay"
+      className={`draft-overlay${isRevealing ? " draft-overlay--reveal" : ""}`}
       role="dialog"
       style={{ "--draft-house": house.color } as CSSProperties}
     >
-      <div className="draft-overlay__header">
-        <p>{t("draft.eyebrow")}</p>
-        <h2>{t("draft.heading", { house: houseName(t, house.id), level: offer.level })}</h2>
-        <span>{t("draft.choose")}</span>
-      </div>
-      <div className="choice-deck draft-card-list">
+      {isRevealing ? (
+        <div className="draft-overlay__revelation" aria-live="assertive">
+          <p>{t("draft.eyebrow")}</p>
+          <h2>{t("draft.heading", { house: houseName(t, house.id), level: offer.level })}</h2>
+        </div>
+      ) : (
+        <>
+          <div className="draft-overlay__header">
+            <p>{t("draft.eyebrow")}</p>
+            <h2>{t("draft.heading", { house: houseName(t, house.id), level: offer.level })}</h2>
+            <span>{t("draft.choose")}</span>
+          </div>
+          <div className="choice-deck draft-card-list">
         {offer.cardIds.map((cardId, index) => {
           const card = CARD_DEFINITIONS.find(({ id }) => id === cardId);
           if (card === undefined) {
@@ -191,12 +218,14 @@ export function DraftOverlay() {
             </button>
           );
         })}
-      </div>
-      <p className="draft-overlay__queue" aria-live="polite">
-        {state.pendingDrafts.length > 1
-          ? t("draft.queue.more", { count: state.pendingDrafts.length - 1 })
-          : t("draft.queue.final")}
-      </p>
+          </div>
+          <p className="draft-overlay__queue" aria-live="polite">
+            {state.pendingDrafts.length > 1
+              ? t("draft.queue.more", { count: state.pendingDrafts.length - 1 })
+              : t("draft.queue.final")}
+          </p>
+        </>
+      )}
     </section>
   );
 }

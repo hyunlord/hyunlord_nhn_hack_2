@@ -278,6 +278,54 @@ select {
     radial-gradient(circle at center, color-mix(in srgb, var(--divine) 12%, transparent), transparent 62%);
 }
 
+.draft-overlay--reveal {
+  grid-template-rows: 1fr;
+}
+
+.draft-overlay__revelation {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-2);
+  color: var(--draft-house);
+  text-align: center;
+  animation: level-up-revelation var(--motion-revelation) var(--motion-ease) both;
+}
+
+.draft-overlay__revelation p,
+.draft-overlay__revelation h2 {
+  margin: 0;
+}
+
+.draft-overlay__revelation p {
+  color: var(--gold);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.draft-overlay__revelation h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
+}
+
+@keyframes level-up-revelation {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+
+  45% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0.86;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .draft-card {
   color: var(--text);
   background: color-mix(in srgb, var(--panel-raised) 94%, transparent);

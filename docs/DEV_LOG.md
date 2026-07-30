@@ -598,3 +598,32 @@
   locked by deterministic automated tests. The browser extension disconnected
   after a debugger pause before a third fracture screenshot could be retained,
   so that specific screenshot is not claimed as verified evidence.
+
+## 2026-07-30 — Phase 5D level-up pacing
+
+- Measured the `18488d0` baseline on DGX across 20 timing seeds and 100 neutral
+  `abc` auto-shop runs. Baseline: 11.64 drafts/run, 0.3% level-one houses,
+  99.0% victory; seed `20260810` reached A2/A3/A4/A5 at
+  ticks `659/673/684/710`.
+- Added RED regression coverage for exact XP boundaries, scaled damage XP,
+  no level five by tick 800, fewer than 5% level-one houses across 100 seeds,
+  6–10 average drafts, reducer purity, and the presentation-only revelation.
+- Changed damage XP from 1:1 to rounded 0.6, thresholds from
+  `[0,500,1200,2200,3500]` to `[0,2000,5200,9500,15000]`, and automatic
+  level growth from `1.06/+8 HP` to `1.12/+18 HP`.
+- The first `[0,2200,5200,9500,15000]` estimate was not shipped: its 100-seed
+  result left exactly 5.0% of houses at level one. The final first threshold
+  of 2000 produced 3.7%, 8.67 drafts/run, and 93.0% victory.
+- Added a 640ms motion-safe house revelation before each draft offer, using
+  only render-local React state plus opacity/transform CSS. Reduced-motion
+  users skip the delay; simulation and replay state remain untouched.
+- Updated deterministic fixtures to the new expected progression baseline:
+  organic `victory/2138/590/2400/840`, full state
+  `victory/1699/341/2400/1242`.
+- All implementation and heavy measurement ran on DGX Spark in the isolated
+  `codex/phase5d-level-pacing` worktree.
+- Chrome play-through at 2x speed completed all three waves with the original
+  trio, one manually placed tower, eight draft choices, 100 surviving agents,
+  all three banners, and zero console warnings or errors. The first house
+  reached level two during wave one and the first level five appeared during
+  wave three.

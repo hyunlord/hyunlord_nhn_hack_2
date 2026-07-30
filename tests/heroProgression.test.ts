@@ -98,11 +98,11 @@ test("Given a hero attack, when personal damage and a kill resolve, then XP is a
 
   assert.deepEqual(result.heroXpAwards, [{
     heroId: "hero_ashvale",
-    amount: 45,
+    amount: 37,
   }]);
   assert.deepEqual(result.xpAwards, [{
     houseId: "house_a",
-    amount: 45,
+    amount: 37,
   }]);
 });
 

@@ -11,6 +11,7 @@
   --wave-banner-ink: var(--draft-panel);
   --motion-quick: 140ms;
   --motion-combat: 300ms;
+  --motion-revelation: 640ms;
   --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 

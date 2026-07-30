@@ -7,13 +7,13 @@ import {
 } from "../src/engine/progressionEngine";
 import { advanceTick, createInitialState } from "../src/engine/tick";
 
-test("Given 499 XP and two damage XP, when progression applies, then exactly one level and draft are created", () => {
+test("Given 1999 XP and two damage XP, when progression applies, then exactly one level and draft are created", () => {
   const initial = createInitialState(5).state;
   const state = {
     ...initial,
     houseProgress: initial.houseProgress.map((progress) =>
       progress.houseId === "house_a"
-        ? { ...progress, xp: 499 }
+        ? { ...progress, xp: 1999 }
         : progress,
     ),
   };
@@ -27,7 +27,7 @@ test("Given 499 XP and two damage XP, when progression applies, then exactly one
   assert.equal(result.phase, "draft");
   assert.equal(result.phaseBeforeDraft, "preparation");
   assert.equal(result.houseProgress[0]?.level, 2);
-  assert.equal(result.houseProgress[0]?.xp, 501);
+  assert.equal(result.houseProgress[0]?.xp, 2001);
   assert.equal(result.pendingDrafts.length, 1);
   assert.equal(result.pendingDrafts[0]?.level, 2);
 });
@@ -38,14 +38,14 @@ test("Given one award crosses two thresholds, when progression applies, then two
     ...initial,
     houseProgress: initial.houseProgress.map((progress) =>
       progress.houseId === "house_a"
-        ? { ...progress, xp: 499 }
+        ? { ...progress, xp: 1999 }
         : progress,
     ),
   };
 
   const result = applyProgressionAwards(
     state,
-    [{ houseId: "house_a", xp: 701 }],
+    [{ houseId: "house_a", xp: 3201 }],
     createRng(9),
   );
 
@@ -68,8 +68,8 @@ test("Given simultaneous level-ups in reversed award order, when progression app
   const result = applyProgressionAwards(
     initial,
     [
-      { houseId: "house_c", xp: 500 },
-      { houseId: "house_a", xp: 500 },
+      { houseId: "house_c", xp: 2000 },
+      { houseId: "house_a", xp: 2000 },
     ],
     createRng(11),
   );
@@ -84,7 +84,7 @@ test("Given a mismatched or unavailable draft selection, when chosen, then the e
   const initial = createInitialState(5).state;
   const drafted = applyProgressionAwards(
     initial,
-    [{ houseId: "house_a", xp: 500 }],
+    [{ houseId: "house_a", xp: 2000 }],
     createRng(11),
   );
   const head = drafted.pendingDrafts[0];
@@ -106,7 +106,7 @@ test("Given queued drafts, when the head is selected, then cards stack FIFO and 
   const initial = createInitialState(5).state;
   const drafted = applyProgressionAwards(
     initial,
-    [{ houseId: "house_a", xp: 1200 }],
+    [{ houseId: "house_a", xp: 5200 }],
     createRng(11),
   );
   const first = drafted.pendingDrafts[0];
@@ -143,7 +143,7 @@ test("Given draft phase, when ticks advance, then only tick and effect expiry ch
   const initial = createInitialState(5).state;
   const drafted = applyProgressionAwards(
     initial,
-    [{ houseId: "house_a", xp: 500 }],
+    [{ houseId: "house_a", xp: 2000 }],
     createRng(11),
   );
 
@@ -162,12 +162,12 @@ test("Given identical state and award inputs, when progression reduces twice, th
   const snapshot = structuredClone(initial);
   const first = applyProgressionAwards(
     initial,
-    [{ houseId: "house_a", xp: 500 }],
+    [{ houseId: "house_a", xp: 2000 }],
     createRng(33),
   );
   const second = applyProgressionAwards(
     initial,
-    [{ houseId: "house_a", xp: 500 }],
+    [{ houseId: "house_a", xp: 2000 }],
     createRng(33),
   );
 

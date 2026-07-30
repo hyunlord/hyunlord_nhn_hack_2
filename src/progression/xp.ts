@@ -1,8 +1,8 @@
-export const LEVEL_THRESHOLDS = [0, 500, 1200, 2200, 3500] as const;
+export const LEVEL_THRESHOLDS = [0, 2000, 5200, 9500, 15000] as const;
 export const HERO_LEVEL_THRESHOLDS = [0, 250, 700, 1400, 2400] as const;
 
 export function xpForDamage(damage: number): number {
-  return Math.max(0, damage);
+  return Math.max(0, Math.round(damage * 0.6));
 }
 
 export function xpForKill(): number {

@@ -76,8 +76,8 @@ test("Given two ordered attackers finish one creature, when attacks resolve, the
   );
 
   assert.deepEqual(result.xpAwards, [
-    { houseId: "house_a", amount: 22 },
-    { houseId: "house_b", amount: 33 },
+    { houseId: "house_a", amount: 13 },
+    { houseId: "house_b", amount: 30 },
   ]);
   assert.deepEqual(result.creatureKillsByHouse, [
     { houseId: "house_b", amount: 1 },

@@ -79,6 +79,7 @@ game rather than a document.
 | Wave banner ink | `--wave-banner-ink` | `#e8e4f0` | Wave-start banner text |
 | Motion quick | `--motion-quick` | `140ms` | Targeted hover/active feedback |
 | Motion combat | `--motion-combat` | `300ms` | Render-local combat transient fade |
+| Motion revelation | `--motion-revelation` | `640ms` | House level-up pause before draft choices |
 | Motion easing | `--motion-ease` | `cubic-bezier(0.2, 0.8, 0.2, 1)` | GPU-composited UI and combat motion |
 | Valid placement | canvas token | `rgba(108, 190, 132, 0.22)` | Valid tower preview |
 | Invalid placement | canvas token | `rgba(214, 91, 76, 0.22)` | Invalid tower preview |
@@ -208,6 +209,8 @@ The content width is capped at 1200px and arranged with CSS Grid.
 
 ### Level-up draft
 
+- Each newly queued level first shows a 640ms house-colour revelation using
+  opacity and transform only; reduced-motion users proceed directly to choices
 - The overlay fills the canvas panel so the paused world remains visible beneath
   a dark veil
 - The house color, house name, and newly reached level form the header

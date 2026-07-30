@@ -75,7 +75,7 @@ test("Given matching houses, when modifiers resolve and a draft is chosen, then 
 
   const awarded = applyProgressionAwards(
     world.state,
-    [{ houseId: "house_a", xp: 500 }],
+    [{ houseId: "house_a", xp: 2000 }],
     createRng(440),
   );
   const offer = awarded.pendingDrafts[0];

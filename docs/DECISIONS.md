@@ -767,3 +767,54 @@ The final audit did not introduce compensating balance changes. The measured
 `3.830/14.289 ms` average/worst to `4.825/28.888 ms` are recorded for later
 profiling and balancing rather than silently tuned inside this presentation
 pass.
+
+## 2026-07-30 — Phase 5D progression pacing
+
+### Damage XP stays linear but no longer mirrors every damage point
+
+House XP from damage changed from `damage` to
+`Math.max(0, Math.round(damage * 0.6))`. A flat multiplier keeps contribution
+easy to predict and deterministic while decoupling XP growth from the full
+increase in army size and attack damage. Per-tick caps and logarithmic scaling
+were rejected because the measured flat rule reached the requested timing
+without adding hidden discontinuities. Kill XP remains `25`.
+
+### The measured curve, not the first estimate, owns the thresholds
+
+The old thresholds `[0, 500, 1200, 2200, 3500]` let seed `20260810` reach
+levels 2/3/4/5 at ticks `659/673/684/710`, all during wave one. The initial
+Phase 5D estimate `[0, 2200, 5200, 9500, 15000]` produced the desired
+`8.59` average drafts but left `15/300` houses at level one, exactly `5.0%`
+instead of below the regression ceiling. Lowering only the first threshold
+yielded the shipped curve `[0, 2000, 5200, 9500, 15000]`.
+
+Across 100 neutral `abc` runs with the default auto-shop, the shipped curve
+averaged `8.67` drafts, left `11/300` houses at level one (`3.7%`), and won
+`93/100` runs. The previous build averaged `11.64` drafts, left `1/300`
+houses at level one (`0.3%`), and won `99/100` runs. The win-rate movement is
+recorded as an observation; this pass does not compensate through waves,
+rosters, classes, cards, shops, heroes, or investments.
+
+Twenty timing seeds confirmed no level five before tick `800`. Representative
+final traces were:
+
+- `20260810`: A2 `703` (W1), C2 `1073` (W2), A3 `1485` (W2),
+  C3 `1727` (W3), C5 `2244` (W3), A5 `2485` (W3); 9 drafts.
+- `20260813`: A2 `702` (W1), C2 `946` (W2), A3 `1502` (W3),
+  A5 `1987` (W3), C5 `2097` (W3); 10 drafts.
+- `20260817`: C2 `578` (W1), C3 `1088` (W2), C5 `1759` (W3);
+  no other house reached level five; 8 drafts.
+
+### Rarer levels carry a visible and mechanical payoff
+
+Automatic per-level growth changed from `1.06` compounding damage and `+8` HP
+to `1.12` and `+18`. Card definitions, rarity, and effects remain unchanged.
+The draft previously appeared immediately, so each offer now starts with a
+640ms house-colour revelation while the already-paused draft phase is active.
+The motion uses opacity and transform only, and reduced-motion users proceed
+directly to the choices. This presentation timer never enters `GameState`.
+
+The expected deterministic baseline changed with the progression rules.
+Seed `20260810` now has an organic victory at tick `2138`, tribute `590`,
+keep `2400`, banners total `840`; the full-state-machine lane reaches victory
+at tick `1699`, tribute `341`, keep `2400`, banners total `1242`.

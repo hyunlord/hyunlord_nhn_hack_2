@@ -169,16 +169,30 @@ test("Given scoped and unscoped cards, when modifiers resolve without a class co
   assert.equal(result.maxHpBonus, 24);
 });
 
-test("Given combat contribution and cumulative XP, when progression is queried, then thresholds are exact", () => {
-  assert.deepEqual(LEVEL_THRESHOLDS, [0, 500, 1200, 2200, 3500]);
-  assert.equal(xpForDamage(19.5), 19.5);
+test("Given combat contribution and cumulative XP, when progression is queried, then scaled awards and thresholds are exact", () => {
+  assert.deepEqual(LEVEL_THRESHOLDS, [0, 2000, 5200, 9500, 15000]);
+  assert.equal(xpForDamage(-10), 0);
+  assert.equal(xpForDamage(0), 0);
+  assert.equal(xpForDamage(1), 1);
+  assert.equal(xpForDamage(19.5), 12);
+  assert.equal(xpForDamage(100), 60);
   assert.equal(xpForKill(), 25);
-  assert.equal(levelForXp(499), 1);
-  assert.equal(levelForXp(501), 2);
-  assert.equal(levelForXp(3500), 5);
-  assert.equal(xpToNextLevel(499), 1);
-  assert.equal(xpToNextLevel(501), 699);
-  assert.equal(xpToNextLevel(3500), null);
+  assert.equal(levelForXp(1999), 1);
+  assert.equal(levelForXp(2000), 2);
+  assert.equal(levelForXp(5199), 2);
+  assert.equal(levelForXp(5200), 3);
+  assert.equal(levelForXp(9499), 3);
+  assert.equal(levelForXp(9500), 4);
+  assert.equal(levelForXp(14999), 4);
+  assert.equal(levelForXp(15000), 5);
+  assert.equal(xpToNextLevel(1999), 1);
+  assert.equal(xpToNextLevel(2000), 3200);
+  assert.equal(xpToNextLevel(5199), 1);
+  assert.equal(xpToNextLevel(5200), 4300);
+  assert.equal(xpToNextLevel(9499), 1);
+  assert.equal(xpToNextLevel(9500), 5500);
+  assert.equal(xpToNextLevel(14999), 1);
+  assert.equal(xpToNextLevel(15000), null);
 });
 
 test("Given reordered definitions and equal seeds, when offers generate, then card ids are deterministic and order-independent", () => {
