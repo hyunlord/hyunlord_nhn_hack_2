@@ -6,6 +6,7 @@ import { AppFlowProvider } from "./state/appFlowContext";
 import { SettingsLocaleProvider, SettingsProvider } from "./settings/SettingsContext";
 import "./index.css";
 import "./styles/phase4b.css";
+import "./styles/phase5b.css";
 
 class RootElementMissingError extends Error {
   public constructor() {

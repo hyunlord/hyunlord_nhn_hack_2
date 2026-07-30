@@ -30,6 +30,6 @@ export const CANVAS_VISUAL_TOKENS = {
   },
   waveBannerInk: {
     cssName: "--wave-banner-ink",
-    value: "#fff8df",
+    value: "#e8e4f0",
   },
 } as const satisfies Record<string, CanvasVisualToken>;

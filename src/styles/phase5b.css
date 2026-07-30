@@ -1,0 +1,285 @@
+/* Phase 5B: presentation-only dark fantasy interface. */
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  color: var(--text);
+  background: var(--bg);
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+}
+
+:is(h1, h2, h3, .title-card__identity) {
+  font-family: var(--font-display);
+}
+
+:is(
+  .meta-stats dd,
+  .summary-facts dd,
+  .legacy-award dd,
+  .tick-counter,
+  .hud-metric-row strong,
+  .miracle-cost,
+  .miracle-cooldown,
+  .shop-overlay__tribute strong
+) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+:is(
+  [data-screen="title"],
+  [data-screen="selection"],
+  [data-screen="meta"],
+  [data-screen="settings"],
+  [data-screen="summary"]
+) {
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  color: var(--text);
+  background:
+    linear-gradient(180deg, rgba(15, 13, 20, 0.82), rgba(15, 13, 20, 0.94)),
+    url("/assets/world/background_field.png") center / cover fixed;
+}
+
+:is(
+  [data-screen="selection"],
+  [data-screen="meta"],
+  [data-screen="settings"],
+  [data-screen="summary"]
+).app-shell {
+  width: min(calc(100% - 32px), 1180px);
+  margin-inline: auto;
+  padding: clamp(18px, 3vw, 40px);
+}
+
+.screen-shell {
+  gap: clamp(16px, 2vw, 28px);
+}
+
+.screen-header {
+  border-bottom-color: color-mix(in srgb, var(--border-strong) 72%, transparent);
+}
+
+:is(.screen-header h1, .summary-hero h1) {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  font-weight: 800;
+}
+
+.section-heading h2,
+.intelligence-panel h2,
+.legacy-award h2 {
+  font-size: 1.05rem;
+}
+
+.eyebrow,
+.status-label {
+  color: var(--divine);
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+}
+
+:is(
+  .screen-header,
+  .summary-hero,
+  .intelligence-panel,
+  .legacy-award,
+  .settings-screen .ledger-section,
+  .investment-group,
+  .investment-summary
+) {
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  box-shadow: 0 18px 46px rgba(6, 5, 10, 0.28);
+}
+
+:is(.screen-header, .summary-hero, .intelligence-panel, .legacy-award) {
+  padding: clamp(16px, 2.4vw, 28px);
+}
+
+:is(.primary-action, .unlock-row button) {
+  min-height: 44px;
+  border: 1px solid color-mix(in srgb, var(--divine) 72%, var(--border));
+  border-radius: 4px;
+  color: var(--bg);
+  background: var(--divine);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--divine) 18%, transparent);
+  font-weight: 600;
+}
+
+.text-action {
+  min-height: 44px;
+  border-color: var(--border-strong);
+  border-radius: 4px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--panel-raised) 76%, transparent);
+}
+
+:is(.primary-action, .text-action, .selection-card, .draft-card):focus-visible {
+  outline: 2px solid var(--divine);
+  outline-offset: 3px;
+}
+
+.title-screen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  min-height: 100dvh;
+  padding: clamp(20px, 6vw, 84px);
+  overflow: hidden;
+}
+
+.title-screen::before {
+  position: absolute;
+  inset: -3%;
+  z-index: -1;
+  background: url("/assets/world/background_field.png") center / cover;
+  animation: phase5b-field-drift 24s ease-in-out infinite alternate;
+  content: "";
+}
+
+.title-screen::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(15, 13, 20, 0.94), rgba(15, 13, 20, 0.68) 58%, rgba(15, 13, 20, 0.88));
+  content: "";
+}
+
+.title-card {
+  width: min(100%, 660px);
+  padding: clamp(24px, 5vw, 56px);
+  border: 16px solid transparent;
+  border-image-source: url("/assets/ui/panel_frame.png");
+  border-image-slice: 64 fill;
+  border-image-repeat: round;
+  color: var(--text);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  box-shadow: 0 28px 80px rgba(4, 3, 8, 0.48);
+}
+
+.title-card h1 {
+  margin: 8px 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 7vw, 5.4rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+}
+
+.title-subtitle {
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  letter-spacing: 0.08em;
+}
+
+.title-description {
+  max-width: 52ch;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.title-actions__buttons {
+  gap: 10px;
+}
+
+.title-actions .primary-action {
+  min-width: 180px;
+  min-height: 52px;
+}
+
+.hud-panel,
+.miracle-panel,
+.settings-screen {
+  border-image-source: url("/assets/ui/panel_frame.png");
+  border-image-slice: 64 fill;
+  border-image-repeat: round;
+  color: var(--text);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+
+.run-viewport {
+  width: 100dvw;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.run-stage {
+  box-shadow: 0 0 64px rgba(0, 0, 0, 0.54);
+}
+
+.shop-overlay {
+  color: var(--text);
+  background: linear-gradient(90deg, rgba(15, 13, 20, 0.98), rgba(22, 19, 31, 0.92) 68%, rgba(15, 13, 20, 0.84));
+}
+
+.shop-card {
+  border-color: color-mix(in srgb, var(--gold) 42%, transparent);
+  background: color-mix(in srgb, var(--panel-raised) 90%, transparent);
+  box-shadow: 0 10px 24px rgba(5, 4, 9, 0.3);
+}
+
+.draft-overlay {
+  color: var(--text);
+  background:
+    linear-gradient(rgba(15, 13, 20, 0.9), rgba(15, 13, 20, 0.96)),
+    radial-gradient(circle at center, color-mix(in srgb, var(--divine) 12%, transparent), transparent 62%);
+}
+
+.draft-card {
+  color: var(--text);
+  background: color-mix(in srgb, var(--panel-raised) 94%, transparent);
+  box-shadow: 0 16px 36px rgba(4, 3, 8, 0.42);
+}
+
+@keyframes phase5b-field-drift {
+  from {
+    transform: scale(1.03) translate3d(-0.5%, -0.35%, 0);
+  }
+
+  to {
+    transform: scale(1.07) translate3d(0.65%, 0.4%, 0);
+  }
+}
+
+@media (max-width: 768px) {
+  :is(
+    [data-screen="selection"],
+    [data-screen="meta"],
+    [data-screen="settings"],
+    [data-screen="summary"]
+  ).app-shell {
+    width: min(calc(100% - 16px), 1180px);
+    padding: 16px;
+  }
+
+  .screen-header {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,20 +1,29 @@
-# Fantasy God-Sim Design System
+# Fantasy God-Sim Design System — Phase 5B
 
 ## 1. Atmosphere & Identity
 
-A quiet technical frame around a living fantasy simulation. The signature is a
-restrained blueprint-like interface surrounding a dark, vignetted world map.
+A restrained dark-fantasy command interface around a living simulation. The
+world remains the visual anchor; menus use field art, shadowed surfaces, serif
+display typography, and selective house/divine color so the product reads as a
+game rather than a document.
 
 ## 2. Color
 
 | Role | Token | Value | Usage |
 | --- | --- | --- | --- |
-| Surface | `--surface` | `#f4f1e8` | Page background |
-| Panel | `--panel` | `#fffdf6` | Placeholder surfaces |
-| Text | `--text` | `#25241f` | Primary text |
-| Muted | `--muted` | `#68655b` | Supporting text |
-| Border | `--border` | `#b8b2a3` | Surface outlines |
-| Accent | `--accent` | `#1f6650` | Canvas label and focus |
+| Background | `--bg` | `#0f0d14` | Page ground |
+| Surface | `--surface` | `#16131f` | Recessed surface |
+| Panel | `--panel` | `#1e1a2b` | Primary panel |
+| Raised panel | `--panel-raised` | `#262034` | Elevated choices |
+| Border | `--border` | `#3a3350` | Subtle separators |
+| Strong border | `--border-strong` | `#4d4468` | Selected boundaries |
+| Text | `--text` | `#e8e4f0` | Primary text |
+| Muted | `--muted` | `#9b93ad` | Supporting text |
+| Dim | `--dim` | `#6d6580` | Quiet metadata |
+| Divine | `--divine` | `#63c9c2` | Primary action and focus |
+| Gold | `--gold` | `#d9b544` | Reward and value emphasis |
+| Danger | `--danger` | `#d4693f` | Damage and warning |
+| Threat | `--threat` | `#8c5ec0` | Enemy presence |
 | World | `--world` | `#1a1613` | Canvas ground |
 | World grid | `--world-grid` | `rgba(255, 245, 220, 0.055)` | Map grid |
 | World outline | `--world-outline` | `rgba(0, 0, 0, 0.72)` | Agent outlines |
@@ -39,9 +48,9 @@ restrained blueprint-like interface surrounding a dark, vignetted world map.
 | Hero aura | canvas token | `rgba(123, 176, 106, 0.15)` | Greymoor aura fill |
 | Hero aura rim | canvas token | `rgba(160, 214, 139, 0.40)` | Greymoor aura outline |
 | Draft veil | `--draft-veil` | `rgba(26, 22, 19, 0.86)` | Paused-world overlay |
-| Draft panel | `--draft-panel` | `#fff8df` | Draft card surface |
-| Draft ink | `--draft-ink` | `#252016` | Draft card text |
-| Draft accent | `--draft-accent` | `#d8c879` | Draft borders and labels |
+| Draft panel | `--draft-panel` | `var(--panel-raised)` | Draft card surface |
+| Draft ink | `--draft-ink` | `var(--text)` | Draft card text |
+| Draft accent | `--draft-accent` | `var(--gold)` | Draft borders and labels |
 | Common rarity | rarity config | `#9aa0a6` border / `#50545a` text | Common draft identity |
 | Rare rarity | rarity config | `#5aa9e6` border / `#1f638f` text | Rare draft identity |
 | Legendary rarity | rarity config | `#e8b73a` border / `#73520a` text | Legendary draft identity |
@@ -77,9 +86,11 @@ the same house identity.
 
 ## 3. Typography
 
-The primary stack is `ui-monospace, SFMono-Regular, Menlo, monospace`.
-Page titles use `1.5rem`, section titles use `1rem`, and body text uses
-`0.875rem`, all with readable line height.
+Display type uses `"Noto Serif KR"` at 600/800 with Korean serif and Georgia
+fallbacks. Body type uses `"Noto Sans KR"` at 400/600 with system sans-serif
+fallbacks. Mono is reserved for numeric telemetry. The scale is approximately
+2.4rem display, 1.5rem screen title, 1.05rem section title, 0.9rem body, and
+0.78rem metadata, all with readable line height.
 
 ## 4. Spacing & Layout
 
@@ -115,11 +126,11 @@ The content width is capped at 1200px and arranged with CSS Grid.
   `sprite-debug-overlay__header`, `sprite-debug-overlay__status`, and
   `sprite-debug-overlay__missing` classes; `Shift+D` toggles it and shows
   ready, missing, and total counts plus the missing IDs
-- `framePresentation.ts` keeps `frameSpriteEnabled: false` for the rarity and
-  house-selection frames, so the current border-and-label UI remains the
-  visual default until art exists
-- The borders-only treatment stays in force: this slice adds no shadows,
-  glows, or new surface tokens
+- `framePresentation.ts` owns proportional safe insets for the rarity and
+  house-selection frames. Frame artwork stays transparent and decorative; an
+  opaque fallback must not cover its interior.
+- Depth comes from layered dark surfaces and restrained shadow. Borders are
+  secondary separators rather than the primary grouping device.
 
 ### World HUD
 
@@ -197,8 +208,8 @@ The content width is capped at 1200px and arranged with CSS Grid.
 - Up to three bordered cards appear side by side at desktop and tablet widths;
   each includes rarity, kind, name, one-sentence description, current stacks,
   and its `1`/`2`/`3` shortcut
-- Bright centralized rarity colors identify the three-pixel card border while
-  darker companion colors keep the rarity text readable on the light card
+- Bright centralized rarity colors identify the frame while the card interior
+  remains a translucent raised dark surface.
 - At 520px and below the cards stack vertically to preserve readable text and
   44px minimum targets
 - The overlay is a labeled modal region, announces the queued-draft count, and
@@ -224,8 +235,8 @@ The content width is capped at 1200px and arranged with CSS Grid.
   insufficient Legacy, max rank, or locked house access
 - The running bonus summary lists accumulated active effects in readable labels
   so permanent progress is visible without requiring player arithmetic
-- The ledger uses the existing panel, border, monospace, and 4px spacing tokens;
-  no shadows or ad hoc color roles are introduced
+- The ledger uses the shared dark panels, body typography, and 4px spacing
+  tokens; numeric values alone use mono.
 
 ### House selection
 

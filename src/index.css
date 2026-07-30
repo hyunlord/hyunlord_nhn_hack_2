@@ -1,17 +1,27 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600&family=Noto+Serif+KR:wght@600;800&display=swap");
+
 :root {
-  --surface: #f4f1e8;
-  --panel: #fffdf6;
-  --text: #25241f;
-  --muted: #68655b;
-  --border: #b8b2a3;
-  --accent: #1f6650;
+  --bg: #0f0d14;
+  --surface: #16131f;
+  --panel: #1e1a2b;
+  --panel-raised: #262034;
+  --border: #3a3350;
+  --border-strong: #4d4468;
+  --text: #e8e4f0;
+  --muted: #9b93ad;
+  --dim: #6d6580;
+  --divine: #63c9c2;
+  --gold: #d9b544;
+  --danger: #d4693f;
+  --threat: #8c5ec0;
+  --accent: var(--divine);
   --world: #1a1613;
   --world-grid: rgba(255, 245, 220, 0.055);
   --world-outline: rgba(0, 0, 0, 0.72);
   --draft-veil: rgba(26, 22, 19, 0.86);
-  --draft-panel: #fff8df;
-  --draft-ink: #252016;
-  --draft-accent: #d8c879;
+  --draft-panel: var(--panel-raised);
+  --draft-ink: var(--text);
+  --draft-accent: var(--gold);
   --shop-veil: rgba(26, 22, 19, 0.96);
   --space-2: 8px;
   --space-4: 16px;
@@ -20,9 +30,12 @@
   --z-hud: 1;
   --z-overlay: 2;
   --z-debug-overlay: 3;
+  --font-display: "Noto Serif KR", "Nanum Myeongjo", Georgia, serif;
+  --font-body: "Noto Sans KR", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   color: var(--text);
-  background: var(--surface);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--bg);
+  font-family: var(--font-body);
   font-synthesis: none;
 }
 
@@ -34,6 +47,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100dvh;
+  background: var(--bg);
 }
 
 button,
@@ -1159,7 +1173,7 @@ button {
   gap: 12px;
   padding: var(--space-4);
   overflow-y: auto;
-  color: #fff8df;
+  color: var(--text);
   background: var(--shop-veil);
 }
 
@@ -1308,7 +1322,7 @@ button {
 }
 
 .shop-card h3 {
-  color: #fff8df;
+  color: var(--text);
   font-size: 0.85rem;
 }
 
