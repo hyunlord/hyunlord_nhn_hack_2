@@ -5,10 +5,7 @@ import {
 } from "react";
 import { useLocale } from "../../content/locale";
 import {
-  cardDescription,
-  cardKindLabel,
   cardName,
-  cardRarityLabel,
   formatCardApplicabilityWarning,
   formatCardEffect,
   houseName,
@@ -23,6 +20,8 @@ import {
 } from "../../content/framePresentation";
 import { HOUSE_CONFIG } from "../../content/houseConfig";
 import { useGameStore } from "../../state/gameStore";
+import { cardEffectIcon } from "../choicePresentation/choiceVisuals";
+import { ChoiceIcon } from "./ChoiceIcon";
 
 type DraftCardStyle = CSSProperties & {
   readonly "--rarity-color": string;
@@ -36,9 +35,6 @@ export function DraftOverlay() {
   const returnFocusReference = useRef<HTMLElement | null>(null);
   const offer = state.pendingDrafts[0];
   const house = HOUSE_CONFIG.find(({ id }) => id === offer?.houseId);
-  const progress = state.houseProgress.find(
-    ({ houseId }) => houseId === offer?.houseId,
-  );
   const isDraft = state.phase === "draft" && offer !== undefined;
 
   useEffect(() => {
@@ -109,8 +105,7 @@ export function DraftOverlay() {
   if (
     state.phase !== "draft" ||
     offer === undefined ||
-    house === undefined ||
-    progress === undefined
+    house === undefined
   ) {
     return null;
   }
@@ -128,15 +123,12 @@ export function DraftOverlay() {
         <h2>{t("draft.heading", { house: houseName(t, house.id), level: offer.level })}</h2>
         <span>{t("draft.choose")}</span>
       </div>
-      <div className="draft-card-list">
+      <div className="choice-deck draft-card-list">
         {offer.cardIds.map((cardId, index) => {
           const card = CARD_DEFINITIONS.find(({ id }) => id === cardId);
           if (card === undefined) {
             return null;
           }
-          const stacks =
-            progress.cards.find((owned) => owned.cardId === card.id)
-              ?.stacks ?? 0;
           const presentation = RARITY_FRAME_PRESENTATION[card.rarity];
           const backgroundImage = frameBackgroundImage(presentation);
           const style: DraftCardStyle =
@@ -160,6 +152,10 @@ export function DraftOverlay() {
             keep: state.keep,
             banners: state.banners,
           });
+          const warningText = applicabilityWarnings
+            .map((warning) => formatCardApplicabilityWarning(t, warning))
+            .join(" ");
+          const effectLine = cardEffects.join(" · ");
           return (
             <button
               className="draft-card"
@@ -176,44 +172,21 @@ export function DraftOverlay() {
                 buttonReferences.current[index] = element;
               }}
               style={style}
+              title={warningText.length > 0 ? warningText : undefined}
               type="button"
             >
               <span className="draft-card__content">
-                <span className="draft-card__meta">
-                  <span>
-                    <b>{cardRarityLabel(t, card.rarity)}</b> · {cardKindLabel(t, card.kind)}
-                  </span>
-                  <kbd>{index + 1}</kbd>
+                <span className="choice-card__icon-row">
+                  <ChoiceIcon name={cardEffectIcon(card.effect)} />
+                  {warningText.length > 0 ? (
+                    <ChoiceIcon label={warningText} name="warning" />
+                  ) : null}
                 </span>
-                <strong>{cardName(t, card.id)}</strong>
-                {cardEffects.length > 0 ? (
-                  <span className="draft-card__effects">
-                    {cardEffects.map((line, effectIndex) => (
-                      <span
-                        className="draft-card__effect"
-                        key={`${card.id}-effect-${effectIndex}`}
-                      >
-                        {t("draft.effectLabel", { text: line })}
-                      </span>
-                    ))}
-                  </span>
-                ) : null}
-                {applicabilityWarnings.map((warning) => (
-                  <span
-                    className="draft-card__warning"
-                    key={`${card.id}-warning-${warning.kind}`}
-                  >
-                    {t("draft.warning.class", {
-                      text: formatCardApplicabilityWarning(t, warning),
-                    })}
-                  </span>
-                ))}
-                <span className="draft-card__description">
-                  {cardDescription(t, card.id)}
+                <strong className="choice-card__name">{cardName(t, card.id)}</strong>
+                <span className="choice-card__effect">
+                  {t("draft.effectLabel", { text: effectLine })}
                 </span>
-                <span className="draft-card__stacks">
-                  {t("draft.stacks", { current: stacks, max: card.maxStacks })}
-                </span>
+                <kbd>{index + 1}</kbd>
               </span>
             </button>
           );

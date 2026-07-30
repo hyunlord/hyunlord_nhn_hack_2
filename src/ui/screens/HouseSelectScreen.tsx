@@ -1,3 +1,4 @@
+import { useState, type CSSProperties } from "react";
 import { HOUSE_CONFIG, HOUSE_SPAWN_SLOTS } from "../../content/houseConfig";
 import { useLocale, type LocaleKey } from "../../content/locale";
 import {
@@ -15,6 +16,12 @@ import {
 } from "../../content/framePresentation";
 import { previewHouseSynergies } from "../../content/houseSynergies";
 import { useAppFlow } from "../../state/appFlowContext";
+import { ChoiceIcon } from "../components/ChoiceIcon";
+import {
+  houseTraitIcons,
+  pageCount,
+  pageItems,
+} from "../choicePresentation/choiceVisuals";
 
 const SLOT_LABEL_KEYS = {
   north: "selection.slot.north",
@@ -27,24 +34,19 @@ function rosterComposition(houseId: typeof HOUSE_CONFIG[number]["id"]) {
   if (house === undefined) {
     return [];
   }
-  const total = UNIT_CLASS_ORDER.reduce(
-    (sum, id) => sum + (house.roster[id] ?? 0),
-    0,
-  );
-  return UNIT_CLASS_ORDER.map((unitClass) => ({
-    unitClass,
-    count: house.roster[unitClass] ?? 0,
-    percent: total === 0 ? 0 : ((house.roster[unitClass] ?? 0) / total) * 100,
-  }));
-}
-
-function selectionSegmentFill(houseColor: string, index: number): string {
-  return `color-mix(in srgb, ${houseColor} ${40 + index * 14}%, var(--panel))`;
+  return UNIT_CLASS_ORDER
+    .map((unitClass) => ({
+      count: house.roster[unitClass] ?? 0,
+      unitClass,
+    }))
+    .filter(({ count }) => count > 0);
 }
 
 export function HouseSelectScreen() {
   const { dispatch, state } = useAppFlow();
   const { t } = useLocale();
+  const [page, setPage] = useState(0);
+  const totalPages = pageCount(HOUSE_CONFIG);
   const synergies = previewHouseSynergies(
     state.selectedHouseIds,
     state.meta.discoveredSynergies,
@@ -82,10 +84,10 @@ export function HouseSelectScreen() {
         <section className="ledger-section" aria-labelledby="choose-heading">
           <div className="section-heading">
             <p className="eyebrow">{t("selection.available.eyebrow")}</p>
-            <h2 id="choose-heading">{t("selection.roster")}</h2>
+            <h2 id="choose-heading">{t("selection.heading")}</h2>
           </div>
-          <div className="selection-roster">
-            {HOUSE_CONFIG.map((house) => {
+          <div className="choice-deck selection-roster">
+            {pageItems(HOUSE_CONFIG, page).map((house) => {
               const unlocked = state.meta.unlockedHouses.includes(house.id);
               const order = state.selectedHouseIds.indexOf(house.id);
               const backgroundImage = frameBackgroundImage(HOUSE_SELECTION_FRAME);
@@ -101,13 +103,21 @@ export function HouseSelectScreen() {
               );
             })}
           </div>
+          <nav className="choice-pager" aria-label={t("selection.page", { current: page + 1, total: totalPages })}>
+            <button disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))} type="button">
+              {t("selection.previous")}
+            </button>
+            <span>{page + 1} / {totalPages}</span>
+            <button disabled={page + 1 >= totalPages} onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))} type="button">
+              {t("selection.next")}
+            </button>
+          </nav>
         </section>
 
-        <aside className="intelligence-panel" aria-labelledby="synergy-preview-heading">
-          <p className="eyebrow">{t("selection.intel.eyebrow")}</p>
-          <h2 id="synergy-preview-heading">{t("selection.intel.heading")}</h2>
+        <aside className="synergy-strip" aria-labelledby="synergy-preview-heading">
+          <strong id="synergy-preview-heading">{t("selection.intel.heading")}</strong>
           {synergies.length === 0 ? (
-            <p>{t("selection.intel.empty")}</p>
+            <span>{t("selection.intel.empty")}</span>
           ) : (
             <ul>
               {synergies.map((synergy) => (
@@ -118,7 +128,6 @@ export function HouseSelectScreen() {
               ))}
             </ul>
           )}
-          <p className="intelligence-panel__note">{t("selection.intel.note")}</p>
         </aside>
       </div>
 
@@ -152,6 +161,22 @@ export function HouseSelectionCard({
 }) {
   const { t } = useLocale();
   const selected = selectedOrder >= 0;
+  const traitIcons = houseTraitIcons(house);
+  const populationDots = Array.from(
+    { length: house.startingPopulation },
+    (_, index) => index,
+  );
+  const cardStyle = {
+    "--accent": house.color,
+    "--population-gap": `${Math.max(2, Math.round(house.formation.spacing / 4))}px`,
+    ...(backgroundImage === undefined
+      ? {}
+      : {
+          backgroundImage,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "100% 100%",
+        }),
+  } as CSSProperties;
   return (
     <button
       aria-pressed={selected}
@@ -159,46 +184,29 @@ export function HouseSelectionCard({
       data-frame-sprite={HOUSE_SELECTION_FRAME.frameSpriteId}
       disabled={!unlocked}
       onClick={onToggle}
-      style={
-        backgroundImage === undefined
-          ? undefined
-          : { backgroundImage, backgroundRepeat: "no-repeat", backgroundSize: "100% 100%" }
-      }
+      style={cardStyle}
       type="button"
     >
       <span className="selection-card__content">
-        <span aria-hidden="true" className="house-mark" style={{ backgroundColor: house.color }} />
-        <span>
-          <strong>{houseName(t, house.id)}</strong>
-          {houseTraitLabels(t, house).map((label) => (
-            <small className="trait-line" key={label}>{label}</small>
-          ))}
+        <span className="choice-card__icon-row">
+          {traitIcons.map((icon) => <ChoiceIcon key={icon} name={icon} />)}
         </span>
-        <div className="selection-composition" aria-label={t("selection.composition", { house: houseName(t, house.id) })}>
-          {rosterComposition(house.id).map(({ unitClass, count, percent }, index) => (
-            <div className="selection-composition__row" key={unitClass}>
-              <span
-                aria-label={`${unitClassLabel(t, unitClass)} ${count}`}
-                className="selection-composition__label"
-              >
-                <span>{unitClassLabel(t, unitClass)}</span>
-                <strong>{count} · {Math.round(percent)}%</strong>
-              </span>
-              <div className="selection-composition__track">
-                <span
-                  className="selection-composition__fill"
-                  style={{
-                    background: selectionSegmentFill(house.color, index),
-                    width: `${Math.round(percent)}%`,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-        <small>{houseIdentity(t, house.id)}</small>
+        <strong className="choice-card__name">{houseName(t, house.id)}</strong>
+        <span className="choice-card__effect">
+          {houseIdentity(t, house.id)} · {t("selection.population", { count: house.startingPopulation })}
+        </span>
+        <span aria-hidden="true" className="population-cluster">
+          {populationDots.map((dot) => <i key={dot} />)}
+        </span>
         <span className="status-label">
           {selected ? t("selection.pick", { order: selectedOrder + 1 }) : unlocked ? t("selection.choose") : t("common.locked")}
+        </span>
+        <span className="choice-detail-panel" role="tooltip">
+          <strong>{t("selection.details", { house: houseName(t, house.id) })}</strong>
+          {houseTraitLabels(t, house).map((label) => <small key={label}>{label}</small>)}
+          {rosterComposition(house.id).map(({ unitClass, count }) => (
+            <small key={unitClass}>{unitClassLabel(t, unitClass)} {count}</small>
+          ))}
         </span>
       </span>
     </button>

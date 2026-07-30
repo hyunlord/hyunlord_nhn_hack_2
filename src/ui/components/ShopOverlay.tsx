@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ShopAvailability, ShopItemId } from "../../build/build.types";
 import type { GameState } from "../../engine/engine.types";
 import { useLocale } from "../../content/locale";
@@ -8,11 +9,14 @@ import { useGameStore } from "../../state/gameStore";
 import {
   localizedShopEffects,
   localizedShopReason,
-  SHOP_CATEGORY_ORDER,
-  shopAvailabilityByCategory,
-  shopCategoryLabelKey,
   shopPresentationFor,
 } from "./shopOverlayPresentation";
+import { ChoiceIcon } from "./ChoiceIcon";
+import {
+  pageCount,
+  pageItems,
+  shopItemIcon,
+} from "../choicePresentation/choiceVisuals";
 
 export function ShopOverlay() {
   const {
@@ -65,8 +69,10 @@ export function ShopOverlayView({
   readonly towerPlacementActive: boolean;
 }) {
   const { t } = useLocale();
+  const [page, setPage] = useState(0);
   const clearedWave = WAVE_DEFINITIONS[state.waveIndex];
   const summary = state.lastWaveSummary;
+  const totalPages = pageCount(availability);
 
   return (
     <section
@@ -103,27 +109,26 @@ export function ShopOverlayView({
         </p>
       </header>
 
-      <div className="shop-grid">
-        {SHOP_CATEGORY_ORDER.map((category) => {
-          const entries = shopAvailabilityByCategory(availability, category);
-          return (
-            <section className="shop-category" key={category}>
-              <h3>{t(shopCategoryLabelKey(category))}</h3>
-              <div className="shop-category__items">
-                {entries.map((availability) => (
-                  <ShopCard
-                    availability={availability}
-                    key={availability.item.id}
-                    onBuy={onBuy}
-                    purchaseCount={state.shopPurchases[availability.item.id]}
-                    towerPlacementActive={towerPlacementActive}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+      <div className="choice-deck shop-grid">
+        {pageItems(availability, page).map((entry) => (
+          <ShopCard
+            availability={entry}
+            key={entry.item.id}
+            onBuy={onBuy}
+            purchaseCount={state.shopPurchases[entry.item.id]}
+            towerPlacementActive={towerPlacementActive}
+          />
+        ))}
       </div>
+      <nav className="choice-pager" aria-label={t("shop.page", { current: page + 1, total: totalPages })}>
+        <button disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))} type="button">
+          {t("shop.previous")}
+        </button>
+        <span>{page + 1} / {totalPages}</span>
+        <button disabled={page + 1 >= totalPages} onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))} type="button">
+          {t("shop.next")}
+        </button>
+      </nav>
 
       {towerPlacementActive && (
         <div className="placement-instruction" role="status">
@@ -168,37 +173,30 @@ export function ShopCard({
   const presentation = shopPresentationFor(item.id);
   const localizedReason = localizedShopReason(reason, t);
   const effects = localizedShopEffects(item.id, t);
+  const effectLine = effects.join(" · ");
+  const detail = [
+    localizedReason,
+    t("shop.purchased", { count: purchaseCount }),
+  ].filter((line): line is string => line !== null).join(" · ");
   return (
-    <article className="shop-card">
-      <div className="shop-card__heading">
-        <h4>
-          {presentation.nameKey === null ? item.name : t(presentation.nameKey)}
-        </h4>
-        <strong>{cost}</strong>
-      </div>
-      <ul className="shop-card__effects">
-        {effects.map((effect) => (
-          <li key={effect}>{effect}</li>
-        ))}
-      </ul>
-      <p>
-        {presentation.descriptionKey === null
-          ? item.description
-          : t(presentation.descriptionKey)}
-      </p>
-      <p className="shop-card__count">
-        {t("shop.purchased", { count: purchaseCount })}
-      </p>
-      <button
-        disabled={!available || towerPlacementActive}
-        onClick={() => onBuy(item.id)}
-        type="button"
-      >
-        {item.needsPlacement ? t("shop.choosePosition") : t("shop.purchase")}
-      </button>
-      {localizedReason === null ? null : (
-        <small className="shop-card__reason">{localizedReason}</small>
-      )}
-    </article>
+    <button
+      className={`shop-card shop-card--${presentation.category}`}
+      disabled={!available || towerPlacementActive}
+      onClick={() => onBuy(item.id)}
+      title={detail}
+      type="button"
+    >
+      <span className="choice-card__icon-row">
+        <ChoiceIcon name={shopItemIcon(item.id)} />
+      </span>
+      <strong className="choice-card__name">
+        {presentation.nameKey === null ? item.name : t(presentation.nameKey)}
+      </strong>
+      <span className="choice-card__effect">{effectLine}</span>
+      <span className="shop-card__cost">{cost}</span>
+      <span className="choice-detail-panel" role="tooltip">
+        {detail}
+      </span>
+    </button>
   );
 }

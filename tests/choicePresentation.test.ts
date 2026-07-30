@@ -47,7 +47,7 @@ function renderKorean(element: ReactElement): string {
   );
 }
 
-test("Given rendered shop choices, when card markup is produced, then numeric effects lead flavour while costs counts and reasons stay visible", () => {
+test("Given rendered shop choices, when card markup is produced, then one icon name effect and cost form the default face", () => {
   const snapshot = {
     tribute: 500,
     purchases: {
@@ -82,13 +82,16 @@ test("Given rendered shop choices, when card markup is produced, then numeric ef
     }),
   );
   assertOrderedText(towerMarkup, [
+    "choice-icon--defense",
     "Raise Tower",
-    "70",
     "Tower 300 HP · 22 damage · 130 range",
-    "Enter placement mode for a defensive tower.",
-    "Purchased 0",
-    "Choose position",
+    "70",
   ]);
+  assert.doesNotMatch(
+    towerMarkup,
+    /Enter placement mode for a defensive tower|Choose position/,
+  );
+  assert.equal(towerMarkup.match(/<button/g)?.length, 1);
 
   const reviveMarkup = renderEnglish(
     createElement(ShopCard, {
@@ -99,18 +102,20 @@ test("Given rendered shop choices, when card markup is produced, then numeric ef
     }),
   );
   assertOrderedText(reviveMarkup, [
+    "choice-icon--healing",
     "Revive Hero",
-    "60",
     "Next dead hero returns",
-    "Immediately return the next dead hero.",
-    "Purchased 2",
-    "Purchase",
-    "No dead hero.",
+    "60",
   ]);
+  assert.match(reviveMarkup, /title="No dead hero\. · Purchased 2"/);
+  assert.doesNotMatch(
+    reviveMarkup,
+    /Immediately return the next dead hero|>Purchase</,
+  );
 });
 
 
-test("Given reinforce keep is unavailable in Korean, when the shop card renders, then every visible label is localized", () => {
+test("Given reinforce keep is unavailable in Korean, when the shop card renders, then the compact face and detail remain localized", () => {
   const reinforce = shopAvailability({
     tribute: 500,
     purchases: {
@@ -139,15 +144,21 @@ test("Given reinforce keep is unavailable in Korean, when the shop card renders,
   );
 
   assertOrderedText(markup, [
+    "choice-icon--defense",
     "성채 보강",
-    "45",
     "성채/깃발 HP +300 회복",
-    "가장 손상된 생존 성채나 깃발 HP 300 회복.",
-    "구매 0회",
-    "구매",
-    "피해를 입은 생존 성채나 깃발이 없습니다.",
+    "45",
   ]);
-  assert.doesNotMatch(markup, /Reinforce Keep|Keep\/banner repair|no damaged surviving keep or banners/);
+  assert.match(markup, /피해를 입은 생존 성채나 깃발이 없습니다\./);
+  assert.match(markup, /disabled=""/);
+  assert.doesNotMatch(
+    markup,
+    /가장 손상된 생존 성채나 깃발 HP 300 회복|>구매</,
+  );
+  assert.doesNotMatch(
+    markup,
+    /Reinforce Keep|Keep\/banner repair|no damaged surviving keep or banners/,
+  );
 });
 
 test("Given rendered investment choices, when card markup is produced, then numeric per-rank effect leads description and disabled reason remains visible", () => {
@@ -174,7 +185,7 @@ test("Given rendered investment choices, when card markup is produced, then nume
   ]);
 });
 
-test("Given rendered house choices, when card markup is produced, then numeric traits and roster lead identity while locked status stays visible", () => {
+test("Given rendered house choices, when card markup is produced, then identity population and visual cluster lead focused details", () => {
   const duskmere = HOUSE_CONFIG.find(({ id }) => id === "house_d");
   assert.ok(duskmere);
 
@@ -189,18 +200,20 @@ test("Given rendered house choices, when card markup is produced, then numeric t
   );
 
   assertOrderedText(markup, [
+    "choice-icon--attack",
     "Duskmere",
+    "fast, fragile · 34 people",
+    "population-cluster",
+    "Locked",
     "Max HP -18%",
     "Attack interval -15%",
     "Movement speed +25%",
-    "Bulwark 0",
-    "Assault 0",
     "Volley 30",
     "Skirmish 70",
-    "fast, fragile",
-    "Locked",
   ]);
   assert.match(markup, /disabled=""/);
+  assert.equal(markup.match(/<i><\/i>/g)?.length, 34);
+  assert.doesNotMatch(markup, /selection-composition__track|%<\/strong>/);
 });
 
 test("Given numeric card effects, when choices are formatted, then source-derived values are prominent and exact", () => {
