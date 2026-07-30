@@ -1,4 +1,4 @@
-# Fantasy God-Sim Design System — Phase 5B
+# Fantasy God-Sim Design System — Phase 5C
 
 ## 1. Atmosphere & Identity
 
@@ -70,6 +70,9 @@ game rather than a document.
 | Composition divider | `--composition-divider` | `rgba(0, 0, 0, 0.42)` | Hairline separation between class-composition segments |
 | Choice effect text | `--choice-effect-text` | `color-mix(in srgb, var(--text) 78%, var(--accent))` | Numeric effect lines on choice cards |
 | Choice warning text | `--choice-warning-text` | `color-mix(in srgb, #d4693f 72%, var(--draft-ink))` | Applicability and raid warning copy |
+| Choice card | `--choice-card-surface` | `color-mix(in srgb, var(--panel-raised) 90%, transparent)` | Shared house, draft, and shop card surface |
+| Choice detail | `--choice-detail-surface` | `color-mix(in srgb, var(--surface) 88%, transparent)` | Focus detail panel behind secondary facts |
+| Choice cluster dot | `--choice-cluster-dot` | `color-mix(in srgb, var(--text) 74%, var(--accent))` | Population cluster marks |
 | Combat hit flash | `--combat-hit-flash` | `rgba(255, 243, 196, 0.95)` | Recent-hit outline and ranged volley emphasis |
 | Combat death puff | `--combat-death-puff` | `rgba(214, 196, 161, 0.45)` | Render-local death-puff fade |
 | Defense pulse | `--defense-pulse` | `rgba(255, 214, 138, 0.32)` | Keep and banner damage pulse and low-HP attention |
@@ -190,33 +193,36 @@ The content width is capped at 1200px and arranged with CSS Grid.
 
 ### Intermission shop
 
-- A six-card grid keeps cost, purchase count, and disabled reason visible
-- Tribute is the dominant number; the previous-wave loss summary supplies
-  purchase context
+- The shop uses the shared three-card deck with two deterministic pages
+- Each card exposes one shared effect icon, name, one functional effect line,
+  and tribute cost; rarity is communicated by frame treatment only
+- Categories remain visually grouped through card accents without repeating
+  category headings inside each card
 - Tower selection enters a map placement mode and defers payment until a valid
   canvas click
 - The next-wave action is isolated in a footer to prevent accidental starts
-- Numeric effect lines lead flavour copy and use the shared choice-effect text
-  token; disabled reasons stay visible as structured text, not opacity-only
-  state.
+- Disabled reasons move into the focus detail panel and remain available to
+  pointer, keyboard, and touch users
+- Desktop and tablet show all three cards; phones show one scroll snap card at
+  a time without adding page-level vertical scrolling.
 
 ### Level-up draft
 
 - The overlay fills the canvas panel so the paused world remains visible beneath
   a dark veil
 - The house color, house name, and newly reached level form the header
-- Up to three bordered cards appear side by side at desktop and tablet widths;
-  each includes rarity, kind, name, one-sentence description, current stacks,
-  and its `1`/`2`/`3` shortcut
-- Bright centralized rarity colors identify the frame while the card interior
-  remains a translucent raised dark surface.
-- At 520px and below the cards stack vertically to preserve readable text and
-  44px minimum targets
+- Three large cards use the shared three-card deck; each exposes one shared
+  effect icon, name, one functional effect line, and shortcut
+- Rarity appears only through frame and restrained glow. Kind labels, flavour,
+  and stack counts leave the default card face.
+- Applicability uses a warning icon whose explanation lives in the focus detail
+  panel rather than a sentence stacked on every card
+- At 520px and below, cards use horizontal scroll snap so one complete card
+  remains readable while the world stays visible
 - The overlay is a labeled modal region, announces the queued-draft count, and
   accepts both pointer selection and number keys
-- Applicability warnings sit after numeric effects and before flavour. Long
-  Korean and English lines wrap inside cards rather than widening the canvas
-  panel.
+- Long Korean and English effect lines wrap inside cards rather than widening
+  the canvas panel.
 
 ### Legacy overview
 
@@ -240,14 +246,20 @@ The content width is capped at 1200px and arranged with CSS Grid.
 
 ### House selection
 
-- Three numbered deployment slots preserve selection order
-- Every house remains visible; locked houses are disabled and marked with a
-  restrained diagonal hatch
-- A live intelligence panel reveals public synergies and only previously
-  discovered hidden synergies
+- A compact three-slot strip preserves selection order without a separate
+  roster heading
+- Houses use the shared three-card deck with two deterministic pages; locked
+  houses remain disabled and marked with a restrained diagonal hatch
+- Every default card contains the house name, one functional identity line
+  including exact starting population, a population cluster whose dot count
+  and spacing derive from configuration, and no more than two trait icons
+- Percentage stat rows, four stacked composition bars, and flavour prose move
+  to the focus detail panel reached by hover, focus, or tap
+- Known synergy appears as one thin strip rather than a second information
+  panel
 - Confirmation stays disabled until exactly three unlocked houses are selected
-- Selection cards reuse the same class-composition projection as the HUD and
-  keep numeric trait/roster lines before identity prose.
+- Desktop and tablet show three cards at once; phones show one scroll snap card
+  at a time without hiding the living-world presentation.
 
 ### Keep, banners, and combat transients
 
