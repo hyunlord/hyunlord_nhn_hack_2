@@ -73,7 +73,7 @@ game rather than a document.
 | Combat hit flash | `--combat-hit-flash` | `rgba(255, 243, 196, 0.95)` | Recent-hit outline and ranged volley emphasis |
 | Combat death puff | `--combat-death-puff` | `rgba(214, 196, 161, 0.45)` | Render-local death-puff fade |
 | Defense pulse | `--defense-pulse` | `rgba(255, 214, 138, 0.32)` | Keep and banner damage pulse and low-HP attention |
-| Wave banner ink | `--wave-banner-ink` | `#fff8df` | Wave-start banner text |
+| Wave banner ink | `--wave-banner-ink` | `#e8e4f0` | Wave-start banner text |
 | Motion quick | `--motion-quick` | `140ms` | Targeted hover/active feedback |
 | Motion combat | `--motion-combat` | `300ms` | Render-local combat transient fade |
 | Motion easing | `--motion-ease` | `cubic-bezier(0.2, 0.8, 0.2, 1)` | GPU-composited UI and combat motion |
