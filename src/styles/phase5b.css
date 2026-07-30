@@ -774,7 +774,7 @@ select {
   --accent: var(--gold);
 }
 
-.shop-card:disabled {
+.shop-card[aria-disabled="true"] {
   cursor: not-allowed;
   filter: saturate(0.4);
 }

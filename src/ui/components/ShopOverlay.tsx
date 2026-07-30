@@ -180,9 +180,13 @@ export function ShopCard({
   ].filter((line): line is string => line !== null).join(" · ");
   return (
     <button
+      aria-disabled={!available || towerPlacementActive}
       className={`shop-card shop-card--${presentation.category}`}
-      disabled={!available || towerPlacementActive}
-      onClick={() => onBuy(item.id)}
+      onClick={() => {
+        if (available && !towerPlacementActive) {
+          onBuy(item.id);
+        }
+      }}
       title={detail}
       type="button"
     >

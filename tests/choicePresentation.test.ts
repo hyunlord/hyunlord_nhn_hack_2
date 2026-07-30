@@ -150,7 +150,7 @@ test("Given reinforce keep is unavailable in Korean, when the shop card renders,
     "45",
   ]);
   assert.match(markup, /피해를 입은 생존 성채나 깃발이 없습니다\./);
-  assert.match(markup, /disabled=""/);
+  assert.match(markup, /aria-disabled="true"/);
   assert.doesNotMatch(
     markup,
     /가장 손상된 생존 성채나 깃발 HP 300 회복|>구매</,
@@ -211,7 +211,7 @@ test("Given rendered house choices, when card markup is produced, then identity 
     "Volley 30",
     "Skirmish 70",
   ]);
-  assert.match(markup, /disabled=""/);
+  assert.match(markup, /aria-disabled="true"/);
   assert.equal(markup.match(/<i><\/i>/g)?.length, 34);
   assert.doesNotMatch(markup, /selection-composition__track|%<\/strong>/);
 });

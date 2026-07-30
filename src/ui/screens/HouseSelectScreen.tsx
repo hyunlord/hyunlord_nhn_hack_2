@@ -179,11 +179,15 @@ export function HouseSelectionCard({
   } as CSSProperties;
   return (
     <button
+      aria-disabled={!unlocked}
       aria-pressed={selected}
       className={`selection-card${unlocked ? "" : " selection-card--locked"}`}
       data-frame-sprite={HOUSE_SELECTION_FRAME.frameSpriteId}
-      disabled={!unlocked}
-      onClick={onToggle}
+      onClick={() => {
+        if (unlocked) {
+          onToggle();
+        }
+      }}
       style={cardStyle}
       type="button"
     >
