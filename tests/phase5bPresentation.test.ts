@@ -70,3 +70,11 @@ test("Given framed choices, when their source is inspected, then transparent art
   assert.match(PHASE5B_CSS, /--draft-safe-inline:\s*7\.8125%/);
   assert.match(PHASE5B_CSS, /--draft-safe-block:\s*7\.2917%/);
 });
+
+test("Given dark menu screens, when legacy selectors compete, then critical headings remain readable and each screen keeps one kicker", () => {
+  assert.match(PHASE5B_CSS, /\.title-card__identity h1\s*\{[\s\S]*color:\s*var\(--text\)/);
+  assert.match(PHASE5B_CSS, /\.settings-screen \.screen-header h1[\s\S]*color:\s*var\(--text\)/);
+  assert.match(PHASE5B_CSS, /\.settings-screen \.section-heading h2[\s\S]*color:\s*var\(--text\)/);
+  assert.match(PHASE5B_CSS, /\[data-screen="meta"\] \.ledger-section \.eyebrow[\s\S]*display:\s*none/);
+  assert.match(PHASE5B_CSS, /\[data-screen="summary"\] \.legacy-award > \.eyebrow[\s\S]*display:\s*none/);
+});

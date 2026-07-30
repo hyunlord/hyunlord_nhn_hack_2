@@ -170,13 +170,14 @@ select {
   box-shadow: 0 28px 80px rgba(4, 3, 8, 0.48);
 }
 
-.title-card h1 {
+.title-card__identity h1 {
   margin: 8px 0;
   font-family: var(--font-display);
   font-size: clamp(2.4rem, 7vw, 5.4rem);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 0.98;
+  color: var(--text);
 }
 
 .title-subtitle {
@@ -290,6 +291,7 @@ select {
 .selection-card__content > span:nth-child(2) {
   display: grid;
   gap: 2px;
+  padding-right: 3.5rem;
 }
 
 .selection-card__content > span:nth-child(2) strong {
@@ -343,8 +345,11 @@ select {
 }
 
 .selection-card__content > .status-label {
-  align-self: end;
+  position: absolute;
+  top: 2px;
+  right: 0;
   font-size: 0.6rem;
+  white-space: nowrap;
 }
 
 .selection-card[aria-pressed="true"] {
@@ -399,6 +404,34 @@ select {
   line-height: 1.45;
 }
 
+.settings-screen .screen-header h1,
+.settings-screen .section-heading h2 {
+  color: var(--text);
+}
+
+.settings-screen .screen-header p,
+.settings-screen .section-heading p,
+.settings-screen label {
+  color: var(--muted);
+}
+
+.draft-overlay__header {
+  color: var(--text);
+}
+
+.draft-overlay .draft-overlay__header > p {
+  color: var(--muted);
+}
+
+[data-screen="selection"] :is(.section-heading, .intelligence-panel) > .eyebrow,
+[data-screen="meta"] .ledger-section .eyebrow,
+[data-screen="settings"] .ledger-section .eyebrow,
+[data-screen="summary"] .ledger-section .eyebrow,
+[data-screen="summary"] .legacy-award > .eyebrow,
+[data-screen="summary"] .new-achievements > .eyebrow {
+  display: none;
+}
+
 @keyframes phase5b-field-drift {
   from {
     transform: scale(1.03) translate3d(-0.5%, -0.35%, 0);
@@ -441,7 +474,7 @@ select {
 
 @media (max-width: 520px) {
   .selection-roster {
-    grid-template-columns: repeat(3, minmax(196px, 76vw));
+    grid-template-columns: repeat(3, minmax(220px, 76vw));
   }
 
   .draft-card-list {
