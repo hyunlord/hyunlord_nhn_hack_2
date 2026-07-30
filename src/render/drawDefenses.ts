@@ -48,7 +48,7 @@ function drawKeepPrimitive(
     BALANCE_CONFIG.KEEP_RADIUS * 2,
   );
   context.fillStyle = keep.hp > 0 ? KEEP_COLOR : FALLEN_COLOR;
-  context.strokeStyle = "#f4e6bd";
+  context.strokeStyle = "#e8e4f0";
   context.lineWidth = 2;
   context.fill();
   context.stroke();
@@ -71,7 +71,7 @@ function drawBannerPrimitive(
   );
   context.closePath();
   context.fillStyle = banner.hp > 0 ? color : FALLEN_COLOR;
-  context.strokeStyle = banner.hp > 0 ? "#f4e6bd" : "#211d1a";
+  context.strokeStyle = banner.hp > 0 ? "#e8e4f0" : "#211d1a";
   context.lineWidth = 2;
   context.fill();
   context.stroke();

@@ -14,7 +14,7 @@ export const DIVINE_SKILL_DEFINITIONS: Readonly<
     cost: 55,
     cooldownTicks: 240,
     radius: 120,
-    color: "#f06b3e",
+    color: "#d4693f",
     targeted: true,
   },
   sanctuary: {
@@ -47,7 +47,7 @@ export const DIVINE_SKILL_DEFINITIONS: Readonly<
     cost: 70,
     cooldownTicks: 600,
     radius: 0,
-    color: "#f3d37a",
+    color: "#d9b544",
     targeted: false,
   },
 } as const;

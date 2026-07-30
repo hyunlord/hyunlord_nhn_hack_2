@@ -75,8 +75,8 @@ Commit using the Lore protocol.
 
 **Files:**
 - Modify: `src/content/framePresentation.ts`
-- Modify: `src/components/HouseSelectScreen.tsx`
-- Modify: `src/components/DraftOverlay.tsx`
+- Modify: `src/ui/screens/HouseSelectScreen.tsx`
+- Modify: `src/ui/components/DraftOverlay.tsx`
 - Modify: `src/styles/phase5b.css`
 - Test: `tests/phase5bPresentation.test.ts`
 
@@ -107,11 +107,11 @@ Commit using the Lore protocol.
 ### Task 4: Refine every menu and run surface
 
 **Files:**
-- Modify: `src/components/TitleScreen.tsx`
-- Modify: `src/components/MetaScreen.tsx`
-- Modify: `src/components/SettingsScreen.tsx`
-- Modify: `src/components/RunSummaryScreen.tsx`
-- Modify: `src/components/ShopOverlay.tsx`
+- Modify: `src/ui/screens/TitleScreen.tsx`
+- Modify: `src/ui/screens/MetaScreen.tsx`
+- Modify: `src/ui/screens/SettingsScreen.tsx`
+- Modify: `src/ui/screens/RunSummaryScreen.tsx`
+- Modify: `src/ui/components/ShopOverlay.tsx`
 - Modify: `src/styles/phase5b.css`
 - Modify only if copy changes: `src/locales/en.ts`, `src/locales/ko.ts`
 
@@ -221,4 +221,3 @@ Replace the existing `hyunlord-game` tmux session with
 Confirm `ss` reports `0.0.0.0:3100`, fetch the external address from outside
 DGX, verify root HTML and referenced JS/CSS bodies, and confirm the runtime HEAD
 equals the pushed remote SHA.
-

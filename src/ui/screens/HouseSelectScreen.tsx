@@ -177,7 +177,10 @@ export function HouseSelectionCard({
         <div className="selection-composition" aria-label={t("selection.composition", { house: houseName(t, house.id) })}>
           {rosterComposition(house.id).map(({ unitClass, count, percent }, index) => (
             <div className="selection-composition__row" key={unitClass}>
-              <span className="selection-composition__label">
+              <span
+                aria-label={`${unitClassLabel(t, unitClass)} ${count}`}
+                className="selection-composition__label"
+              >
                 <span>{unitClassLabel(t, unitClass)}</span>
                 <strong>{count} · {Math.round(percent)}%</strong>
               </span>

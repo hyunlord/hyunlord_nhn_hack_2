@@ -62,6 +62,14 @@ test("Given source presentation colors, when files are scanned, then obsolete li
   assert.deepEqual(violations, []);
 });
 
+test("Given the broad light-color scan, when protected gameplay config is excluded, then presentation source has no hardcoded near-white values", () => {
+  const broadLight = /#f[0-9a-f]{5}\b|#fff\b/i;
+  const violations = sourceFiles("src")
+    .filter((file) => /\.(?:css|ts|tsx)$/.test(file))
+    .filter((file) => broadLight.test(readFileSync(file, "utf8")));
+  assert.deepEqual(violations, ["src/divine/miracleTypes.ts"]);
+});
+
 test("Given framed choices, when their source is inspected, then transparent art and proportional safe regions own the composition", () => {
   assert.doesNotMatch(HOUSE_SELECT, /backgroundRepeat:\s*"no-repeat,\s*repeat"/);
   assert.doesNotMatch(DRAFT_OVERLAY, /backgroundRepeat:\s*"no-repeat,\s*repeat"/);

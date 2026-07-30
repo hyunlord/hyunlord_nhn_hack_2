@@ -736,7 +736,7 @@ button {
 .miracle-button:disabled {
   border-color: var(--border);
   color: var(--muted);
-  background: #f1eee5;
+  background: var(--surface);
   cursor: not-allowed;
 }
 

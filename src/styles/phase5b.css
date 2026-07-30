@@ -11,6 +11,14 @@ body {
   background: var(--bg);
 }
 
+p,
+h1,
+h2,
+h3,
+small {
+  word-break: keep-all;
+}
+
 button,
 input,
 select {
@@ -134,8 +142,10 @@ select {
 
 .title-screen {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 660px);
+  grid-template-rows: auto auto;
   align-content: center;
+  gap: 18px;
   min-height: 100dvh;
   padding: clamp(20px, 6vw, 84px);
   overflow: hidden;
@@ -154,7 +164,9 @@ select {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(90deg, rgba(15, 13, 20, 0.94), rgba(15, 13, 20, 0.68) 58%, rgba(15, 13, 20, 0.88));
+  background:
+    radial-gradient(circle at 76% 42%, color-mix(in srgb, var(--gold) 9%, transparent), transparent 28%),
+    linear-gradient(90deg, rgba(15, 13, 20, 0.94), rgba(15, 13, 20, 0.68) 58%, rgba(15, 13, 20, 0.88));
   content: "";
 }
 
@@ -195,7 +207,13 @@ select {
 }
 
 .title-actions__buttons {
+  justify-content: flex-start;
   gap: 10px;
+}
+
+.title-actions {
+  justify-content: flex-start;
+  width: min(100%, 660px);
 }
 
 .title-actions .primary-action {
@@ -230,9 +248,24 @@ select {
 }
 
 .shop-card {
-  border-color: color-mix(in srgb, var(--gold) 42%, transparent);
-  background: color-mix(in srgb, var(--panel-raised) 90%, transparent);
+  border: 8px solid transparent;
+  border-image-source: url("/assets/ui/panel_frame.png");
+  border-image-slice: 64 fill;
+  border-image-repeat: round;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--panel-raised) 96%, transparent), color-mix(in srgb, var(--surface) 92%, transparent));
   box-shadow: 0 10px 24px rgba(5, 4, 9, 0.3);
+}
+
+.shop-card__heading h3 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.shop-card button {
+  border-radius: 3px;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--gold) 14%, transparent);
+  font-weight: 600;
 }
 
 .draft-overlay {
@@ -415,8 +448,71 @@ select {
   color: var(--muted);
 }
 
+.settings-screen .ledger-section {
+  border: 0;
+  border-left: 3px solid color-mix(in srgb, var(--gold) 58%, var(--border));
+  border-radius: 5px;
+  background:
+    linear-gradient(110deg, color-mix(in srgb, var(--panel-raised) 82%, transparent), color-mix(in srgb, var(--panel) 72%, transparent));
+  box-shadow: 0 12px 28px rgba(5, 4, 9, 0.24);
+}
+
+.settings-screen .ledger-section:last-child {
+  border-left-color: color-mix(in srgb, var(--danger) 72%, var(--border));
+}
+
 .draft-overlay__header {
   color: var(--text);
+}
+
+[data-screen="summary"] .summary-hero {
+  border-left-color: var(--gold);
+  background:
+    radial-gradient(circle at 78% 34%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 28%),
+    color-mix(in srgb, var(--panel) 94%, transparent);
+}
+
+[data-screen="summary"] .summary-layout > .ledger-section {
+  padding: clamp(16px, 2vw, 24px);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
+  box-shadow: 0 14px 34px rgba(5, 4, 9, 0.26);
+}
+
+[data-screen="summary"] .summary-facts {
+  gap: 8px;
+  border: 0;
+}
+
+[data-screen="summary"] .summary-facts div {
+  border: 0;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--panel-raised) 84%, transparent);
+}
+
+[data-screen="summary"] .legacy-award {
+  border: 1px solid color-mix(in srgb, var(--gold) 52%, var(--border));
+}
+
+[data-screen="summary"] .legacy-award h2 {
+  color: var(--gold);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+}
+
+[data-screen="summary"] .legacy-award dl {
+  border: 0;
+}
+
+[data-screen="summary"] .legacy-award dl div {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--gold) 18%, transparent);
+}
+
+[data-screen="summary"] .population-arc li {
+  border: 0;
+  border-left: 3px solid var(--border-strong);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--panel-raised) 70%, transparent);
 }
 
 .draft-overlay .draft-overlay__header > p {
@@ -474,7 +570,18 @@ select {
 
 @media (max-width: 520px) {
   .selection-roster {
-    grid-template-columns: repeat(3, minmax(220px, 76vw));
+    grid-template-columns: 1fr;
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
+
+  .selection-card {
+    width: min(100%, 320px);
+    justify-self: center;
+  }
+
+  .phase-status--stacked strong {
+    white-space: nowrap;
   }
 
   .draft-card-list {
