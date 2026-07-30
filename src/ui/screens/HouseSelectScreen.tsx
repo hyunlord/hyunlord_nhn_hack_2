@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import { HOUSE_CONFIG, HOUSE_SPAWN_SLOTS } from "../../content/houseConfig";
 import { useLocale, type LocaleKey } from "../../content/locale";
 import {
@@ -12,18 +11,10 @@ import {
 } from "../../content/locale/display";
 import {
   frameBackgroundImage,
-  HOUSE_FRAME_CONTENT_PERCENT,
   HOUSE_SELECTION_FRAME,
 } from "../../content/framePresentation";
 import { previewHouseSynergies } from "../../content/houseSynergies";
 import { useAppFlow } from "../../state/appFlowContext";
-
-const FRAME_CONTENT_STYLE = {
-  height: `${HOUSE_FRAME_CONTENT_PERCENT.height}%`,
-  left: `${HOUSE_FRAME_CONTENT_PERCENT.left}%`,
-  top: `${HOUSE_FRAME_CONTENT_PERCENT.top}%`,
-  width: `${HOUSE_FRAME_CONTENT_PERCENT.width}%`,
-} as const satisfies CSSProperties;
 
 const SLOT_LABEL_KEYS = {
   north: "selection.slot.north",
@@ -97,11 +88,7 @@ export function HouseSelectScreen() {
             {HOUSE_CONFIG.map((house) => {
               const unlocked = state.meta.unlockedHouses.includes(house.id);
               const order = state.selectedHouseIds.indexOf(house.id);
-              const selected = order >= 0;
-              const backgroundImage = frameBackgroundImage(
-                HOUSE_SELECTION_FRAME,
-                selected ? "color-mix(in srgb, var(--accent) 8%, var(--panel))" : "var(--panel)",
-              );
+              const backgroundImage = frameBackgroundImage(HOUSE_SELECTION_FRAME);
               return (
                 <HouseSelectionCard
                   backgroundImage={backgroundImage}
@@ -175,11 +162,11 @@ export function HouseSelectionCard({
       style={
         backgroundImage === undefined
           ? undefined
-          : { backgroundImage, backgroundRepeat: "no-repeat, repeat", backgroundSize: "100% 100%, auto" }
+          : { backgroundImage, backgroundRepeat: "no-repeat", backgroundSize: "100% 100%" }
       }
       type="button"
     >
-      <span className="selection-card__content" style={FRAME_CONTENT_STYLE}>
+      <span className="selection-card__content">
         <span aria-hidden="true" className="house-mark" style={{ backgroundColor: house.color }} />
         <span>
           <strong>{houseName(t, house.id)}</strong>
@@ -190,13 +177,9 @@ export function HouseSelectionCard({
         <div className="selection-composition" aria-label={t("selection.composition", { house: houseName(t, house.id) })}>
           {rosterComposition(house.id).map(({ unitClass, count, percent }, index) => (
             <div className="selection-composition__row" key={unitClass}>
-              <span>
-                {unitClassLabel(t, unitClass)}
-                {" "}
-                {count}
-                {" · "}
-                {Math.round(percent)}
-                %
+              <span className="selection-composition__label">
+                <span>{unitClassLabel(t, unitClass)}</span>
+                <strong>{count} · {Math.round(percent)}%</strong>
               </span>
               <div className="selection-composition__track">
                 <span

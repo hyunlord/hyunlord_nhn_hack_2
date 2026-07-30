@@ -7,6 +7,8 @@ const INDEX_CSS = readFileSync("src/index.css", "utf8");
 const PHASE5B_PATH = "src/styles/phase5b.css";
 const PHASE5B_CSS = existsSync(PHASE5B_PATH) ? readFileSync(PHASE5B_PATH, "utf8") : "";
 const MAIN = readFileSync("src/main.tsx", "utf8");
+const HOUSE_SELECT = readFileSync("src/ui/screens/HouseSelectScreen.tsx", "utf8");
+const DRAFT_OVERLAY = readFileSync("src/ui/components/DraftOverlay.tsx", "utf8");
 
 const REQUIRED_TOKENS = {
   "--bg": "#0f0d14",
@@ -60,3 +62,11 @@ test("Given source presentation colors, when files are scanned, then obsolete li
   assert.deepEqual(violations, []);
 });
 
+test("Given framed choices, when their source is inspected, then transparent art and proportional safe regions own the composition", () => {
+  assert.doesNotMatch(HOUSE_SELECT, /backgroundRepeat:\s*"no-repeat,\s*repeat"/);
+  assert.doesNotMatch(DRAFT_OVERLAY, /backgroundRepeat:\s*"no-repeat,\s*repeat"/);
+  assert.match(PHASE5B_CSS, /--house-safe-inline:\s*13\.5417%/);
+  assert.match(PHASE5B_CSS, /--house-safe-top:\s*16\.0156%/);
+  assert.match(PHASE5B_CSS, /--draft-safe-inline:\s*7\.8125%/);
+  assert.match(PHASE5B_CSS, /--draft-safe-block:\s*7\.2917%/);
+});

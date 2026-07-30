@@ -44,17 +44,14 @@ test("Given frame sprites are enabled, when background images are resolved, then
     "legendary",
   ] satisfies readonly CardRarity[]) {
     assert.equal(
-      frameBackgroundImage(
-        RARITY_FRAME_PRESENTATION[rarity],
-        "var(--draft-panel)",
-      ),
-      `url("/assets/ui/card_frame_${rarity}.png"), linear-gradient(var(--draft-panel), var(--draft-panel))`,
+      frameBackgroundImage(RARITY_FRAME_PRESENTATION[rarity]),
+      `url("/assets/ui/card_frame_${rarity}.png")`,
     );
   }
 
   assert.equal(
-    frameBackgroundImage(HOUSE_SELECTION_FRAME, "var(--panel)"),
-    'url("/assets/ui/house_select_frame.png"), linear-gradient(var(--panel), var(--panel))',
+    frameBackgroundImage(HOUSE_SELECTION_FRAME),
+    'url("/assets/ui/house_select_frame.png")',
   );
 });
 
@@ -79,19 +76,19 @@ test("Given a non-native rendered frame, when its transparent interior is mapped
   });
 });
 
-test("Given the tall house banner, when its content region is mapped, then text stays inside the rectangular upper field", () => {
+test("Given the tall house banner, when its safe inset is mapped, then the framed card can contain its full information hierarchy", () => {
   assert.deepEqual(
     houseFrameContentRect({ height: 400, width: 300 }),
     {
-      height: 162.5,
-      left: 31.25,
-      top: 56.25,
-      width: 237.5,
+      height: 246.875,
+      left: 40.625,
+      top: 64.0625,
+      width: 218.75,
     },
   );
 });
 
-test("Given a frame sprite is enabled, when background image is resolved, then the manifest URL is layered over the fallback color", () => {
+test("Given a frame sprite is enabled, when background image is resolved, then no opaque fallback covers the transparent interior", () => {
   const enabledFrame: UiFramePresentation = {
     borderColor: "#5aa9e6",
     labelColor: "#1f638f",
@@ -100,7 +97,7 @@ test("Given a frame sprite is enabled, when background image is resolved, then t
   };
 
   assert.equal(
-    frameBackgroundImage(enabledFrame, "var(--draft-panel)"),
-    'url("/assets/ui/card_frame_rare.png"), linear-gradient(var(--draft-panel), var(--draft-panel))',
+    frameBackgroundImage(enabledFrame),
+    'url("/assets/ui/card_frame_rare.png")',
   );
 });

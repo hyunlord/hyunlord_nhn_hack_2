@@ -247,6 +247,158 @@ select {
   box-shadow: 0 16px 36px rgba(4, 3, 8, 0.42);
 }
 
+.selection-roster {
+  grid-template-columns: repeat(3, minmax(188px, 1fr));
+  gap: 12px;
+}
+
+.selection-card {
+  --house-safe-inline: 13.5417%;
+  --house-safe-top: 16.0156%;
+  position: relative;
+  aspect-ratio: 3 / 4;
+  min-height: 0;
+  border: 0;
+  color: var(--text);
+  background-color: color-mix(in srgb, var(--panel-raised) 38%, transparent);
+  filter: drop-shadow(0 14px 18px rgba(4, 3, 8, 0.4));
+}
+
+.selection-card::before {
+  position: absolute;
+  inset: 11% 10% 17%;
+  z-index: -1;
+  background: color-mix(in srgb, var(--panel) 76%, transparent);
+  clip-path: polygon(0 0, 100% 0, 100% 66%, 50% 100%, 0 66%);
+  content: "";
+}
+
+.selection-card__content {
+  position: absolute;
+  top: var(--house-safe-top);
+  right: var(--house-safe-inline);
+  bottom: calc(100% - 77.7344%);
+  left: var(--house-safe-inline);
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-content: start;
+  gap: 7px 8px;
+  overflow: visible;
+}
+
+.selection-card__content > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+}
+
+.selection-card__content > span:nth-child(2) strong {
+  font-family: var(--font-display);
+  font-size: clamp(0.88rem, 1.3vw, 1.08rem);
+}
+
+.selection-card__content .trait-line {
+  color: var(--muted);
+  font-size: 0.66rem;
+  line-height: 1.3;
+}
+
+.selection-composition {
+  align-content: center;
+  gap: 5px;
+}
+
+.selection-composition__row {
+  gap: 3px;
+}
+
+.selection-composition__label {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.selection-composition__label strong {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.selection-composition__track {
+  height: 5px;
+  border: 0;
+  background: color-mix(in srgb, var(--border) 38%, transparent);
+}
+
+.selection-card__content > small {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: var(--dim);
+  font-size: 0.61rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selection-card__content > .status-label {
+  align-self: end;
+  font-size: 0.6rem;
+}
+
+.selection-card[aria-pressed="true"] {
+  color: var(--text);
+  background-color: color-mix(in srgb, var(--divine) 18%, transparent);
+  filter: drop-shadow(0 16px 22px color-mix(in srgb, var(--divine) 22%, transparent));
+}
+
+.draft-card {
+  --draft-safe-inline: 7.8125%;
+  --draft-safe-block: 7.2917%;
+  position: relative;
+  aspect-ratio: 2 / 3;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background-color: color-mix(in srgb, var(--panel-raised) 40%, transparent);
+}
+
+.draft-card::before {
+  position: absolute;
+  inset: var(--draft-safe-block) var(--draft-safe-inline);
+  z-index: -1;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  content: "";
+}
+
+.draft-card__content {
+  position: absolute;
+  inset: var(--draft-safe-block) var(--draft-safe-inline);
+  display: grid;
+  align-content: start;
+  gap: clamp(6px, 1.2vh, 12px);
+  padding: clamp(10px, 1.8vw, 20px);
+  overflow: hidden;
+}
+
+.draft-card__content > strong {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.35rem);
+}
+
+.draft-card__meta {
+  color: var(--gold);
+  font-size: 0.72rem;
+}
+
+.draft-card__description,
+.draft-card__stacks {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 @keyframes phase5b-field-drift {
   from {
     transform: scale(1.03) translate3d(-0.5%, -0.35%, 0);
@@ -270,6 +422,35 @@ select {
 
   .screen-header {
     grid-template-columns: 1fr;
+  }
+
+  .selection-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .selection-roster {
+    grid-template-columns: repeat(3, minmax(164px, 1fr));
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+
+  .selection-card {
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 520px) {
+  .selection-roster {
+    grid-template-columns: repeat(3, minmax(196px, 76vw));
+  }
+
+  .draft-card-list {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .draft-card {
+    min-height: min(72vh, 560px);
   }
 }
 

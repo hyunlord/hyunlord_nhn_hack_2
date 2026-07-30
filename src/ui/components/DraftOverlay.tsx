@@ -18,7 +18,6 @@ import {
   CARD_DEFINITIONS,
 } from "../../content/cardConfig";
 import {
-  FRAME_CONTENT_PERCENT,
   frameBackgroundImage,
   RARITY_FRAME_PRESENTATION,
 } from "../../content/framePresentation";
@@ -29,13 +28,6 @@ type DraftCardStyle = CSSProperties & {
   readonly "--rarity-color": string;
   readonly "--rarity-text-color": string;
 };
-
-const FRAME_CONTENT_STYLE = {
-  height: `${FRAME_CONTENT_PERCENT.height}%`,
-  left: `${FRAME_CONTENT_PERCENT.left}%`,
-  top: `${FRAME_CONTENT_PERCENT.top}%`,
-  width: `${FRAME_CONTENT_PERCENT.width}%`,
-} as const satisfies CSSProperties;
 
 export function DraftOverlay() {
   const { dispatch, state } = useGameStore();
@@ -146,10 +138,7 @@ export function DraftOverlay() {
             progress.cards.find((owned) => owned.cardId === card.id)
               ?.stacks ?? 0;
           const presentation = RARITY_FRAME_PRESENTATION[card.rarity];
-          const backgroundImage = frameBackgroundImage(
-            presentation,
-            "var(--draft-panel)",
-          );
+          const backgroundImage = frameBackgroundImage(presentation);
           const style: DraftCardStyle =
             backgroundImage === undefined
               ? {
@@ -160,8 +149,8 @@ export function DraftOverlay() {
                   "--rarity-color": presentation.borderColor,
                   "--rarity-text-color": presentation.labelColor,
                   backgroundImage,
-                  backgroundRepeat: "no-repeat, repeat",
-                  backgroundSize: "100% 100%, auto",
+                  backgroundRepeat: "no-repeat",
+                  backgroundSize: "100% 100%",
                 };
           const cardEffects = formatCardEffect(card.effect, t);
           const applicabilityWarnings = cardApplicabilityWarnings({
@@ -189,10 +178,7 @@ export function DraftOverlay() {
               style={style}
               type="button"
             >
-              <span
-                className="draft-card__content"
-                style={FRAME_CONTENT_STYLE}
-              >
+              <span className="draft-card__content">
                 <span className="draft-card__meta">
                   <span>
                     <b>{cardRarityLabel(t, card.rarity)}</b> · {cardKindLabel(t, card.kind)}

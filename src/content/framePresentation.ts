@@ -34,10 +34,10 @@ const CARD_FRAME_SOURCE = {
 } as const;
 
 const HOUSE_FRAME_SOURCE = {
-  contentHeight: 208,
-  contentWidth: 304,
-  contentX: 40,
-  contentY: 72,
+  contentHeight: 316,
+  contentWidth: 280,
+  contentX: 52,
+  contentY: 82,
   height: 512,
   width: 384,
 } as const;
@@ -107,12 +107,11 @@ export const HOUSE_SELECTION_FRAME = {
 
 export function frameBackgroundImage(
   frame: UiFrameIdentity,
-  fallbackColor: string,
 ): string | undefined {
   if (!frame.frameSpriteEnabled) {
     return undefined;
   }
 
   const { src } = SPRITE_MANIFEST[frame.frameSpriteId];
-  return `url("${src}"), linear-gradient(${fallbackColor}, ${fallbackColor})`;
+  return `url("${src}")`;
 }
