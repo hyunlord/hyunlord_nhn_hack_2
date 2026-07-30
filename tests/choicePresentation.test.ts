@@ -204,7 +204,6 @@ test("Given rendered house choices, when card markup is produced, then identity 
     "Duskmere",
     "fast, fragile · 34 people",
     "population-cluster",
-    "Locked",
     "Max HP -18%",
     "Attack interval -15%",
     "Movement speed +25%",
@@ -213,6 +212,7 @@ test("Given rendered house choices, when card markup is produced, then identity 
   ]);
   assert.match(markup, /aria-disabled="true"/);
   assert.equal(markup.match(/<i><\/i>/g)?.length, 34);
+  assert.doesNotMatch(markup, />Locked</);
   assert.doesNotMatch(markup, /selection-composition__track|%<\/strong>/);
 });
 

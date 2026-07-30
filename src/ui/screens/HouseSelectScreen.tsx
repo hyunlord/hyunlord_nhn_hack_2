@@ -202,9 +202,6 @@ export function HouseSelectionCard({
         <span aria-hidden="true" className="population-cluster">
           {populationDots.map((dot) => <i key={dot} />)}
         </span>
-        <span className="status-label">
-          {selected ? t("selection.pick", { order: selectedOrder + 1 }) : unlocked ? t("selection.choose") : t("common.locked")}
-        </span>
         <span className="choice-detail-panel" role="tooltip">
           <strong>{t("selection.details", { house: houseName(t, house.id) })}</strong>
           {houseTraitLabels(t, house).map((label) => <small key={label}>{label}</small>)}

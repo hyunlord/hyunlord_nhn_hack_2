@@ -628,6 +628,43 @@ select {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.selection-slots {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  align-self: center;
+  gap: 8px;
+  padding: 6px;
+  border: 0;
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
+}
+
+.selection-slots li,
+.selection-slots li:first-child {
+  min-width: min(28vw, 150px);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+}
+
+.selection-slots li > span {
+  font-size: 0.9rem;
+}
+
+.selection-slots div {
+  gap: 0;
+}
+
+.selection-slots strong,
+.selection-slots small {
+  overflow: hidden;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .selection-roster {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -641,16 +678,10 @@ select {
   inset: var(--house-safe-top) var(--house-safe-inline) calc(100% - 77.7344%);
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto auto auto minmax(42px, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(42px, 1fr);
   align-content: start;
   gap: clamp(6px, 1vw, 10px);
   overflow: visible;
-}
-
-.selection-card__content > .status-label {
-  position: static;
-  justify-self: center;
-  font-size: 0.7rem;
 }
 
 .population-cluster {
@@ -844,10 +875,6 @@ select {
 
   .selection-card__content {
     gap: 5px;
-  }
-
-  .selection-slots {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .selection-slots small,
